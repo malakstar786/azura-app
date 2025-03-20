@@ -37,29 +37,36 @@ export default function RootLayout() {
 
   return (
     <ToastProvider>
-      <Stack>
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#fff',
+          },
+          headerTintColor: '#000',
+        }}
+      >
         <Stack.Screen
           name="(shop)"
-          options={{ headerShown: false, title: "Shop" }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="categories"
-          options={{ headerShown: false, title: "Categories" }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="product"
-          options={{ headerShown: false, title: "Product" }}
-        />
-        <Stack.Screen
-          name="cart"
-          options={{
-            presentation: "modal",
-            title: "Shopping Cart",
-          }}
+          options={{ headerShown: false }}
         />
         <Stack.Screen 
           name="auth" 
           options={{ headerShown: true }} 
+        />
+        <Stack.Screen
+          name="orders"
+          options={{
+            headerShown: true,
+            presentation: 'modal'
+          }}
         />
       </Stack>
     </ToastProvider>
