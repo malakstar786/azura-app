@@ -18,6 +18,7 @@ export const PRODUCTS: Product[] = [
       slug: 'nail-care',
     },
     maxQuantity: 5,
+    isNewArrival: true,
   },
   {
     id: 2,
@@ -52,6 +53,25 @@ export const PRODUCTS: Product[] = [
       slug: 'makeup',
     },
     maxQuantity: 15,
+    isNewArrival: true,
+  },
+  {
+    id: 7,
+    title: 'Foundation Makeup 2',
+    slug: 'foundation-makeup-2',
+    heroImage: require('./images/makeup-1.png'),
+    imagesUrl: [
+      require('./images/makeup-1.png'),
+      require('./images/makeup-2.png'),
+    ],
+    price: 49.99,
+    category: {
+      imageUrl: require('./images/makeup-1.png'),
+      name: 'Makeup',
+      slug: 'makeup',
+    },
+    maxQuantity: 15,
+    isNewArrival: true,
   },
   {
     id: 4,
@@ -85,6 +105,7 @@ export const PRODUCTS: Product[] = [
       slug: 'fragrances',
     },
     maxQuantity: 12,
+    isNewArrival: true,
   },
   {
     id: 6,

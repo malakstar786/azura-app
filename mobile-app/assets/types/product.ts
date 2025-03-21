@@ -10,4 +10,5 @@ export type Product = {
   heroImage: ImageSourcePropType;
   category: Omit<Category, 'products'>;
   maxQuantity: number;
+  isNewArrival?: boolean;
 };

@@ -1,63 +1,57 @@
 import { Redirect, Stack, useLocalSearchParams } from 'expo-router';
 import {
-  FlatList,
-  Image,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
+  Image,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
 import { useState } from 'react';
+import { Link } from 'expo-router';
 
 import { useCartStore } from '../../store/cart-store';
 import { PRODUCTS } from '../../../assets/products';
+
+const { width } = Dimensions.get('window');
 
 const ProductDetails = () => {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const toast = useToast();
 
   const product = PRODUCTS.find(product => product.slug === slug);
-
-
   const { items, addItem, incrementItem, decrementItem } = useCartStore();
-
   const cartItem = items.find(item => item.id === product?.id);
-
   const initialQuantity = cartItem ? cartItem.quantity : 1;
-
   const [quantity, setQuantity] = useState(initialQuantity);
 
   if (!product) return <Redirect href='/404' />;
 
-  const increaseQuantity = () => {
-    if (quantity < product.maxQuantity) {
+  const handleIncrement = () => {
+    if (quantity < (product.maxQuantity || 10)) {
       setQuantity(prev => prev + 1);
-      incrementItem(product.id);
-    } else {
-      toast.show('Cannot add more than maximum quantity', {
-        type: 'warning',
-        placement: 'top',
-        duration: 1500,
-      });
+      if (cartItem) {
+        incrementItem(product.id);
+      }
     }
   };
 
-  const decreaseQuantity = () => {
+  const handleDecrement = () => {
     if (quantity > 1) {
       setQuantity(prev => prev - 1);
-      decrementItem(product.id);
+      if (cartItem) {
+        decrementItem(product.id);
+      }
     }
   };
 
-  const addToCart = () => {
+  const handleAddToCart = () => {
     addItem({
-      id: product.id,
-      title: product.title,
-      heroImage: product.heroImage,
-      price: product.price,
+      ...product,
       quantity,
-      maxQuantity: product.maxQuantity,
+      maxQuantity: product.maxQuantity || 10,
     });
     toast.show('Added to cart', {
       type: 'success',
@@ -66,67 +60,73 @@ const ProductDetails = () => {
     });
   };
 
-  const totalPrice = (product.price * quantity).toFixed(2);
-
   return (
-    <View style={styles.container}>
-      <Stack.Screen options={{ title: product.title }} />
+    <ScrollView style={styles.container} bounces={false}>
+      <Stack.Screen 
+        options={{ 
+          headerTitle: '',
+          headerShadowVisible: false,
+        }} 
+      />
 
-      <Image source={product.heroImage } style={styles.heroImage} />
-
-      <View style={{ padding: 16, flex: 1 }}>
-        <Text style={styles.title}>Title: {product.title}</Text>
-        <Text style={styles.slug}>Slug: {product.slug}</Text>
-        <View style={styles.priceContainer}>
-          <Text style={styles.price}>
-            Unit Price: ${product.price.toFixed(2)}
-          </Text>
-          <Text style={styles.price}>Total Price: ${totalPrice}</Text>
+      {product.isNewArrival && (
+        <View style={styles.newArrivalContainer}>
+          <Text style={styles.newArrivalText}>NEW ARRIVAL</Text>
         </View>
+      )}
 
-        <FlatList
-          data={product.imagesUrl}
-          keyExtractor={(item, index) => index.toString()}
-          renderItem={({ item }) => (
-            <Image source={item } style={styles.image} />
-          )}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.imagesContainer}
-        />
+      <Image source={product.heroImage} style={styles.productImage} />
+
+      <View style={styles.content}>
+        <Text style={styles.categoryAndSku}>
+          {product.category.name} | SKU:{product.id}
+        </Text>
+
+        <Text style={styles.title}>{product.title}</Text>
+
+        <Text style={styles.description}>
+          BY USING THE HARDENER, NAILS BECOME STRONG.{'\n'}
+          BEAUTIFULLY LONG NAILS ARE POSSIBLE FOR{'\n'}
+          EVERYONE.
+        </Text>
+
+        <TouchableOpacity>
+          <Text style={styles.readMore}>READ MORE</Text>
+        </TouchableOpacity>
+
+        <Text style={styles.price}>{product.price.toFixed(3)} KD</Text>
+
+        <View style={styles.quantityContainer}>
+          <TouchableOpacity 
+            style={[styles.quantityButton, styles.minusButton]} 
+            onPress={handleDecrement}
+          >
+            <Text style={[styles.quantityButtonText, styles.minusButtonText]}>−</Text>
+          </TouchableOpacity>
+          <View style={styles.quantityTextContainer}>
+            <Text style={styles.quantityText}>{quantity}</Text>
+          </View>
+          <TouchableOpacity 
+            style={[styles.quantityButton, styles.plusButton]} 
+            onPress={handleIncrement}
+          >
+            <Text style={[styles.quantityButtonText, styles.plusButtonText]}>+</Text>
+          </TouchableOpacity>
+        </View>
 
         <View style={styles.buttonContainer}>
-          <TouchableOpacity
-            style={styles.quantityButton}
-            onPress={decreaseQuantity}
-            disabled={quantity <= 1}
-          >
-            <Text style={styles.quantityButtonText}>-</Text>
+          <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
+            <Text style={styles.buttonText}>ADD TO CART</Text>
           </TouchableOpacity>
 
-          <Text style={styles.quantity}>{quantity}</Text>
-
-          <TouchableOpacity
-            style={styles.quantityButton}
-            onPress={increaseQuantity}
-            disabled={quantity >= product.maxQuantity}
-          >
-            <Text style={styles.quantityButtonText}>+</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[
-              styles.addToCartButton,
-              { opacity: quantity === 0 ? 0.5 : 1 },
-            ]}
-            onPress={addToCart}
-            disabled={quantity === 0}
-          >
-            <Text style={styles.addToCartText}>Add to Cart</Text>
-          </TouchableOpacity>
+          <Link href={`/checkout?productId=${product.id}`} asChild>
+            <TouchableOpacity style={styles.buyNowButton}>
+              <Text style={styles.buttonText}>BUY NOW</Text>
+            </TouchableOpacity>
+          </Link>
         </View>
       </View>
-    </View>
+    </ScrollView>
   );
 };
 
@@ -137,83 +137,114 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  heroImage: {
-    width: '100%',
-    height: 250,
-    resizeMode: 'cover',
+  newArrivalContainer: {
+    position: 'absolute',
+    top: 10,
+    left: 0,
+    backgroundColor: '#4A4A4A',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    zIndex: 1,
+  },
+  newArrivalText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  productImage: {
+    width: width,
+    height: width,
+    resizeMode: 'contain',
+  },
+  content: {
+    padding: 16,
+  },
+  categoryAndSku: {
+    fontSize: 12,
+    color: '#4A4A4A',
+    marginBottom: 8,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    marginVertical: 8,
-  },
-  slug: {
-    fontSize: 18,
-    color: '#555',
+    fontWeight: '600',
     marginBottom: 16,
+    textTransform: 'uppercase',
   },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+  description: {
+    fontSize: 14,
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  readMore: {
+    fontSize: 14,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    marginBottom: 24,
   },
   price: {
-    fontWeight: 'bold',
-    color: '#000',
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 24,
   },
-
-  imagesContainer: {
-    marginBottom: 16,
-  },
-  image: {
-    width: 100,
-    height: 100,
-    marginRight: 8,
-    borderRadius: 8,
-  },
-  buttonContainer: {
+  quantityContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    height: 44,
     marginBottom: 16,
-    paddingHorizontal: 16,
   },
   quantityButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#007bff',
-    alignItems: 'center',
+    width: 44,
+    height: '100%',
     justifyContent: 'center',
-    marginHorizontal: 8,
+    alignItems: 'center',
+  },
+  plusButton: {
+    backgroundColor: '#000',
+  },
+  minusButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#000',
   },
   quantityButtonText: {
-    fontSize: 24,
+    fontSize: 20,
+    fontWeight: '500',
+  },
+  plusButtonText: {
     color: '#fff',
   },
-  quantity: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginHorizontal: 16,
+  minusButtonText: {
+    color: '#000',
+  },
+  quantityTextContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#000',
+  },
+  quantityText: {
+    color: '#000',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  buttonContainer: {
+    gap: 8,
   },
   addToCartButton: {
-    flex: 1,
-    backgroundColor: '#28a745',
+    backgroundColor: '#000',
     paddingVertical: 12,
-    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    marginHorizontal: 8,
   },
-  addToCartText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: 'bold',
+  buyNowButton: {
+    backgroundColor: '#000',
+    paddingVertical: 12,
+    alignItems: 'center',
   },
-  errorMessage: {
-    fontSize: 18,
-    color: '#f00',
-    textAlign: 'center',
-    marginTop: 20,
+  buttonText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
