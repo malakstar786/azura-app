@@ -2,7 +2,7 @@ import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'reac
 
 import { Link } from 'expo-router';
 import { useToast } from 'react-native-toast-notifications';
-import { Product } from '../../assets/types/product';
+import { Product } from '../assets/types/product';
 import { useCartStore } from '../store/cart-store';
 
 export const ProductListItem = ({
@@ -15,11 +15,7 @@ export const ProductListItem = ({
   const cartItem = items.find(item => item.id === product.id);
 
   const handleAddToCart = () => {
-    addItem({
-      ...product,
-      quantity: 1,
-      maxQuantity: product.maxQuantity || 10,
-    });
+    addItem(product);
     toast.show('Added to cart', {
       type: 'success',
       placement: 'top',
@@ -28,7 +24,7 @@ export const ProductListItem = ({
   };
 
   const handleIncrement = () => {
-    if (cartItem && cartItem.quantity < (product.maxQuantity || 10)) {
+    if (cartItem) {
       incrementItem(product.id);
       toast.show('Quantity increased', {
         type: 'success',

@@ -1,77 +1,76 @@
 import { create } from 'zustand';
 import { ImageSourcePropType } from 'react-native';
+import { Product } from '../assets/types/product';
 
-export type CartItemType = {
-  id: number;
-  title: string;
-  heroImage: ImageSourcePropType;
-  price: number;
+export type CartItemType = Product & {
   quantity: number;
-  maxQuantity: number;
 };
 
-type CartState = {
+type CartStore = {
   items: CartItemType[];
-  addItem: (item: CartItemType) => void;
+  addItem: (item: Product) => void;
   removeItem: (id: number) => void;
+  updateQuantity: (id: number, quantity: number) => void;
   incrementItem: (id: number) => void;
   decrementItem: (id: number) => void;
   getTotalPrice: () => string;
   getItemCount: () => number;
-  resetCart: () => void;
 };
 
 const initialCartItems: CartItemType[] = [];
 
-export const useCartStore = create<CartState>((set, get) => ({
+export const useCartStore = create<CartStore>((set, get) => ({
   items: initialCartItems,
-  addItem: (item: CartItemType) => {
-    const existingItem = get().items.find(i => i.id === item.id);
-    if (existingItem) {
-      set(state => ({
-        items: state.items.map(i =>
-          i.id === item.id
-            ? {
-                ...i,
-                quantity: Math.min(i.quantity + item.quantity, i.maxQuantity),
-              }
-            : i
-        ),
-      }));
-    } else {
-      set(state => ({ items: [...state.items, item] }));
-    }
+  addItem: (item: Product) => {
+    set((state) => {
+      const existingItem = state.items.find((i) => i.id === item.id);
+      if (existingItem) {
+        return {
+          items: state.items.map((i) =>
+            i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
+          ),
+        };
+      }
+      return { items: [...state.items, { ...item, quantity: 1 }] };
+    });
   },
-  removeItem: (id: number) =>
-    set(state => ({ items: state.items.filter(item => item.id !== id) })),
-  incrementItem: (id: number) =>
-    set(state => {
-      return {
-        items: state.items.map(item =>
-          item.id === id && item.quantity < item.maxQuantity
-            ? { ...item, quantity: item.quantity + 1 }
-            : item
-        ),
-      };
-    }),
-  decrementItem: (id: number) =>
-    set(state => ({
-      items: state.items.map(item =>
+  removeItem: (id: number) => {
+    set((state) => ({
+      items: state.items.filter((item) => item.id !== id),
+    }));
+  },
+  updateQuantity: (id: number, quantity: number) => {
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.id === id ? { ...item, quantity: Math.max(1, quantity) } : item
+      ),
+    }));
+  },
+  incrementItem: (id: number) => {
+    set((state) => ({
+      items: state.items.map((item) =>
+        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+      ),
+    }));
+  },
+  decrementItem: (id: number) => {
+    set((state) => ({
+      items: state.items.map((item) =>
         item.id === id && item.quantity > 1
           ? { ...item, quantity: item.quantity - 1 }
           : item
       ),
-    })),
+    }));
+  },
   getTotalPrice: () => {
-    const { items } = get();
-
-    return items
-      .reduce((total, item) => total + item.price * item.quantity, 0)
-      .toFixed(2);
+    const total = get().items.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+    return total.toFixed(3);
   },
   getItemCount: () => {
     const { items } = get();
     return items.reduce((count, item) => count + item.quantity, 0);
   },
-  resetCart: () => set({ items: initialCartItems }),
 }));

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     View,
     Text,
@@ -6,12 +6,16 @@ import {
     ImageBackground,
     TextInput,
     TouchableOpacity,
+    ActivityIndicator,
+    Platform,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import * as zod from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Redirect, Stack } from 'expo-router';
-import { Toast } from 'react-native-toast-notifications';
+import { Link, Stack, router } from 'expo-router';
+import { useToast } from 'react-native-toast-notifications';
+import { useAuthStore } from '../store/auth-store';
+import { Ionicons } from '@expo/vector-icons';
 // import { useAuth } from '../providers/auth-provider';
   
 const authSchema = zod.object({
@@ -21,12 +25,16 @@ password: zod
     .min(6, { message: 'Password must be at least 6 characters long' }),
 });
   
-  export default function Auth() {
+export default function Auth() {
     // const { session } = useAuth();
   
     // if (session) return <Redirect href='/' />;
   
-    const { control, handleSubmit, formState } = useForm({
+    const [isLoading, setIsLoading] = useState(false);
+    const signIn = useAuthStore((state) => state.signIn);
+    const toast = useToast();
+  
+    const { control, handleSubmit, formState: { errors } } = useForm({
       resolver: zodResolver(authSchema),
       defaultValues: {
         email: '',
@@ -34,8 +42,20 @@ password: zod
       },
     });
   
-    const signIn = async (data: zod.infer<typeof authSchema>) => {
-      console.log(data);
+    const onSubmit = async (data: zod.infer<typeof authSchema>) => {
+      try {
+        setIsLoading(true);
+        await signIn(data.email, data.password);
+        router.replace('/');
+      } catch (error) {
+        toast.show(error instanceof Error ? error.message : 'Sign in failed', {
+          type: 'error',
+          placement: 'top',
+          duration: 3000,
+        });
+      } finally {
+        setIsLoading(false);
+      }
     };
 
     const signUp = async (data: zod.infer<typeof authSchema>) => {
@@ -43,148 +63,160 @@ password: zod
     };
   
     return (
-      <ImageBackground
-        source={{
-          uri: 'https://images.pexels.com/photos/682933/pexels-photo-682933.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-        }}
-        style={styles.backgroundImage}
-      >
-        <View style={styles.overlay} />
+      <View style={styles.container}>
+        <Stack.Screen 
+          options={{
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => router.back()}>
+                <Ionicons name="arrow-back" size={24} color="black" />
+              </TouchableOpacity>
+            ),
+            headerTitle: '',
+            headerShadowVisible: false,
+          }} 
+        />
   
-        <View style={styles.container}>
-          <Text style={styles.title}>Welcome</Text>
-          <Text style={styles.subtitle}>Please Authenticate to continue</Text>
+        <View style={styles.content}>
+          <Text style={styles.title}>SIGN IN</Text>
+          <Text style={styles.subtitle}>WELCOME BACK TO AZURA</Text>
+  
+          <View style={styles.divider} />
+  
+          <Text style={styles.instruction}>
+            SIGN IN WITH YOUR REGISTERED EMAIL AND PASSWORD
+          </Text>
   
           <Controller
             control={control}
-            name='email'
-            render={({
-              field: { value, onChange, onBlur },
-              fieldState: { error },
-            }) => (
-              <>
+            name="email"
+            render={({ field: { value, onChange, onBlur } }) => (
+              <View style={styles.inputContainer}>
                 <TextInput
-                  placeholder='Email'
+                  placeholder="EMAIL"
                   style={styles.input}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
-                  placeholderTextColor='#aaa'
-                  autoCapitalize='none'
-                  editable={!formState.isSubmitting}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  editable={!isLoading}
                 />
-                {error && <Text style={styles.error}>{error.message}</Text>}
-              </>
+                {errors.email && (
+                  <Text style={styles.errorText}>{errors.email.message}</Text>
+                )}
+              </View>
             )}
           />
   
           <Controller
             control={control}
-            name='password'
-            render={({
-              field: { value, onChange, onBlur },
-              fieldState: { error },
-            }) => (
-              <>
+            name="password"
+            render={({ field: { value, onChange, onBlur } }) => (
+              <View style={styles.inputContainer}>
                 <TextInput
-                  placeholder='Password'
+                  placeholder="PASSWORD"
                   style={styles.input}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   secureTextEntry
-                  placeholderTextColor='#aaa'
-                  autoCapitalize='none'
-                  editable={!formState.isSubmitting}
+                  autoCapitalize="none"
+                  editable={!isLoading}
                 />
-                {error && <Text style={styles.error}>{error.message}</Text>}
-              </>
+                {errors.password && (
+                  <Text style={styles.errorText}>{errors.password.message}</Text>
+                )}
+              </View>
             )}
           />
   
-          <TouchableOpacity
-            style={styles.button}
-            onPress={handleSubmit(signIn)}
-            disabled={formState.isSubmitting}
-          >
-            <Text style={styles.buttonText}>Sign In</Text>
+          <TouchableOpacity onPress={() => router.push('/forgot-password')}>
+            <Text style={styles.forgotPassword}>FORGOT PASSWORD?</Text>
           </TouchableOpacity>
+  
           <TouchableOpacity
-            style={[styles.button, styles.signUpButton]}
-            onPress={handleSubmit(signUp)}
-            disabled={formState.isSubmitting}
+            style={styles.loginButton}
+            onPress={handleSubmit(onSubmit)}
+            disabled={isLoading}
           >
-            <Text style={styles.buttonText}>Sign Up</Text>
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.loginButtonText}>LOGIN</Text>
+            )}
+          </TouchableOpacity>
+  
+          <TouchableOpacity onPress={() => router.push('/signup')}>
+            <Text style={styles.createAccount}>NEW USER? CREATE ACCOUNT</Text>
           </TouchableOpacity>
         </View>
-      </ImageBackground>
+      </View>
     );
   }
   
   const styles = StyleSheet.create({
-    backgroundImage: {
-      flex: 1,
-      resizeMode: 'cover',
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    overlay: {
-      ...StyleSheet.absoluteFillObject,
-      backgroundColor: 'rgba(0,0,0,0.7)',
-    },
     container: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: 16,
-      width: '100%',
+      backgroundColor: '#fff',
+    },
+    content: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingTop: 16,
     },
     title: {
-      fontSize: 36,
-      fontWeight: 'bold',
-      color: '#fff',
-      marginBottom: 8,
+      fontSize: 32,
+      fontWeight: '700',
+      marginBottom: 4,
     },
     subtitle: {
-      fontSize: 18,
-      color: '#ddd',
-      marginBottom: 32,
+      fontSize: 14,
+      color: '#4A4A4A',
+      marginBottom: 16,
+    },
+    divider: {
+      height: 2,
+      backgroundColor: '#000',
+      marginBottom: 24,
+    },
+    instruction: {
+      fontSize: 12,
+      marginBottom: 24,
+    },
+    inputContainer: {
+      marginBottom: 16,
     },
     input: {
-      width: '90%',
-      padding: 12,
-      marginBottom: 16,
-      backgroundColor: 'rgba(255, 255, 255, 0.9)',
-      borderRadius: 8,
-      fontSize: 16,
-      color: '#000',
-    },
-    button: {
-      backgroundColor: '#6a1b9a',
-      padding: 16,
-      borderRadius: 8,
-      marginBottom: 16,
-      width: '90%',
-      alignItems: 'center',
-    },
-    signUpButton: {
-      backgroundColor: 'transparent',
-      borderColor: '#fff',
       borderWidth: 1,
+      borderColor: '#000',
+      padding: 12,
+      fontSize: 14,
     },
-    signUpButtonText: {
-      color: '#fff',
-    },
-    buttonText: {
-      fontSize: 16,
-      fontWeight: 'bold',
-      color: '#fff',
-    },
-    error: {
+    errorText: {
       color: 'red',
       fontSize: 12,
-      marginBottom: 16,
-      textAlign: 'left',
-      width: '90%',
+      marginTop: 4,
+    },
+    forgotPassword: {
+      fontSize: 12,
+      color: '#000',
+      textAlign: 'right',
+      marginBottom: 24,
+    },
+    loginButton: {
+      backgroundColor: '#000',
+      padding: 16,
+      alignItems: 'center',
+      marginBottom: 24,
+    },
+    loginButtonText: {
+      color: '#fff',
+      fontSize: 14,
+      fontWeight: '600',
+    },
+    createAccount: {
+      fontSize: 12,
+      color: '#000',
+      textAlign: 'center',
     },
   });
