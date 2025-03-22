@@ -11,6 +11,7 @@ export type User = {
 
 interface AuthState {
   user: User | null;
+  isAuthenticated: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (data: { email: string; password: string; fullName: string; mobile: string; }) => Promise<void>;
   signOut: () => void;
@@ -30,8 +31,9 @@ const TEMP_USERS = [
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
+      isAuthenticated: false,
       signIn: async (email: string, password: string) => {
         // Simulate API call delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -45,7 +47,7 @@ export const useAuthStore = create<AuthState>()(
         }
         
         const { password: _, ...userData } = user;
-        set({ user: userData });
+        set({ user: userData, isAuthenticated: true });
       },
       signUp: async (data) => {
         // Simulate API call delay
@@ -74,7 +76,7 @@ export const useAuthStore = create<AuthState>()(
         
         // Set the user state (excluding password)
         const { password: _, ...userData } = newUser;
-        set({ user: userData });
+        set({ user: userData, isAuthenticated: true });
       },
       checkEmail: async (email: string) => {
         // Simulate API call delay
@@ -94,13 +96,13 @@ export const useAuthStore = create<AuthState>()(
         return;
       },
       signOut: () => {
-        set({ user: null });
+        set({ user: null, isAuthenticated: false });
       },
     }),
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ user: state.user }),
+      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
     }
   )
 ); 

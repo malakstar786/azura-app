@@ -64,7 +64,7 @@ export default function RootLayout() {
         <Stack.Screen
           name="orders"
           options={{
-            headerShown: true,
+            headerShown: false,
             presentation: 'modal'
           }}
         />
