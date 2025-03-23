@@ -14,8 +14,10 @@ export const PRODUCTS: Product[] = [
     price: 29.99,
     category: {
       imageUrl: require('./images/nail-care-hero.png'),
+      heroImage: require('./images/nail-care-hero.png'),
       name: 'Nail Care',
       slug: 'nail-care',
+      description: 'Premium nail care products for beautiful and healthy nails',
     },
     maxQuantity: 5,
     isNewArrival: true,
@@ -32,8 +34,10 @@ export const PRODUCTS: Product[] = [
     price: 39.99,
     category: {
       imageUrl: require('./images/nail-care-hero.png'),
+      heroImage: require('./images/nail-care-hero.png'),
       name: 'Nail Care',
       slug: 'nail-care',
+      description: 'Premium nail care products for beautiful and healthy nails',
     },
     maxQuantity: 10,
   },
@@ -49,8 +53,10 @@ export const PRODUCTS: Product[] = [
     price: 49.99,
     category: {
       imageUrl: require('./images/makeup-1.png'),
+      heroImage: require('./images/makeup-1.png'),
       name: 'Makeup',
       slug: 'makeup',
+      description: 'High-quality makeup products for a flawless look',
     },
     maxQuantity: 15,
     isNewArrival: true,
@@ -67,8 +73,10 @@ export const PRODUCTS: Product[] = [
     price: 49.99,
     category: {
       imageUrl: require('./images/makeup-1.png'),
+      heroImage: require('./images/makeup-1.png'),
       name: 'Makeup',
       slug: 'makeup',
+      description: 'High-quality makeup products for a flawless look',
     },
     maxQuantity: 15,
     isNewArrival: true,
@@ -84,8 +92,10 @@ export const PRODUCTS: Product[] = [
     price: 34.99,
     category: {
       imageUrl: require('./images/makeup-1.png'),
+      heroImage: require('./images/makeup-1.png'),
       name: 'Makeup',
       slug: 'makeup',
+      description: 'High-quality makeup products for a flawless look',
     },
     maxQuantity: 8,
   },
@@ -101,8 +111,10 @@ export const PRODUCTS: Product[] = [
     price: 89.99,
     category: {
       imageUrl: require('./images/fragrance-1.png'),
+      heroImage: require('./images/fragrance-1.png'),
       name: 'Fragrances',
       slug: 'fragrances',
+      description: 'Luxurious fragrances that leave a lasting impression',
     },
     maxQuantity: 12,
     isNewArrival: true,
@@ -118,8 +130,10 @@ export const PRODUCTS: Product[] = [
     price: 79.99,
     category: {
       imageUrl: require('./images/fragrance-1.png'),
+      heroImage: require('./images/fragrance-1.png'),
       name: 'Fragrances',
       slug: 'fragrances',
+      description: 'Luxurious fragrances that leave a lasting impression',
     },
     maxQuantity: 10,
   }

@@ -2,20 +2,20 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-export type User = {
+interface User {
   id: string;
-  email: string;
   fullName: string;
+  email: string;
   mobileNumber: string;
-};
+}
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
-  signIn: (email: string, password: string) => Promise<void>;
-  signUp: (data: { email: string; password: string; fullName: string; mobile: string; }) => Promise<void>;
-  signOut: () => void;
-  checkEmail: (email: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  signup: (userData: { email: string; password: string; fullName: string; mobileNumber: string }) => Promise<void>;
+  updateUser: (updates: Partial<User>) => void;
 }
 
 // Temporary user data for testing
@@ -34,7 +34,7 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       isAuthenticated: false,
-      signIn: async (email: string, password: string) => {
+      login: async (email: string, password: string) => {
         // Simulate API call delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
         
@@ -49,13 +49,16 @@ export const useAuthStore = create<AuthState>()(
         const { password: _, ...userData } = user;
         set({ user: userData, isAuthenticated: true });
       },
-      signUp: async (data) => {
+      logout: () => {
+        set({ user: null, isAuthenticated: false });
+      },
+      signup: async (userData) => {
         // Simulate API call delay
         await new Promise((resolve) => setTimeout(resolve, 1000));
         
         // Check if user already exists
         const existingUser = TEMP_USERS.find(
-          (u) => u.email === data.email
+          (u) => u.email === userData.email
         );
         
         if (existingUser) {
@@ -65,38 +68,26 @@ export const useAuthStore = create<AuthState>()(
         // Create new user
         const newUser = {
           id: (TEMP_USERS.length + 1).toString(),
-          email: data.email,
-          password: data.password,
-          fullName: data.fullName,
-          mobileNumber: data.mobile,
+          email: userData.email,
+          password: userData.password,
+          fullName: userData.fullName,
+          mobileNumber: userData.mobileNumber,
         };
         
         // Add to temporary users (in real app, this would be an API call)
         TEMP_USERS.push(newUser);
         
         // Set the user state (excluding password)
-        const { password: _, ...userData } = newUser;
-        set({ user: userData, isAuthenticated: true });
+        const { password: _, ...userDataWithoutPassword } = newUser;
+        set({ user: userDataWithoutPassword, isAuthenticated: true });
       },
-      checkEmail: async (email: string) => {
-        // Simulate API call delay
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        
-        // Check if user exists
-        const user = TEMP_USERS.find(
-          (u) => u.email === email
-        );
-        
-        if (!user) {
-          throw new Error('Email not registered');
-        }
-        
-        // In a real app, this would trigger a password reset email
-        // For now, we just simulate success
-        return;
-      },
-      signOut: () => {
-        set({ user: null, isAuthenticated: false });
+      updateUser: (updates) => {
+        set((state) => ({
+          user: state.user ? {
+            ...state.user,
+            ...updates,
+          } : null,
+        }));
       },
     }),
     {

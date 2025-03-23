@@ -6,6 +6,7 @@ import {
     View,
     Image,
     Dimensions,
+    ActivityIndicator,
 } from 'react-native';
 import { Stack, useLocalSearchParams } from 'expo-router';
 
@@ -17,7 +18,7 @@ import { Product } from '../../../assets/types/product';
 
 const { width } = Dimensions.get('window');
 
-const ListHeader = ({ category }: { category: CategoryType }) => (
+const ListHeader = ({ category }: { category: Omit<CategoryType, 'products'> }) => (
     <View style={styles.header}>
         <Image source={category.heroImage} style={styles.heroImage} />
         <View style={styles.headerContent}>
@@ -29,18 +30,31 @@ const ListHeader = ({ category }: { category: CategoryType }) => (
 
 const Category = () => {
     const { slug } = useLocalSearchParams();
-    const category = CATEGORIES.find((c: CategoryType) => c.slug === slug);
-    const categoryProducts = PRODUCTS.filter((p: Product) => p.category.slug === slug);
+    
+    if (!CATEGORIES || !PRODUCTS) {
+        return (
+            <View style={styles.loading}>
+                <ActivityIndicator size="large" color="#000" />
+            </View>
+        );
+    }
+
+    const category = CATEGORIES.find((c) => c.slug === slug);
+    const categoryProducts = PRODUCTS.filter((p) => p.category.slug === slug);
 
     if (!category) {
-        return null;
+        return (
+            <View style={styles.error}>
+                <Text>Category not found</Text>
+            </View>
+        );
     }
 
     return (
         <View style={styles.container}>
             <Stack.Screen 
                 options={{ 
-                    headerTitle: '',
+                    headerTitle: category.name,
                     headerTransparent: true,
                     headerShadowVisible: false,
                     headerStyle: { backgroundColor: 'transparent' },
@@ -66,6 +80,18 @@ export default Category;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#fff',
+    },
+    loading: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+    },
+    error: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
         backgroundColor: '#fff',
     },
     content: {

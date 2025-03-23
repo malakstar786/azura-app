@@ -31,7 +31,7 @@ export default function Auth() {
     // if (session) return <Redirect href='/' />;
   
     const [isLoading, setIsLoading] = useState(false);
-    const signIn = useAuthStore((state) => state.signIn);
+    const login = useAuthStore((state) => state.login);
     const toast = useToast();
   
     const { control, handleSubmit, formState: { errors } } = useForm({
@@ -45,10 +45,10 @@ export default function Auth() {
     const onSubmit = async (data: zod.infer<typeof authSchema>) => {
       try {
         setIsLoading(true);
-        await signIn(data.email, data.password);
+        await login(data.email, data.password);
         router.replace('/');
       } catch (error) {
-        toast.show(error instanceof Error ? error.message : 'Sign in failed', {
+        toast.show(error instanceof Error ? error.message : 'Login failed', {
           type: 'error',
           placement: 'top',
           duration: 3000,

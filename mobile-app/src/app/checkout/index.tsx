@@ -94,15 +94,49 @@ export default function CheckoutScreen() {
 
           <Pressable 
             style={styles.shipToOption}
-            onPress={() => setShipToDifferentAddress(!shipToDifferentAddress)}
+            onPress={() => {
+              setShipToDifferentAddress(!shipToDifferentAddress);
+              if (!shipToDifferentAddress) {
+                setShowShippingAddressModal(true);
+              }
+            }}
           >
-            <View style={styles.checkbox}>
+            <View style={[styles.checkbox, shipToDifferentAddress && styles.checkboxChecked]}>
               {shipToDifferentAddress && (
                 <Ionicons name="checkmark" size={16} color="black" />
               )}
             </View>
             <Text style={styles.shipToText}>Ship to Different Address?</Text>
           </Pressable>
+
+          {shipToDifferentAddress && defaultAddress && (
+            <View style={[styles.addressCard, styles.shippingAddressCard]}>
+              <Text style={styles.addressLabel}>Shipping Address</Text>
+              <Text style={styles.addressName}>{defaultAddress.fullName}</Text>
+              <Text style={styles.addressPhone}>{defaultAddress.mobileNumber}</Text>
+              <Text style={styles.addressDetails}>
+                {defaultAddress.country},
+              </Text>
+              <Text style={styles.addressDetails}>
+                {[
+                  defaultAddress.area,
+                  'Block ' + defaultAddress.block,
+                  'Street ' + defaultAddress.street,
+                  'House Building ' + defaultAddress.houseBuilding,
+                ].filter(Boolean).join(', ')}
+              </Text>
+              {defaultAddress.addressLine2 && (
+                <Text style={styles.addressDetails}>{defaultAddress.addressLine2}</Text>
+              )}
+              <Pressable 
+                style={styles.editAddress}
+                onPress={() => setShowShippingAddressModal(true)}
+              >
+                <Ionicons name="create-outline" size={20} color="black" />
+                <Text style={styles.editAddressText}>Edit Address</Text>
+              </Pressable>
+            </View>
+          )}
         </View>
 
         <View style={styles.section}>
@@ -221,18 +255,17 @@ export default function CheckoutScreen() {
         />
       </Modal>
 
-      {shipToDifferentAddress && (
-        <Modal
-          visible={showShippingAddressModal}
-          animationType="slide"
-          presentationStyle="formSheet"
-          onRequestClose={() => setShowShippingAddressModal(false)}
-        >
-          <AddEditAddress
-            onClose={() => setShowShippingAddressModal(false)}
-          />
-        </Modal>
-      )}
+      <Modal
+        visible={showShippingAddressModal}
+        animationType="slide"
+        presentationStyle="formSheet"
+        onRequestClose={() => setShowShippingAddressModal(false)}
+      >
+        <AddEditAddress
+          address={defaultAddress}
+          onClose={() => setShowShippingAddressModal(false)}
+        />
+      </Modal>
     </View>
   );
 }
@@ -313,7 +346,8 @@ const styles = StyleSheet.create({
   shipToOption: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: 16,
+    paddingHorizontal: 16,
   },
   checkbox: {
     width: 20,
@@ -324,8 +358,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  checkboxChecked: {
+    backgroundColor: '#fff',
+  },
   shipToText: {
     fontSize: 14,
+    color: '#000',
+  },
+  shippingAddressCard: {
+    marginTop: 16,
+    borderStyle: 'dashed',
+  },
+  addressLabel: {
+    fontSize: 12,
+    color: '#4A4A4A',
+    marginBottom: 8,
+    textTransform: 'uppercase',
   },
   productCard: {
     flexDirection: 'row',
