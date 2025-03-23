@@ -12,12 +12,15 @@ import {
   Modal,
   ScrollView,
 } from 'react-native';
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cart-store';
 import { StatusBar } from 'expo-status-bar';
 import { CartItemType } from '../../store/cart-store';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useAddressStore, Address } from '../../store/address-store';
+import AddEditAddress from '../../components/add-edit-address';
+import { formatPrice } from '../../utils/format-price';
 
 const { width } = Dimensions.get('window');
 
@@ -181,9 +184,21 @@ export default function CartScreen() {
     decrementItem,
     getTotalPrice,
   } = useCartStore();
+  const { addresses, selectedAddress } = useAddressStore();
+  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+  const [showAddressModal, setShowAddressModal] = useState(false);
+
+  const handleCheckout = () => {
+    if (!selectedAddress) {
+      setEditingAddress(null);
+      setShowAddressModal(true);
+      return;
+    }
+    router.push('/checkout');
+  };
 
   const SHIPPING_COST = 50.000;
-  const cartTotal = parseFloat(getTotalPrice());
+  const cartTotal = parseFloat(getTotalPrice().toString());
   const total = cartTotal + SHIPPING_COST;
 
   if (items.length === 0) {
@@ -243,24 +258,32 @@ export default function CartScreen() {
       <View style={styles.footer}>
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>CART TOTAL :</Text>
-          <Text style={styles.totalValue}>{cartTotal.toFixed(3)} KD</Text>
+          <Text style={styles.totalValue}>{formatPrice(cartTotal)}</Text>
         </View>
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>SHIPPING :</Text>
-          <Text style={styles.totalValue}>{SHIPPING_COST.toFixed(3)} KD</Text>
+          <Text style={styles.totalValue}>{formatPrice(SHIPPING_COST)}</Text>
         </View>
         <View style={[styles.totalRow, styles.finalTotal]}>
           <Text style={styles.totalLabel}>TOTAL :</Text>
-          <Text style={styles.totalValue}>{total.toFixed(3)} KD</Text>
+          <Text style={styles.totalValue}>{formatPrice(total)}</Text>
         </View>
 
-        <Link href="/checkout" asChild>
-          <TouchableOpacity style={styles.checkoutButton}>
-            <Text style={styles.checkoutButtonText}>CHECKOUT</Text>
-            <Ionicons name="arrow-forward" size={20} color="#fff" style={styles.checkoutIcon} />
-          </TouchableOpacity>
-        </Link>
+        <Pressable onPress={handleCheckout} style={styles.checkoutButton}>
+          <Text style={styles.checkoutButtonText}>PROCEED TO CHECKOUT</Text>
+          <Ionicons name="arrow-forward" size={24} color="white" />
+        </Pressable>
       </View>
+
+      {showAddressModal && (
+        <AddEditAddress
+          address={editingAddress}
+          onClose={() => {
+            setShowAddressModal(false);
+            setEditingAddress(null);
+          }}
+        />
+      )}
     </View>
   );
 }

@@ -9,10 +9,11 @@ export type Category = {
 export type Product = {
   id: number;
   title: string;
+  slug: string;
   description: string;
   price: number;
-  heroImage: ImageSourcePropType;
   category: Category;
-  slug: string;
+  heroImage: any;
+  image: string;
   isNewArrival?: boolean;
 }; 

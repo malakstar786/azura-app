@@ -12,41 +12,29 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { ProductListItem } from '../../components/product-list-item';
 import { CATEGORIES } from '../../../assets/categories';
 import { PRODUCTS } from '../../../assets/products';
+import { Category as CategoryType } from '../../../assets/types/category';
+import { Product } from '../../../assets/types/product';
 
 const { width } = Dimensions.get('window');
 
+const ListHeader = ({ category }: { category: CategoryType }) => (
+    <View style={styles.header}>
+        <Image source={category.heroImage} style={styles.heroImage} />
+        <View style={styles.headerContent}>
+            <Text style={styles.title}>{category.name}</Text>
+            <Text style={styles.description}>{category.description}</Text>
+        </View>
+    </View>
+);
+
 const Category = () => {
-    const { slug } = useLocalSearchParams<{ slug: string }>();
-    const category = CATEGORIES.find(category => category.slug === slug);
-    const products = PRODUCTS.filter(product => product.category.slug === slug);
+    const { slug } = useLocalSearchParams();
+    const category = CATEGORIES.find((c: CategoryType) => c.slug === slug);
+    const categoryProducts = PRODUCTS.filter((p: Product) => p.category.slug === slug);
 
-    const ListHeader = () => (
-        <>
-            <View style={styles.heroSection}>
-                <Image 
-                    source={require('../../../assets/images/nail-care-hero.png')}
-                    style={styles.heroImage}
-                />
-            </View>
-
-            <View style={styles.content}>
-                <Text style={styles.description}>
-                    OUR AZURA {category?.name?.toUpperCase()} The New Collection Of{' '}
-                    {category?.name}. A Sensation Of Freshness. A Journey In Every{' '}
-                    Spray. OUR AZURA {category?.name?.toUpperCase()} The New Collection Of{' '}
-                    {category?.name}. A Sensation Of Freshness. A Journey In Every{' '}
-                    Spray. OUR AZURA {category?.name?.toUpperCase()} The New Collection Of{' '}
-                    {category?.name}.
-                </Text>
-                
-                <View style={styles.productCountContainer}>
-                    <Text style={styles.productCount}>
-                        {products.length} PRODUCTS
-                    </Text>
-                </View>
-            </View>
-        </>
-    );
+    if (!category) {
+        return null;
+    }
 
     return (
         <View style={styles.container}>
@@ -61,16 +49,13 @@ const Category = () => {
             />
             
             <FlatList
-                ListHeaderComponent={ListHeader}
-                data={products}
-                keyExtractor={item => item.id.toString()}
+                data={categoryProducts}
                 renderItem={({ item }) => <ProductListItem product={item} />}
+                keyExtractor={(item) => item.id.toString()}
+                ListHeaderComponent={<ListHeader category={category} />}
                 numColumns={2}
-                columnWrapperStyle={styles.productRow}
-                showsVerticalScrollIndicator={false}
-                style={styles.list}
-                contentContainerStyle={styles.listContent}
-                ItemSeparatorComponent={() => <View style={{ height: 24 }} />}
+                columnWrapperStyle={styles.row}
+                contentContainerStyle={styles.content}
             />
         </View>
     );
@@ -83,45 +68,32 @@ const styles = StyleSheet.create({
         flex: 1,
         backgroundColor: '#fff',
     },
-    list: {
-        flex: 1,
+    content: {
+        padding: 16,
     },
-    listContent: {
-        paddingHorizontal: 16,
-        paddingBottom: 40,
+    row: {
+        justifyContent: 'space-between',
     },
-    heroSection: {
-        width: width,
-        height: 400,
-        marginHorizontal: -16,
+    header: {
+        marginBottom: 24,
     },
     heroImage: {
         width: '100%',
-        height: '100%',
+        height: 200,
         resizeMode: 'cover',
     },
-    content: {
-        marginTop: 20,
+    headerContent: {
+        paddingTop: 16,
+        gap: 8,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '600',
+        color: '#000',
     },
     description: {
         fontSize: 14,
-        lineHeight: 22,
-        marginBottom: 20,
-        color: '#000',
-        textAlign: 'center',
-    },
-    productCountContainer: {
-        flexDirection: 'row',
-        justifyContent: 'flex-end',
-        marginBottom: 20,
-    },
-    productCount: {
-        fontSize: 12,
-        fontWeight: '500',
         color: '#4A4A4A',
-    },
-    productRow: {
-        justifyContent: 'space-between',
-        marginBottom: 24,
+        lineHeight: 20,
     },
 });

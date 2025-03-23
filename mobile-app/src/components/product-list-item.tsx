@@ -1,8 +1,8 @@
 import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-
-import { Link } from 'expo-router';
+import { Link, router } from 'expo-router';
 import { useToast } from 'react-native-toast-notifications';
-import { Product } from '../assets/types/product';
+import { Ionicons } from '@expo/vector-icons';
+import { Product } from '../../assets/types/product';
 import { useCartStore } from '../store/cart-store';
 
 export const ProductListItem = ({
@@ -15,12 +15,25 @@ export const ProductListItem = ({
   const cartItem = items.find(item => item.id === product.id);
 
   const handleAddToCart = () => {
-    addItem(product);
+    addItem({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      heroImage: product.heroImage,
+      quantity: 1,
+    });
     toast.show('Added to cart', {
       type: 'success',
       placement: 'top',
       duration: 1500,
     });
+  };
+
+  const handleBuyNow = () => {
+    if (!cartItem) {
+      handleAddToCart();
+    }
+    router.push('/checkout');
   };
 
   const handleIncrement = () => {
@@ -48,52 +61,60 @@ export const ProductListItem = ({
   return (
     <View style={styles.item}>
       <Link asChild href={`/product/${product.slug}`}>
-        <Pressable>
-          <View style={styles.itemImageContainer}>
-            {product.isNewArrival && (
-              <View style={styles.newArrivalBadge}>
-                <Text style={styles.newArrivalText}>NEW ARRIVAL</Text>
-              </View>
-            )}
-            <Image source={product.heroImage} style={styles.itemImage} />
-          </View>
-          <View style={styles.itemTextContainer}>
-            <Text style={styles.categoryName}>{product.category.name}</Text>
-            <Text style={styles.itemTitle}>{product.title}</Text>
-            <Text style={styles.itemPrice}>{product.price.toFixed(3)} KD</Text>
-          </View>
+        <Pressable style={styles.imageContainer}>
+          <Image source={product.heroImage} style={styles.image} />
+          {product.isNewArrival && (
+            <View style={styles.newBadge}>
+              <Ionicons name="star" size={12} color="white" />
+              <Text style={styles.newBadgeText}>NEW</Text>
+            </View>
+          )}
         </Pressable>
       </Link>
-      
-      <View style={styles.buttonContainer}>
-        {!cartItem ? (
-          <TouchableOpacity style={styles.addToCartButton} onPress={handleAddToCart}>
-            <Text style={styles.buttonText}>ADD TO CART</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.quantityContainer}>
-            <TouchableOpacity 
-              style={[styles.quantityButton, styles.minusButton]} 
-              onPress={handleDecrement}
-            >
-              <Text style={[styles.quantityButtonText, styles.minusButtonText]}>−</Text>
-            </TouchableOpacity>
-            <View style={styles.quantityTextContainer}>
-              <Text style={styles.quantityText}>{cartItem.quantity}</Text>
-            </View>
-            <TouchableOpacity 
-              style={[styles.quantityButton, styles.plusButton]} 
-              onPress={handleIncrement}
-            >
-              <Text style={[styles.quantityButtonText, styles.plusButtonText]}>+</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-        <Link href={`/checkout?productId=${product.id}`} asChild>
-          <TouchableOpacity style={styles.buyNowButton}>
-            <Text style={[styles.buttonText, styles.buyNowButtonText]}>BUY NOW</Text>
-          </TouchableOpacity>
+
+      <View style={styles.details}>
+        <Link asChild href={`/product/${product.slug}`}>
+          <Pressable>
+            <Text style={styles.title}>{product.title}</Text>
+          </Pressable>
         </Link>
+        <Text style={styles.price}>KD {product.price.toFixed(2)}</Text>
+
+        <View style={styles.buttonContainer}>
+          {cartItem ? (
+            <View style={styles.quantityControls}>
+              <TouchableOpacity
+                onPress={handleDecrement}
+                style={[styles.quantityButton, styles.minusButton]}
+                disabled={cartItem.quantity === 1}
+              >
+                <Ionicons 
+                  name="remove" 
+                  size={20} 
+                  color={cartItem.quantity === 1 ? '#ccc' : '#000'} 
+                />
+              </TouchableOpacity>
+              <View style={styles.quantityTextContainer}>
+                <Text style={styles.quantityText}>{cartItem.quantity}</Text>
+              </View>
+              <TouchableOpacity 
+                onPress={handleIncrement} 
+                style={[styles.quantityButton, styles.plusButton]}
+              >
+                <Ionicons name="add" size={20} color="white" />
+              </TouchableOpacity>
+            </View>
+          ) : (
+            <TouchableOpacity onPress={handleAddToCart} style={styles.addToCartButton}>
+              <Ionicons name="cart-outline" size={16} color="white" />
+              <Text style={styles.buttonText}>ADD TO CART</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity onPress={handleBuyNow} style={styles.buyNowButton}>
+            <Ionicons name="flash-outline" size={16} color="white" />
+            <Text style={styles.buttonText}>BUY NOW</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
@@ -101,71 +122,76 @@ export const ProductListItem = ({
 
 const styles = StyleSheet.create({
   item: {
-    width: '48%',
-    backgroundColor: 'white',
-    marginVertical: 8,
+    flex: 1,
+    backgroundColor: '#fff',
+    margin: 8,
+    maxWidth: '47%',
   },
-  itemImageContainer: {
+  imageContainer: {
+    aspectRatio: 1,
     width: '100%',
-    height: 200,
+    backgroundColor: '#f5f5f5',
     position: 'relative',
   },
-  newArrivalBadge: {
-    position: 'absolute',
-    top: 10,
-    left: 0,
-    backgroundColor: '#4A4A4A',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    zIndex: 1,
-  },
-  newArrivalText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  itemImage: {
+  image: {
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
   },
-  itemTextContainer: {
-    paddingVertical: 8,
+  newBadge: {
+    position: 'absolute',
+    top: 8,
+    left: 8,
+    backgroundColor: '#000',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 4,
   },
-  categoryName: {
-    fontSize: 12,
-    color: '#4A4A4A',
-    fontWeight: '500',
+  newBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
   },
-  itemTitle: {
+  details: {
+    padding: 8,
+    gap: 4,
+  },
+  title: {
     fontSize: 14,
-    color: '#000',
     fontWeight: '500',
+    color: '#000',
   },
-  itemPrice: {
+  price: {
     fontSize: 14,
     fontWeight: '600',
     color: '#000',
   },
   buttonContainer: {
     gap: 8,
-    marginTop: 4,
+    marginTop: 8,
   },
   addToCartButton: {
     backgroundColor: '#000',
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  quantityContainer: {
+    paddingVertical: 10,
+    borderRadius: 4,
     flexDirection: 'row',
-    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  quantityControls: {
+    flexDirection: 'row',
+    height: 36,
   },
   quantityButton: {
-    width: 44,
+    width: 36,
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 4,
   },
   plusButton: {
     backgroundColor: '#000',
@@ -174,16 +200,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderWidth: 1,
     borderColor: '#000',
-  },
-  quantityButtonText: {
-    fontSize: 20,
-    fontWeight: '500',
-  },
-  plusButtonText: {
-    color: '#fff',
-  },
-  minusButtonText: {
-    color: '#000',
   },
   quantityTextContainer: {
     flex: 1,
@@ -196,22 +212,21 @@ const styles = StyleSheet.create({
   },
   quantityText: {
     color: '#000',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
   },
   buttonText: {
-    color: 'white',
+    color: '#fff',
     fontSize: 12,
     fontWeight: '600',
   },
   buyNowButton: {
     backgroundColor: '#000',
-    paddingVertical: 12,
+    paddingVertical: 10,
+    borderRadius: 4,
+    flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  buyNowButtonText: {
-    color: '#fff',
+    justifyContent: 'center',
+    gap: 6,
   },
 });
