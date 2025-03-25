@@ -14,6 +14,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.azura.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#000000"
@@ -23,9 +24,15 @@
       "favicon": "./assets/icon.png"
     }, 
     "splash": {
-      "image": "/Users/hus3ain/Development/Cursor/Malakstar/Azura/mobile-app/assets/images/splash.png",
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "92df4acd-1d46-4cf5-a942-476a79f5d31d"
+      }
+    },
+    "owner": "malakstar786"
   }
 }
