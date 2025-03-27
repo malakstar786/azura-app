@@ -1,12 +1,25 @@
+import React, { useEffect, useState } from 'react';
+import { StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import CustomSplashScreen from './src/components/custom-splash-screen';
 
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+
+  if (isLoading) {
+    return (
+      <>
+        <CustomSplashScreen onFinish={() => setIsLoading(false)} />
+        <StatusBar style="light" />
+      </>
+    );
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.tsx to start working on your app!</Text>
-      <StatusBar style="auto" />
-    </View>
+    <>
+      {/* Your main app content will go here */}
+      <StatusBar style="dark" />
+    </>
   );
 }
 

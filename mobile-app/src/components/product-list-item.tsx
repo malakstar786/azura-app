@@ -2,7 +2,7 @@ import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'reac
 import { Link, router } from 'expo-router';
 import { useToast } from 'react-native-toast-notifications';
 import { Ionicons } from '@expo/vector-icons';
-import { Product } from '../../assets/types/product';
+import { Product } from '../types/api';
 import { useCartStore } from '../store/cart-store';
 
 export const ProductListItem = ({
@@ -12,14 +12,14 @@ export const ProductListItem = ({
 }) => {
   const toast = useToast();
   const { addItem, items, incrementItem, decrementItem } = useCartStore();
-  const cartItem = items.find(item => item.id === product.id);
+  const cartItem = items.find(item => item.product_id === product.product_id);
 
   const handleAddToCart = () => {
     addItem({
-      id: product.id,
-      title: product.title,
-      price: product.price,
-      heroImage: product.heroImage,
+      product_id: product.product_id,
+      name: product.name,
+      price: parseFloat(product.price.replace(' KD', '')),
+      image: product.image,
       quantity: 1,
     });
     toast.show('Added to cart', {
@@ -38,7 +38,7 @@ export const ProductListItem = ({
 
   const handleIncrement = () => {
     if (cartItem) {
-      incrementItem(product.id);
+      incrementItem(product.product_id);
       toast.show('Quantity increased', {
         type: 'success',
         placement: 'top',
@@ -49,7 +49,7 @@ export const ProductListItem = ({
 
   const handleDecrement = () => {
     if (cartItem && cartItem.quantity > 1) {
-      decrementItem(product.id);
+      decrementItem(product.product_id);
       toast.show('Quantity decreased', {
         type: 'success',
         placement: 'top',
@@ -60,25 +60,31 @@ export const ProductListItem = ({
 
   return (
     <View style={styles.item}>
-      <Link asChild href={`/product/${product.slug}`}>
+      <Link asChild href={`/product/${product.product_id}`}>
         <Pressable style={styles.imageContainer}>
-          <Image source={product.heroImage} style={styles.image} />
-          {product.isNewArrival && (
-            <View style={styles.newBadge}>
-              <Ionicons name="star" size={12} color="white" />
-              <Text style={styles.newBadgeText}>NEW</Text>
+          <Image 
+            source={{ uri: product.image.startsWith('http') 
+              ? product.image 
+              : `https://new.azurakwt.com/image/${product.image}`
+            }} 
+            style={styles.image} 
+          />
+          {product.special && (
+            <View style={styles.specialBadge}>
+              <Ionicons name="pricetag" size={12} color="white" />
+              <Text style={styles.specialBadgeText}>SPECIAL</Text>
             </View>
           )}
         </Pressable>
       </Link>
 
       <View style={styles.details}>
-        <Link asChild href={`/product/${product.slug}`}>
+        <Link asChild href={`/product/${product.product_id}`}>
           <Pressable>
-            <Text style={styles.title}>{product.title}</Text>
+            <Text style={styles.title}>{product.name}</Text>
           </Pressable>
         </Link>
-        <Text style={styles.price}>KD {product.price.toFixed(2)}</Text>
+        <Text style={styles.price}>{product.price}</Text>
 
         <View style={styles.buttonContainer}>
           {cartItem ? (
@@ -138,11 +144,11 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
-  newBadge: {
+  specialBadge: {
     position: 'absolute',
     top: 8,
     left: 8,
-    backgroundColor: '#000',
+    backgroundColor: '#E31837',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -150,7 +156,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  newBadgeText: {
+  specialBadgeText: {
     color: '#fff',
     fontSize: 10,
     fontWeight: '600',
@@ -182,6 +188,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
   },
+  buyNowButton: {
+    backgroundColor: '#E31837',
+    paddingVertical: 10,
+    borderRadius: 4,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
   quantityControls: {
     flexDirection: 'row',
     height: 36,
@@ -205,28 +225,13 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
     borderTopWidth: 1,
     borderBottomWidth: 1,
     borderColor: '#000',
   },
   quantityText: {
-    color: '#000',
     fontSize: 14,
-    fontWeight: '600',
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  buyNowButton: {
-    backgroundColor: '#000',
-    paddingVertical: 10,
-    borderRadius: 4,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
+    fontWeight: '500',
+    color: '#000',
   },
 });

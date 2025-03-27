@@ -1,143 +1,361 @@
-import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, ScrollView } from "react-native";
-import { Link } from "expo-router";
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, ScrollView, ActivityIndicator, FlexAlignType } from "react-native";
+import { useRouter } from "expo-router";
+import { publicApi } from "../../utils/api-service";
+import { NetworkErrorCodes } from "../../utils/api-config";
+import { LinearGradient } from 'expo-linear-gradient';
 
 const { width, height } = Dimensions.get("window");
 
+interface SliderBlock {
+  image: string;
+  title: string;
+  titlecolor: string;
+  subtitle: string;
+  subtitlecolor: string;
+  subtitlebgcolor: string;
+  desc: string;
+  desccolor: string;
+  textalignment: string;
+  textposition: string;
+  mobiletextalignment: string;
+  mobiletextposition: string;
+  btntext: string;
+  link: string;
+  imagehover: string;
+}
+
+interface FeaturesBlock {
+  ishi_randomnumer: string;
+  scale: string;
+  bgcolor: string;
+  heading: string;
+  text_align: string;
+  subtitle: string;
+  desc: string;
+  btntext: string;
+  btnlink: string;
+  image: string;
+}
+
+interface ServiceBlock {
+  heading_text: string;
+  class: string;
+  ishiservices: {
+    image: string;
+    title: string;
+    desc: string;
+  }[];
+}
+
+interface SliderResponse {
+  success: number;
+  error: string[];
+  data: {
+    ishiservices: SliderBlock[];
+  };
+}
+
+interface FeaturesResponse {
+  success: number;
+  error: string[];
+  data: FeaturesBlock;
+}
+
+// Update the category mapping
+const CATEGORY_MAP = {
+  'nail-care': { id: '20', name: 'Nail Care' },
+  'perfumes': { id: '57', name: 'Fragrance' },
+  'makeup': { id: '18', name: 'Makeup' }
+};
+
 export default function HomeScreen() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [sliderData, setSliderData] = useState<SliderBlock | null>(null);
+  const [featureBlocks, setFeatureBlocks] = useState<{
+    block1: FeaturesBlock | null;
+    block2: FeaturesBlock | null;
+    block3: FeaturesBlock | null;
+    block4: FeaturesBlock | null;
+    block5: FeaturesBlock | null;
+  }>({
+    block1: null,
+    block2: null,
+    block3: null,
+    block4: null,
+    block5: null
+  });
+  const [serviceData, setServiceData] = useState<ServiceBlock | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  const getErrorMessage = (error: any) => {
+    if (error.code === NetworkErrorCodes.NO_CONNECTION) {
+      return 'No internet connection. Please check your network and try again.';
+    } else if (error.code === NetworkErrorCodes.TIMEOUT) {
+      return 'Request timed out. Please try again.';
+    } else if (error.code === NetworkErrorCodes.SERVER_ERROR) {
+      return 'Server error. Please try again later.';
+    }
+    return 'An error occurred. Please try again.';
+  };
+
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+
+        // Fetch slider block data
+        const sliderResponse = await fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|sliderblock');
+        if (!sliderResponse.ok) {
+          throw new Error('Failed to fetch slider data');
+        }
+
+        const sliderData = await sliderResponse.json() as SliderResponse;
+        if (sliderData.success === 1 && sliderData.data.ishiservices.length > 0) {
+          setSliderData(sliderData.data.ishiservices[0]);
+        }
+
+        // Fetch all feature blocks in parallel
+        const [block1Res, block2Res, block3Res, block4Res, block5Res] = await Promise.all([
+          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock1'),
+          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock2'),
+          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock3'),
+          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock4'),
+          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock5')
+        ]);
+
+        const [block1Data, block2Data, block3Data, block4Data, block5Data] = await Promise.all([
+          block1Res.json(),
+          block2Res.json(),
+          block3Res.json(),
+          block4Res.json(),
+          block5Res.json()
+        ]) as [FeaturesResponse, FeaturesResponse, FeaturesResponse, FeaturesResponse, FeaturesResponse];
+
+        setFeatureBlocks({
+          block1: block1Data.success === 1 ? block1Data.data : null,
+          block2: block2Data.success === 1 ? block2Data.data : null,
+          block3: block3Data.success === 1 ? block3Data.data : null,
+          block4: block4Data.success === 1 ? block4Data.data : null,
+          block5: block5Data.success === 1 ? block5Data.data : null,
+        });
+
+        // Fetch service block data
+        const serviceResponse = await publicApi.getHomeServiceBlock();
+        if (serviceResponse.success === 1 && serviceResponse.data) {
+          setServiceData(serviceResponse.data);
+        }
+
+      } catch (err) {
+        console.error('Error fetching home data:', err);
+        setError(getErrorMessage(err));
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchHomeData();
+  }, []);
+
+  const handleExplorePress = (category: string) => {
+    // For fragrance blocks, always use 'perfumes' as the slug
+    const slug = category === 'fragrance' ? 'perfumes' : category;
+    router.push(`/categories/${slug}`);
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#000" />
+      </View>
+    );
+  }
+
+  if (error || !sliderData || !featureBlocks.block1 || !featureBlocks.block2 || 
+      !featureBlocks.block3 || !featureBlocks.block4 || !featureBlocks.block5) {
   return (
-    <ScrollView style={styles.container} bounces={true}>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error || 'Failed to load content'}</Text>
+      </View>
+    );
+  }
+
+  const getFlexAlignment = (alignment: string): FlexAlignType => {
+    switch (alignment) {
+      case 'left': return 'flex-start';
+      case 'right': return 'flex-end';
+      default: return 'center';
+    }
+  };
+
+  const renderFeatureBlock = (block: FeaturesBlock, category: string) => (
+    <View style={styles.section}>
+      <Image
+        source={{ uri: block.image }}
+        style={styles.sectionImage}
+        resizeMode="cover"
+      />
+      <LinearGradient
+        colors={['rgba(0,0,0,0.3)', 'rgba(0,0,0,0.5)']}
+        style={styles.overlay}
+      >
+        <View style={[
+          styles.contentContainer,
+          { alignItems: block.text_align === 'left' ? 'flex-start' : 'center' }
+        ]}>
+          <Text style={[
+            styles.title,
+            { 
+              color: '#fff',
+              textAlign: block.text_align as any,
+              marginBottom: block.subtitle ? 12 : 20
+            }
+          ]}>
+            {block.heading}
+          </Text>
+          {block.subtitle && (
+            <Text style={[
+              styles.subtitle,
+              { 
+                color: '#fff',
+                textAlign: block.text_align as any
+              }
+            ]}>
+              {block.subtitle}
+            </Text>
+          )}
+          {block.desc && (
+            <Text style={[
+              styles.description,
+              { 
+                color: '#fff',
+                textAlign: block.text_align as any
+              }
+            ]}>
+              {block.desc}
+            </Text>
+          )}
+          {category !== 'makeup' && block.btntext && (
+            <TouchableOpacity 
+              style={styles.exploreButton}
+              onPress={() => handleExplorePress(category)}
+            >
+              <Text style={styles.exploreButtonText}>
+                {block.btntext}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </LinearGradient>
+    </View>
+  );
+
+  return (
+    <ScrollView style={styles.container} bounces={false}>
       <View style={styles.header}>
         <Text style={styles.logoText}>A Z U R A</Text>
       </View>
 
-      {/* Main Section (Fragrances-1)*/}
-      <View style={styles.section}>
+      {/* Hero Section */}
+      <View style={styles.fullScreenSection}>
         <Image
-          source={require("../../../assets/images/nail-care-hero.png")}
-          style={styles.sectionImage}
+          source={{ uri: sliderData.image }}
+          style={styles.fullScreenImage}
           resizeMode="cover"
         />
-        <View style={styles.overlay}>
-          <View style={styles.contentContainer}>
-            <Text style={styles.title}>THIS SEASON'S ESSENTIALS</Text>
-            <Text style={styles.subtitle}>
-              THE NEW COLLECTION OF{"\n"}
-              FRAGRANCES. A SENSATION OF FRESHNESS.{"\n"}
-              A JOURNEY IN EVERY SPRAY.
+        <LinearGradient
+          colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.5)']}
+          style={styles.overlay}
+        >
+          <View style={styles.contentWrapper}>
+            <Text style={styles.mainTitle}>
+              {sliderData.title}
             </Text>
-            <Link href="/categories/fragrances" asChild>
-              <TouchableOpacity style={styles.exploreButton}>
-                <Text style={styles.exploreButtonText}>EXPLORE</Text>
-              </TouchableOpacity>
-            </Link>
+            <Text style={styles.mainDescription}>
+              {sliderData.desc}
+            </Text>
+            <TouchableOpacity
+              style={styles.mainButton}
+              onPress={() => handleExplorePress('nail-care')}
+            >
+              <Text style={styles.mainButtonText}>{sliderData.btntext}</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </View>
+
+      {/* Feature Blocks */}
+      {Object.entries(featureBlocks).map(([key, block]) => {
+        if (!block) return null;
+        const category = key === 'block2' ? 'nail-care' : 
+                        key === 'block5' ? 'makeup' : 'fragrance';
+        
+        return (
+          <View key={key} style={styles.fullScreenSection}>
+            <Image
+              source={{ uri: block.image }}
+              style={styles.fullScreenImage}
+              resizeMode="cover"
+            />
+            <LinearGradient
+              colors={['rgba(0,0,0,0.2)', 'rgba(0,0,0,0.5)']}
+              style={styles.overlay}
+            >
+              <View style={styles.contentWrapper}>
+                <Text style={styles.mainTitle}>
+                  {block.heading}
+                </Text>
+                {block.subtitle && (
+                  <Text style={styles.mainSubtitle}>
+                    {block.subtitle}
+                  </Text>
+                )}
+                <Text style={styles.mainDescription}>
+                  {block.desc}
+                </Text>
+                {category !== 'makeup' && block.btntext && (
+                  <TouchableOpacity 
+                    style={styles.mainButton}
+                    onPress={() => handleExplorePress(category)}
+                  >
+                    <Text style={styles.mainButtonText}>
+                      {block.btntext}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </LinearGradient>
+          </View>
+        );
+      })}
+
+      {/* Services Section */}
+      {serviceData && (
+        <View style={styles.servicesSection}>
+          <Text style={styles.servicesTitle}>
+            {serviceData.heading_text}
+          </Text>
+          <View style={styles.servicesContainer}>
+            {serviceData.ishiservices.map((service, index) => (
+              <View key={index} style={styles.serviceItem}>
+                <Image
+                  source={{ uri: service.image }}
+                  style={styles.serviceIcon}
+                  resizeMode="contain"
+                />
+                <Text style={styles.serviceTitle}>
+                  {service.title}
+                </Text>
+                <Text style={styles.serviceDescription}>
+                  {service.desc}
+                </Text>
+              </View>
+            ))}
           </View>
         </View>
-      </View>
-
-      {/* Makeup Section */}
-      <View style={styles.section}>
-        <Image
-          source={require("../../../assets/images/makeup-1.png")}
-          style={styles.sectionImage}
-          resizeMode="cover"
-        />
-        <View style={styles.overlay}>
-          <View style={styles.contentContainer}>
-            <Text style={styles.title}>MAKEUP COLLECTION</Text>
-            <Text style={styles.subtitle}>
-              DISCOVER OUR RANGE OF{"\n"}
-              PREMIUM MAKEUP PRODUCTS.{"\n"}
-              ENHANCE YOUR NATURAL BEAUTY.
-            </Text>
-            <Link href="/categories/makeup" asChild>
-              <TouchableOpacity style={styles.exploreButton}>
-                <Text style={styles.exploreButtonText}>EXPLORE</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        </View>
-      </View>
-
-      {/* Nail Care Section */}
-      <View style={styles.section}>
-        <Image
-          source={require("../../../assets/images/nail-care-1.png")}
-          style={styles.sectionImage}
-          resizeMode="cover"
-        />
-        <View style={styles.overlay}>
-          <View style={styles.contentContainer}>
-            <Text style={styles.title}>NAIL CARE ESSENTIALS</Text>
-            <Text style={styles.subtitle}>
-              PROFESSIONAL NAIL CARE{"\n"}
-              PRODUCTS FOR THE PERFECT{"\n"}
-              MANICURE AT HOME.
-            </Text>
-            <Link href="/categories/nail-care" asChild>
-              <TouchableOpacity style={styles.exploreButton}>
-                <Text style={styles.exploreButtonText}>EXPLORE</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        </View>
-      </View>
-
-      {/* Fragrances-2*/}
-      <View style={styles.section}>
-        <Image
-          source={require("../../../assets/images/nail-care-hero.png")}
-          style={styles.sectionImage}
-          resizeMode="cover"
-        />
-        <View style={styles.overlay}>
-          <View style={styles.contentContainer}>
-            <Text style={styles.title}>LOVE IS IN THE AIR</Text>
-            <Text style={styles.subtitle}>
-              THE NEW COLLECTION OF{"\n"}
-              FRAGRANCES. A SENSATION OF FRESHNESS.{"\n"}
-              A JOURNEY IN EVERY SPRAY.
-            </Text>
-            <Link href="/categories/fragrances" asChild>
-              <TouchableOpacity style={styles.exploreButton}>
-                <Text style={styles.exploreButtonText}>EXPLORE</Text>
-              </TouchableOpacity>
-            </Link>
-          </View>
-        </View>
-      </View>
-
-      {/* Azura Services Section*/}
-      <View style={[styles.section, styles.servicesSection]}>
-        <View style={styles.contentContainer}>
-          <Text style={[styles.title, styles.servicesTitle]}>THE AZURA SERVICES</Text>
-          
-          <View style={styles.serviceItem}>
-            <Text style={styles.serviceIcon}>📦</Text>
-            <Text style={[styles.title, styles.serviceItemTitle]}>STANDARD SHIPPING</Text>
-            <Text style={[styles.subtitle, styles.serviceItemText]}>
-              ENJOY COMPLIMENTARY{"\n"}
-              STANDARD SHIPPING
-            </Text>
-          </View>
-
-          <View style={styles.serviceItem}>
-            <Text style={styles.serviceIcon}>🎁</Text>
-            <Text style={[styles.title, styles.serviceItemTitle]}>RIGHT GIFTING</Text>
-            <Text style={[styles.subtitle, styles.serviceItemText]}>
-              YOUR GIFT ORDERS WILL BE{"\n"}
-              PRESENTED IN AN AZURA{"\n"}
-              GIFT BOX
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Footer Section */}
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Follow Us On
-        </Text>
-      </View>
+      )}
     </ScrollView>
   );
 }
@@ -147,93 +365,216 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#000",
   },
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  errorContainer: {
+    flex: 1,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorText: {
+    color: "#fff",
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  retryText: {
+    color: "#fff",
+    fontSize: 14,
+    marginTop: 16,
+    opacity: 0.7,
+  },
+  retryButton: {
+    borderWidth: 1,
+    borderColor: "#fff",
+    paddingVertical: 12,
+    paddingHorizontal: 40,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+  },
   header: {
     paddingTop: 53,
-    paddingBottom: 30,
+    paddingBottom: 15,
     alignItems: "center",
     backgroundColor: "#000",
   },
   logoText: {
-    color: "white",
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "600",
+    letterSpacing: 4,
+  },
+  fullScreenSection: {
+    width: '100%',
+    height: Dimensions.get('window').height,
+    position: 'relative',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+  },
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+  },
+  contentWrapper: {
+    paddingHorizontal: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  mainTitle: {
     fontSize: 28,
-    fontWeight: "500",
-    letterSpacing: 8,
+    fontWeight: '600',
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 15,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  mainSubtitle: {
+    fontSize: 16,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  mainDescription: {
+    fontSize: 14,
+    color: '#fff',
+    textAlign: 'center',
+    marginBottom: 25,
+    lineHeight: 20,
+    maxWidth: '80%',
+  },
+  mainButton: {
+    borderWidth: 1,
+    borderColor: '#fff',
+    paddingVertical: 15,
+    paddingHorizontal: 45,
+    minWidth: 200,
+  },
+  mainButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '500',
+    textAlign: 'center',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
   },
   section: {
-    height: height - 180, // Adjust for header and tab bar
+    width: width,
+    height: height - 120,
     position: "relative",
+    backgroundColor: '#000',
   },
   sectionImage: {
     width: "100%",
     height: "100%",
     position: "absolute",
-  },
-  overlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.4)",
+    resizeMode: "cover",
   },
   contentContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: 20,
+    padding: 20,
+    width: "100%",
   },
   title: {
-    color: "white",
-    fontSize: 24,
+    fontSize: 32,
     fontWeight: "600",
-    marginBottom: 20,
     textAlign: "center",
+    marginBottom: 20,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: '#fff',
+    width: '100%',
   },
   subtitle: {
-    color: "white",
+    fontSize: 18,
+    textAlign: "center",
+    marginBottom: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    color: '#fff',
+    width: '100%',
+  },
+  description: {
     fontSize: 16,
     textAlign: "center",
-    marginBottom: 40,
+    marginBottom: 32,
+    opacity: 0.9,
+    color: '#fff',
     lineHeight: 24,
+    maxWidth: '90%',
+    width: '100%',
   },
   exploreButton: {
-    borderWidth: 1,
-    borderColor: "white",
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    alignItems: "center",
+    backgroundColor: '#000',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 5,
   },
   exploreButtonText: {
-    color: "white",
+    color: '#fff',
     fontSize: 16,
-    letterSpacing: 1,
-  },
-  footer: {
-    padding: 40,
-    backgroundColor: "#000",
-  },
-  footerText: {
-    color: "white",
-    fontSize: 16,
-    textAlign: "center",
+    fontWeight: '600',
+    textTransform: 'uppercase',
   },
   servicesSection: {
     backgroundColor: '#000',
+    padding: 30,
+    width: '100%',
   },
   servicesTitle: {
-    fontSize: 28,
+    color: '#fff',
+    fontSize: 24,
+    fontWeight: '600',
+    textAlign: 'center',
     marginBottom: 40,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  servicesContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    flexWrap: 'wrap',
+    gap: 20,
   },
   serviceItem: {
     alignItems: 'center',
-    marginBottom: 40,
+    width: '45%', // Allows 2 items per row with spacing
+    marginBottom: 30,
   },
   serviceIcon: {
-    fontSize: 40,
-    marginBottom: 20,
+    width: 60,
+    height: 60,
+    marginBottom: 15,
   },
-  serviceItemTitle: {
-    fontSize: 20,
-    marginBottom: 10,
+  serviceTitle: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
-  serviceItemText: {
-    marginBottom: 0,
+  serviceDescription: {
+    color: '#fff',
     fontSize: 14,
+    textAlign: 'center',
+    opacity: 0.9,
+    lineHeight: 20,
   },
 });

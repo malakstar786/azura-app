@@ -5,6 +5,7 @@ export default function CustomSplashScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Start fade in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 1000,

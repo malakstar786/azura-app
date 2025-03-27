@@ -2,14 +2,14 @@ import React from 'react';
 import { Redirect, Tabs } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet, View, Text } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cart-store';
 
 function TabBarIcon(props: {
-  name: React.ComponentProps<typeof FontAwesome>['name'];
+  name: React.ComponentProps<typeof Ionicons>['name'];
   color: string;
 }) {
-  return <FontAwesome size={24} {...props} style={{ color: props.color }} />;
+  return <Ionicons size={24} {...props} style={{ color: props.color }} />;
 }
 
 const TabsLayout = () => {
@@ -41,7 +41,7 @@ const TabsLayout = () => {
           options={{
             title: 'Home',
             tabBarIcon(props) {
-              return <TabBarIcon {...props} name="home" />;
+              return <TabBarIcon {...props} name="home-outline" />;
             },
           }}
         />
@@ -50,7 +50,7 @@ const TabsLayout = () => {
           options={{
             title: 'Search',
             tabBarIcon(props) {
-              return <TabBarIcon {...props} name="search" />;
+              return <TabBarIcon {...props} name="search-outline" />;
             },
           }}
         />
@@ -61,7 +61,7 @@ const TabsLayout = () => {
             tabBarIcon(props) {
               return (
                 <>
-                  <TabBarIcon {...props} name="shopping-cart" />
+                  <TabBarIcon {...props} name="cart-outline" />
                   {cartItemsCount > 0 && (
                     <View style={styles.badge}>
                       <Text style={styles.badgeText}>{cartItemsCount}</Text>
@@ -77,7 +77,7 @@ const TabsLayout = () => {
           options={{
             title: 'Account',
             tabBarIcon(props) {
-              return <TabBarIcon {...props} name="user" />;
+              return <TabBarIcon {...props} name="person-outline" />;
             },
           }}
         />

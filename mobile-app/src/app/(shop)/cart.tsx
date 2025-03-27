@@ -15,9 +15,10 @@ import {
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cart-store';
+import { useAuthStore } from '../../store/auth-store';
 import { StatusBar } from 'expo-status-bar';
-import { CartItemType } from '../../store/cart-store';
-import { useState, useEffect } from 'react';
+import { CartItem } from '../../utils/api-config';
+import { useState } from 'react';
 import { useAddressStore, Address } from '../../store/address-store';
 import AddEditAddress from '../../components/add-edit-address';
 import { formatPrice } from '../../utils/format-price';
@@ -28,7 +29,7 @@ type DeleteModalProps = {
   visible: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  item: CartItemType;
+  item: CartItem;
 };
 
 const DeleteConfirmationModal = ({ visible, onClose, onConfirm, item }: DeleteModalProps) => (
@@ -43,12 +44,17 @@ const DeleteConfirmationModal = ({ visible, onClose, onConfirm, item }: DeleteMo
         <Text style={styles.deleteModalTitle}>Remove from Cart?</Text>
         
         <View style={styles.deleteModalItem}>
-          <Image source={item.heroImage} style={styles.deleteModalImage} />
+          <Image 
+            source={{ uri: `https://new.azurakwt.com/image/${item.image}` }} 
+            style={styles.deleteModalImage} 
+          />
           <View style={styles.deleteModalItemDetails}>
-            <Text style={styles.deleteModalSku}>SKU:{item.id}</Text>
-            <Text style={styles.deleteModalItemTitle}>{item.title.toUpperCase()}</Text>
+            <Text style={styles.deleteModalSku}>SKU: {item.product_id}</Text>
+            <Text style={styles.deleteModalItemTitle}>{item.name.toUpperCase()}</Text>
             <Text style={styles.deleteModalQuantity}>QTY: {item.quantity}</Text>
-            <Text style={styles.deleteModalPrice}>{(item.price * item.quantity).toFixed(3)} KD</Text>
+            <Text style={styles.deleteModalPrice}>
+              {(parseFloat(item.price) * item.quantity).toFixed(3)} KD
+            </Text>
           </View>
         </View>
 
@@ -71,32 +77,39 @@ const DeleteConfirmationModal = ({ visible, onClose, onConfirm, item }: DeleteMo
   </Modal>
 );
 
-const CartItem = ({
+const CartItemRow = ({
   item,
   onRemove,
   onUpdateQuantity,
   onIncrement,
   onDecrement,
 }: {
-  item: CartItemType;
-  onRemove: (id: number) => void;
-  onUpdateQuantity: (id: number, quantity: number) => void;
-  onIncrement: (id: number) => void;
-  onDecrement: (id: number) => void;
+  item: CartItem;
+  onRemove: (id: string) => void;
+  onUpdateQuantity: (id: string, quantity: number) => void;
+  onIncrement: (id: string) => Promise<void>;
+  onDecrement: (id: string) => void;
 }) => {
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const quantities = Array.from({ length: 10 }, (_, i) => i + 1);
 
+  const handleIncrement = async () => {
+    await onIncrement(item.product_id);
+  };
+
   return (
-    <View style={styles.cartItem}>
-      <Image source={item.heroImage} style={styles.itemImage} />
+    <View style={styles.cartItemRow}>
+      <Image 
+        source={{ uri: `https://new.azurakwt.com/image/${item.image}` }} 
+        style={styles.itemImage} 
+      />
       <View style={styles.itemDetails}>
-        <Text style={styles.itemSku}>SKU:{item.id}</Text>
-        <Text style={styles.itemTitle}>{item.title.toUpperCase()}</Text>
+        <Text style={styles.itemSku}>SKU: {item.product_id}</Text>
+        <Text style={styles.itemTitle}>{item.name.toUpperCase()}</Text>
         <View style={styles.quantityContainer}>
           <TouchableOpacity 
-            onPress={() => onDecrement(item.id)}
+            onPress={() => onDecrement(item.product_id)}
             style={styles.quantityButton}
           >
             <Text style={styles.quantityButtonText}>-</Text>
@@ -109,13 +122,15 @@ const CartItem = ({
             <Ionicons name="chevron-down" size={16} color="#000" />
           </TouchableOpacity>
           <TouchableOpacity 
-            onPress={() => onIncrement(item.id)}
+            onPress={handleIncrement}
             style={styles.quantityButton}
           >
             <Text style={styles.quantityButtonText}>+</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.itemPrice}>{(item.price * item.quantity).toFixed(3)} KD</Text>
+        <Text style={styles.itemPrice}>
+          {(parseFloat(item.price) * item.quantity).toFixed(3)} KD
+        </Text>
       </View>
       <TouchableOpacity 
         onPress={() => setShowDeleteModal(true)} 
@@ -128,7 +143,7 @@ const CartItem = ({
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={() => {
-          onRemove(item.id);
+          onRemove(item.product_id);
           setShowDeleteModal(false);
         }}
         item={item}
@@ -155,7 +170,7 @@ const CartItem = ({
                     qty === item.quantity && styles.selectedQuantity,
                   ]}
                   onPress={() => {
-                    onUpdateQuantity(item.id, qty);
+                    onUpdateQuantity(item.product_id, qty);
                     setShowQuantityModal(false);
                   }}
                 >
@@ -179,26 +194,66 @@ export default function CartScreen() {
   const {
     items,
     removeItem,
-    updateQuantity,
-    incrementItem,
-    decrementItem,
+    incrementQuantity,
+    decrementQuantity,
     getTotalPrice,
   } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
   const { addresses, selectedAddress } = useAddressStore();
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  const handleCheckout = () => {
-    if (!selectedAddress) {
-      setEditingAddress(null);
-      setShowAddressModal(true);
+  const updateQuantity = (productId: string, quantity: number) => {
+    // First decrement to 1
+    while (items.find(item => item.product_id === productId)?.quantity || 0 > 1) {
+      decrementQuantity(productId);
+    }
+    
+    // Then increment to desired quantity
+    for (let i = 1; i < quantity; i++) {
+      incrementQuantity(productId);
+    }
+  };
+
+  const handleCheckout = async () => {
+    // First check if user is authenticated
+    if (!isAuthenticated) {
+      // If not authenticated, redirect to sign in page with redirect parameter
+      router.push({
+        pathname: '/auth',
+        params: { redirect: 'checkout' }
+      });
       return;
     }
+    
+    // If authenticated, proceed with address check
+    if (!selectedAddress) {
+      Alert.alert(
+        'Add Address',
+        'Please add a delivery address to proceed with checkout.',
+        [
+          {
+            text: 'Cancel',
+            style: 'cancel'
+          },
+          {
+            text: 'Add Address',
+            onPress: () => {
+              setEditingAddress(null);
+              setShowAddressModal(true);
+            }
+          }
+        ]
+      );
+      return;
+    }
+    
+    // Navigate to checkout
     router.push('/checkout');
   };
 
-  const SHIPPING_COST = 50.000;
-  const cartTotal = parseFloat(getTotalPrice().toString());
+  const SHIPPING_COST = 5.000;
+  const cartTotal = getTotalPrice();
   const total = cartTotal + SHIPPING_COST;
 
   if (items.length === 0) {
@@ -218,7 +273,7 @@ export default function CartScreen() {
               <Text style={styles.cartBadgeText}>0</Text>
             </View>
           </View>
-          <Text style={styles.emptyText}>Your Cart is Empty</Text>
+          <Text style={styles.emptyText}>YOUR CART IS EMPTY</Text>
           <Link href="/" asChild>
             <TouchableOpacity style={styles.startShoppingButton}>
               <Text style={styles.startShoppingText}>START SHOPPING</Text>
@@ -242,37 +297,39 @@ export default function CartScreen() {
 
       <FlatList
         data={items}
-        keyExtractor={item => item.id.toString()}
+        keyExtractor={item => item.product_id}
         renderItem={({ item }) => (
-          <CartItem
+          <CartItemRow
             item={item}
             onRemove={removeItem}
             onUpdateQuantity={updateQuantity}
-            onIncrement={incrementItem}
-            onDecrement={decrementItem}
+            onIncrement={incrementQuantity}
+            onDecrement={decrementQuantity}
           />
         )}
-        contentContainerStyle={styles.cartList}
+        contentContainerStyle={styles.cartItemsList}
       />
 
-      <View style={styles.footer}>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>CART TOTAL :</Text>
-          <Text style={styles.totalValue}>{formatPrice(cartTotal)}</Text>
+      <View style={styles.summaryContainer}>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>CART TOTAL</Text>
+          <Text style={styles.summaryValue}>{cartTotal.toFixed(3)} KD</Text>
         </View>
-        <View style={styles.totalRow}>
-          <Text style={styles.totalLabel}>SHIPPING :</Text>
-          <Text style={styles.totalValue}>{formatPrice(SHIPPING_COST)}</Text>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryLabel}>SHIPPING</Text>
+          <Text style={styles.summaryValue}>{SHIPPING_COST.toFixed(3)} KD</Text>
         </View>
-        <View style={[styles.totalRow, styles.finalTotal]}>
-          <Text style={styles.totalLabel}>TOTAL :</Text>
-          <Text style={styles.totalValue}>{formatPrice(total)}</Text>
+        <View style={[styles.summaryRow, styles.totalRow]}>
+          <Text style={[styles.summaryLabel, styles.totalLabel]}>TOTAL</Text>
+          <Text style={[styles.summaryValue, styles.totalValue]}>{total.toFixed(3)} KD</Text>
         </View>
 
-        <Pressable onPress={handleCheckout} style={styles.checkoutButton}>
-          <Text style={styles.checkoutButtonText}>PROCEED TO CHECKOUT</Text>
-          <Ionicons name="arrow-forward" size={24} color="white" />
-        </Pressable>
+        <TouchableOpacity
+          style={styles.checkoutButton}
+          onPress={handleCheckout}
+        >
+          <Text style={styles.checkoutButtonText}>CHECKOUT</Text>
+        </TouchableOpacity>
       </View>
 
       {showAddressModal && (
@@ -292,81 +349,123 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    marginTop: 53,
-    marginBottom: 16,
-    paddingHorizontal: 16,
-  },
-  dividerContainer: {
-    paddingHorizontal: 16,
-    marginBottom: 16,
-  },
-  divider: {
-    height: 2,
-    backgroundColor: '#000',
-  },
-  cartList: {
     padding: 16,
   },
-  cartItem: {
-    flexDirection: 'row',
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    marginTop: 40,
+  },
+  dividerContainer: {
     paddingVertical: 16,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#E0E0E0',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 80,
+  },
+  cartIconContainer: {
+    position: 'relative',
+    marginBottom: 16,
+  },
+  cartIcon: {
+    fontSize: 64,
+  },
+  cartBadge: {
+    position: 'absolute',
+    top: 0,
+    right: -10,
+    backgroundColor: 'red',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  cartBadgeText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  emptyText: {
+    fontSize: 18,
+    fontWeight: '500',
+    marginBottom: 32,
+  },
+  startShoppingButton: {
+    backgroundColor: '#000',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    width: '80%',
+  },
+  startShoppingText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  cartItemsList: {
+    flexGrow: 1,
+  },
+  cartItemRow: {
+    flexDirection: 'row',
+    marginBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#E0E0E0',
+    paddingBottom: 16,
   },
   itemImage: {
     width: 80,
-    height: 100,
+    height: 80,
     resizeMode: 'contain',
     marginRight: 16,
   },
   itemDetails: {
     flex: 1,
-    justifyContent: 'space-between',
   },
   itemSku: {
     fontSize: 12,
-    color: '#4A4A4A',
+    color: '#888',
     marginBottom: 4,
   },
   itemTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontWeight: '500',
+    marginBottom: 8,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   quantityButton: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#000',
-    alignItems: 'center',
+    width: 28,
+    height: 28,
+    backgroundColor: '#F0F0F0',
     justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 4,
   },
   quantityButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
   },
   quantitySelector: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginHorizontal: 8,
+    paddingHorizontal: 12,
   },
   itemQuantity: {
-    fontSize: 12,
-    color: '#4A4A4A',
+    fontSize: 14,
     marginRight: 4,
   },
   itemPrice: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '600',
   },
   removeButton: {
@@ -374,197 +473,155 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContent: {
+    width: 200,
+    maxHeight: 300,
     backgroundColor: 'white',
     borderRadius: 8,
-    padding: 16,
-    width: width * 0.4,
-    maxHeight: width * 0.8,
+    overflow: 'hidden',
   },
   quantityOption: {
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#E0E0E0',
   },
   selectedQuantity: {
-    backgroundColor: '#000',
+    backgroundColor: '#F0F0F0',
   },
   quantityOptionText: {
     fontSize: 16,
     textAlign: 'center',
   },
   selectedQuantityText: {
-    color: '#fff',
-  },
-  footer: {
-    paddingHorizontal: 16,
-    paddingBottom: 32,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-  },
-  totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginBottom: 8,
-  },
-  finalTotal: {
-    marginBottom: 24,
-  },
-  totalLabel: {
-    fontSize: 12,
-    color: '#000',
-    marginRight: 8,
-  },
-  totalValue: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000',
-  },
-  checkoutButton: {
-    backgroundColor: '#000',
-    paddingVertical: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkoutButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
-    marginRight: 8,
-  },
-  checkoutIcon: {
-    marginTop: 2,
-  },
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingBottom: 100,
-  },
-  cartIconContainer: {
-    position: 'relative',
-    marginBottom: 16,
-  },
-  cartIcon: {
-    fontSize: 48,
-  },
-  cartBadge: {
-    position: 'absolute',
-    top: -5,
-    right: -10,
-    backgroundColor: '#000',
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cartBadgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  emptyText: {
-    fontSize: 16,
-    marginBottom: 32,
-  },
-  startShoppingButton: {
-    backgroundColor: '#000',
-    paddingVertical: 16,
-    width: width - 32,
-    alignItems: 'center',
-  },
-  startShoppingText: {
-    color: '#fff',
-    fontSize: 14,
     fontWeight: '600',
   },
   deleteModalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     justifyContent: 'flex-end',
   },
   deleteModalContent: {
     backgroundColor: 'white',
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
-    padding: 16,
+    padding: 20,
   },
   deleteModalTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
-    marginBottom: 24,
+    marginBottom: 20,
     textAlign: 'center',
   },
   deleteModalItem: {
     flexDirection: 'row',
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#E5E5E5',
     marginBottom: 24,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   deleteModalImage: {
     width: 80,
-    height: 100,
+    height: 80,
     resizeMode: 'contain',
     marginRight: 16,
   },
   deleteModalItemDetails: {
     flex: 1,
-    justifyContent: 'space-between',
   },
   deleteModalSku: {
     fontSize: 12,
-    color: '#4A4A4A',
+    color: '#888',
     marginBottom: 4,
   },
   deleteModalItemTitle: {
     fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontWeight: '500',
+    marginBottom: 8,
   },
   deleteModalQuantity: {
-    fontSize: 12,
-    color: '#4A4A4A',
+    fontSize: 14,
     marginBottom: 4,
   },
   deleteModalPrice: {
-    fontSize: 12,
+    fontSize: 16,
     fontWeight: '600',
   },
   deleteModalButtons: {
     flexDirection: 'row',
-    gap: 8,
+    justifyContent: 'space-between',
   },
   deleteModalButton: {
     flex: 1,
-    paddingVertical: 16,
+    paddingVertical: 12,
     alignItems: 'center',
-    justifyContent: 'center',
+    marginHorizontal: 8,
   },
   cancelButton: {
     backgroundColor: '#000',
   },
-  confirmButton: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#000',
-  },
   cancelButtonText: {
-    color: '#fff',
+    color: 'white',
     fontSize: 14,
     fontWeight: '600',
   },
+  confirmButton: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#000',
+  },
   confirmButtonText: {
     color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  summaryContainer: {
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+    paddingTop: 16,
+    marginTop: 8,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  totalRow: {
+    marginTop: 8,
+    marginBottom: 16,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  summaryLabel: {
+    fontSize: 14,
+    color: '#555',
+  },
+  summaryValue: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  totalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+  },
+  totalValue: {
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  checkoutButton: {
+    backgroundColor: '#000',
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  checkoutButtonText: {
+    color: 'white',
     fontSize: 14,
     fontWeight: '600',
   },

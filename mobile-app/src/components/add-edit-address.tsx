@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,9 +10,12 @@ import {
   Platform,
   Dimensions,
   Modal,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAddressStore, Address } from '../store/address-store';
+import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
 
 type Props = {
   address?: Address | null;
@@ -21,37 +24,63 @@ type Props = {
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 
+// List of hardcoded Kuwait cities that users can select from
 const CITIES = [
-  'Hawally',
+  'Kuwait City',
+  'Hawalli',
+  'Salmiya',
+  'Ahmadi',
   'Jahra',
-  'Farwaniyah',
-  'Jabriya',
-  'Mubarak Al Kabeer',
+  'Farwaniya',
+  'Fahaheel',
+  'Mangaf',
+  'Mubarak Al-Kabeer',
+  'Sabah Al-Salem',
 ];
+
+// Kuwait country code for the API
+const KUWAIT_COUNTRY_ID = '114';
+const KUWAIT_ZONE_ID = '1785'; // Default Kuwait zone ID
 
 export default function AddEditAddress({ address, onClose }: Props) {
   const { addAddress, updateAddress } = useAddressStore();
-  const [showCityPicker, setShowCityPicker] = React.useState(false);
-  const [form, setForm] = React.useState({
-    fullName: address?.fullName || '',
-    mobileNumber: address?.mobileNumber || '',
-    country: 'Kuwait',
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
+  
+  // Form state that matches the API expected fields
+  const [form, setForm] = useState({
+    firstname: address?.firstname || '',
+    lastname: address?.lastname || '',
+    telephone: address?.telephone || '',
+    address_1: address?.address_1 || '',
+    address_2: address?.address_2 || '',
     city: address?.city || '',
-    area: address?.area || '',
-    block: address?.block || '',
-    street: address?.street || '',
-    houseBuilding: address?.houseBuilding || '',
-    apartment: address?.apartment || '',
-    addressLine2: address?.addressLine2 || '',
+    custom_field: {
+      '30': address?.custom_field?.['30'] || '', // Block
+      '31': address?.custom_field?.['31'] || '', // Street
+      '32': address?.custom_field?.['32'] || '', // House/Building
+      '33': address?.custom_field?.['33'] || '', // Apartment
+    },
+    country_id: KUWAIT_COUNTRY_ID,
+    zone_id: KUWAIT_ZONE_ID,
+    default: address?.default || '0',
   });
 
-  const handleSave = () => {
-    if (address?.id) {
-      updateAddress(address.id, form);
-    } else {
-      addAddress(form);
-    }
-    onClose();
+  const handleInputChange = (field: string, value: string) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setFormError(null);
+  };
+
+  const handleCustomFieldChange = (field: string, value: string) => {
+    setForm(prev => ({
+      ...prev,
+      custom_field: {
+        ...prev.custom_field,
+        [field]: value
+      }
+    }));
+    setFormError(null);
   };
 
   const handleSelectCity = (city: string) => {
@@ -59,7 +88,42 @@ export default function AddEditAddress({ address, onClose }: Props) {
     setShowCityPicker(false);
   };
 
-  const isFormValid = form.fullName && form.mobileNumber && form.area && form.block;
+  const validateForm = () => {
+    if (!form.firstname.trim()) return 'First name is required';
+    if (!form.lastname.trim()) return 'Last name is required';
+    if (!form.telephone.trim()) return 'Mobile number is required';
+    if (!form.address_1.trim()) return 'Address is required';
+    if (!form.city.trim()) return 'City is required';
+    if (!form.custom_field['30'].trim()) return 'Block is required';
+    if (!form.custom_field['31'].trim()) return 'Street is required';
+    if (!form.custom_field['32'].trim()) return 'House/Building number is required';
+    return null;
+  };
+
+  const handleSave = async () => {
+    const error = validateForm();
+    if (error) {
+      setFormError(error);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      if (address?.address_id) {
+        // Update existing address
+        await updateAddress(address.address_id, form);
+      } else {
+        // Add new address
+        await addAddress(form);
+      }
+      onClose();
+    } catch (error: any) {
+      setFormError(error.message || 'Failed to save address');
+      Alert.alert('Error', error.message || 'Failed to save address');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <KeyboardAvoidingView 
@@ -68,26 +132,59 @@ export default function AddEditAddress({ address, onClose }: Props) {
     >
       <View style={styles.header}>
         <Text style={styles.title}>
-          {address ? 'EDIT' : 'ADD'}{'\n'}ADDRESS
+          {address ? 'EDIT' : 'ADD'} ADDRESS
         </Text>
+        <Pressable onPress={onClose} style={styles.closeButton}>
+          <Ionicons name="close" size={24} color="#000" />
+        </Pressable>
       </View>
 
       <ScrollView style={styles.content}>
-        <TextInput
-          style={styles.input}
-          placeholder="Full Name"
-          value={form.fullName}
-          onChangeText={(text) => setForm({ ...form, fullName: text })}
-          placeholderTextColor="#000"
-        />
+        {formError && (
+          <Text style={styles.errorText}>{formError}</Text>
+        )}
+        
+        <View style={styles.row}>
+          <TextInput
+            style={[styles.input, styles.halfInput]}
+            placeholder="First Name"
+            value={form.firstname}
+            onChangeText={(text) => handleInputChange('firstname', text)}
+            placeholderTextColor="#999"
+          />
+
+          <TextInput
+            style={[styles.input, styles.halfInput]}
+            placeholder="Last Name"
+            value={form.lastname}
+            onChangeText={(text) => handleInputChange('lastname', text)}
+            placeholderTextColor="#999"
+          />
+        </View>
 
         <TextInput
           style={styles.input}
           placeholder="Mobile Number"
-          value={form.mobileNumber}
-          onChangeText={(text) => setForm({ ...form, mobileNumber: text })}
+          value={form.telephone}
+          onChangeText={(text) => handleInputChange('telephone', text)}
           keyboardType="phone-pad"
-          placeholderTextColor="#000"
+          placeholderTextColor="#999"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Address Line 1"
+          value={form.address_1}
+          onChangeText={(text) => handleInputChange('address_1', text)}
+          placeholderTextColor="#999"
+        />
+
+        <TextInput
+          style={styles.input}
+          placeholder="Address Line 2 (Optional)"
+          value={form.address_2}
+          onChangeText={(text) => handleInputChange('address_2', text)}
+          placeholderTextColor="#999"
         />
 
         <View style={[styles.input, styles.selectInput]}>
@@ -105,57 +202,53 @@ export default function AddEditAddress({ address, onClose }: Props) {
           <Ionicons name="chevron-down" size={20} color="black" />
         </Pressable>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Area"
-          value={form.area}
-          onChangeText={(text) => setForm({ ...form, area: text })}
-          placeholderTextColor="#000"
-        />
-
         <View style={styles.row}>
           <TextInput
             style={[styles.input, styles.halfInput]}
             placeholder="Block"
-            value={form.block}
-            onChangeText={(text) => setForm({ ...form, block: text })}
-            placeholderTextColor="#000"
+            value={form.custom_field['30']}
+            onChangeText={(text) => handleCustomFieldChange('30', text)}
+            placeholderTextColor="#999"
           />
 
           <TextInput
             style={[styles.input, styles.halfInput]}
             placeholder="Street"
-            value={form.street}
-            onChangeText={(text) => setForm({ ...form, street: text })}
-            placeholderTextColor="#000"
+            value={form.custom_field['31']}
+            onChangeText={(text) => handleCustomFieldChange('31', text)}
+            placeholderTextColor="#999"
           />
         </View>
 
         <View style={styles.row}>
           <TextInput
             style={[styles.input, styles.halfInput]}
-            placeholder="House Building No."
-            value={form.houseBuilding}
-            onChangeText={(text) => setForm({ ...form, houseBuilding: text })}
-            placeholderTextColor="#000"
+            placeholder="House/Building No."
+            value={form.custom_field['32']}
+            onChangeText={(text) => handleCustomFieldChange('32', text)}
+            placeholderTextColor="#999"
           />
 
           <TextInput
             style={[styles.input, styles.halfInput]}
             placeholder="Apartment No."
-            value={form.apartment}
-            onChangeText={(text) => setForm({ ...form, apartment: text })}
-            placeholderTextColor="#000"
+            value={form.custom_field['33']}
+            onChangeText={(text) => handleCustomFieldChange('33', text)}
+            placeholderTextColor="#999"
           />
         </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Address line 2"
-          value={form.addressLine2}
-          onChangeText={(text) => setForm({ ...form, addressLine2: text })}
-          placeholderTextColor="#000"
-        />
+        <View style={styles.defaultAddressContainer}>
+          <Pressable
+            style={styles.checkboxContainer}
+            onPress={() => handleInputChange('default', form.default === '1' ? '0' : '1')}
+          >
+            <View style={[styles.checkbox, form.default === '1' && styles.checkboxChecked]}>
+              {form.default === '1' && <Ionicons name="checkmark" size={16} color="#fff" />}
+            </View>
+            <Text style={styles.checkboxLabel}>Make this my default address</Text>
+          </Pressable>
+        </View>
       </ScrollView>
 
       <View style={styles.footer}>
@@ -167,11 +260,15 @@ export default function AddEditAddress({ address, onClose }: Props) {
         </Pressable>
 
         <Pressable 
-          style={[styles.saveButton, !isFormValid && styles.saveButtonDisabled]}
+          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
           onPress={handleSave}
-          disabled={!isFormValid}
+          disabled={loading}
         >
-          <Text style={styles.saveButtonText}>SAVE</Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>SAVE</Text>
+          )}
         </Pressable>
       </View>
 
@@ -198,18 +295,13 @@ export default function AddEditAddress({ address, onClose }: Props) {
                   key={city}
                   style={[
                     styles.cityOption,
-                    city === form.city && styles.selectedCity
+                    city === form.city && styles.selectedCityOption
                   ]}
                   onPress={() => handleSelectCity(city)}
                 >
-                  <Text style={[
-                    styles.cityOptionText,
-                    city === form.city && styles.selectedCityText
-                  ]}>
-                    {city}
-                  </Text>
+                  <Text style={styles.cityOptionText}>{city}</Text>
                   {city === form.city && (
-                    <Ionicons name="checkmark" size={24} color="white" />
+                    <Ionicons name="checkmark" size={20} color="black" />
                   )}
                 </Pressable>
               ))}
@@ -223,86 +315,120 @@ export default function AddEditAddress({ address, onClose }: Props) {
 
 const styles = StyleSheet.create({
   container: {
-    height: SCREEN_HEIGHT * 0.9,
+    flex: 1,
     backgroundColor: '#fff',
+    maxHeight: SCREEN_HEIGHT * 0.9,
   },
   header: {
-    padding: 24,
-    paddingBottom: 32,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
   },
   title: {
-    fontSize: 32,
+    fontSize: 20,
     fontWeight: '600',
-    lineHeight: 38,
+  },
+  closeButton: {
+    padding: 4,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 24,
+    padding: 20,
   },
-  input: {
-    height: 48,
-    borderWidth: 1,
-    borderColor: '#000',
-    borderRadius: 4,
-    paddingHorizontal: 16,
+  errorText: {
+    color: '#ff3b30',
     marginBottom: 16,
-    fontSize: 16,
-    color: '#000',
-  },
-  inputText: {
-    fontSize: 16,
-    color: '#000',
-  },
-  placeholder: {
-    color: '#000',
-  },
-  selectInput: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    fontSize: 14,
   },
   row: {
     flexDirection: 'row',
-    gap: 16,
+    justifyContent: 'space-between',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 16,
+    fontSize: 16,
   },
   halfInput: {
-    flex: 1,
+    width: '48%',
   },
-  footer: {
+  selectInput: {
     flexDirection: 'row',
-    padding: 16,
-    paddingHorizontal: 24,
-    gap: 16,
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  cancelButton: {
-    flex: 1,
-    height: 48,
+  inputText: {
+    fontSize: 16,
+  },
+  placeholder: {
+    color: '#999',
+  },
+  defaultAddressContainer: {
+    marginVertical: 8,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
     borderWidth: 1,
     borderColor: '#000',
     borderRadius: 4,
-    alignItems: 'center',
+    marginRight: 8,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#000',
+  },
+  checkboxLabel: {
+    fontSize: 14,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
+  },
+  cancelButton: {
+    flex: 1,
+    alignItems: 'center',
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#000',
+    marginRight: 8,
+    borderRadius: 8,
   },
   cancelButtonText: {
-    color: '#000',
     fontSize: 16,
     fontWeight: '600',
   },
   saveButton: {
     flex: 1,
-    height: 48,
-    backgroundColor: '#000',
-    borderRadius: 4,
     alignItems: 'center',
-    justifyContent: 'center',
+    padding: 14,
+    backgroundColor: '#000',
+    marginLeft: 8,
+    borderRadius: 8,
   },
   saveButtonDisabled: {
-    backgroundColor: '#999',
+    backgroundColor: '#ccc',
   },
   saveButtonText: {
-    color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+    color: '#fff',
   },
   modalOverlay: {
     flex: 1,
@@ -311,10 +437,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   pickerContainer: {
-    width: '90%',
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 12,
     maxHeight: SCREEN_HEIGHT * 0.7,
-    backgroundColor: 'white',
-    borderRadius: 8,
     overflow: 'hidden',
   },
   pickerHeader: {
@@ -323,7 +449,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#E0E0E0',
   },
   pickerTitle: {
     fontSize: 18,
@@ -335,16 +461,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#E0E0E0',
   },
-  selectedCity: {
-    backgroundColor: '#000',
+  selectedCityOption: {
+    backgroundColor: '#F8F8F8',
   },
   cityOptionText: {
     fontSize: 16,
-    color: '#000',
-  },
-  selectedCityText: {
-    color: '#fff',
   },
 }); 

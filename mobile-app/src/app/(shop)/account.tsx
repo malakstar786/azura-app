@@ -1,26 +1,90 @@
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Alert,
+  ScrollView,
+  ActivityIndicator,
+} from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/auth-store';
-import { Ionicons } from '@expo/vector-icons';
+import { makeApiCall, API_ENDPOINTS } from '../../utils/api-config';
 
 export default function AccountScreen() {
-  const { isAuthenticated, signOut } = useAuthStore();
+  const { user, isAuthenticated, logout } = useAuthStore();
+  const [isLoading, setIsLoading] = React.useState(false);
+  const [userProfile, setUserProfile] = React.useState<any>(null);
 
-  const handleLogout = () => {
-    signOut();
+  // Fetch user profile data
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchUserProfile();
+    }
+  }, [isAuthenticated]);
+
+  const fetchUserProfile = async () => {
+    try {
+      setIsLoading(true);
+      const response = await makeApiCall(API_ENDPOINTS.profile, { method: 'GET' });
+      if (response.success === 1 && response.data) {
+        setUserProfile(response.data);
+      }
+    } catch (error: any) {
+      console.error('Error fetching user profile:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Logout',
+          onPress: async () => {
+            setIsLoading(true);
+            try {
+              await logout();
+              router.replace('/');
+            } catch (error) {
+              console.error('Logout error:', error);
+              Alert.alert('Error', 'Failed to logout. Please try again.');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#000" />
+        <Text style={styles.loadingText}>Loading...</Text>
+      </View>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>MY{'\n'}ACCOUNT</Text>
-          <Text style={styles.subtitle}>EASY SHOPPING WITH AZURA</Text>
+          <Text style={styles.title}>MY ACCOUNT</Text>
+          <Text style={styles.subtitle}>Easy shopping with Azura</Text>
           <View style={styles.divider} />
         </View>
 
         <View style={styles.optionsContainer}>
-          <Pressable 
+          <TouchableOpacity 
             style={styles.option}
             onPress={() => router.push('/account/country')}
           >
@@ -28,9 +92,10 @@ export default function AccountScreen() {
               <Ionicons name="globe-outline" size={20} color="black" />
               <Text style={styles.optionText}>COUNTRY / REGION</Text>
             </View>
-          </Pressable>
+            <Ionicons name="chevron-forward" size={20} color="black" />
+          </TouchableOpacity>
 
-          <Pressable 
+          <TouchableOpacity 
             style={styles.option}
             onPress={() => router.push('/account/language')}
           >
@@ -38,39 +103,36 @@ export default function AccountScreen() {
               <Ionicons name="language-outline" size={20} color="black" />
               <Text style={styles.optionText}>LANGUAGE</Text>
             </View>
-          </Pressable>
+            <Ionicons name="chevron-forward" size={20} color="black" />
+          </TouchableOpacity>
         </View>
 
-        <Pressable 
+        <TouchableOpacity 
           style={styles.loginButton}
           onPress={() => router.push('/auth')}
         >
           <Text style={styles.loginButtonText}>LOGIN / REGISTER</Text>
-        </Pressable>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>FOLLOW US</Text>
-          <View style={styles.socialIcons}>
-            <Ionicons name="logo-facebook" size={24} color="black" />
-            <Ionicons name="logo-twitter" size={24} color="black" />
-            <Ionicons name="logo-instagram" size={24} color="black" />
-            <Ionicons name="logo-linkedin" size={24} color="black" />
-          </View>
-        </View>
+        </TouchableOpacity>
       </View>
     );
   }
 
+  const displayName = userProfile ? 
+    `${userProfile.firstname} ${userProfile.lastname}` : 
+    user ? `${user.firstname} ${user.lastname}` : 'User';
+
+  const email = userProfile ? userProfile.email : user?.email || '';
+
   return (
-    <View style={styles.container}>
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>MY{'\n'}ACCOUNT</Text>
-        <Text style={styles.subtitle}>EASY SHOPPING WITH AZURA</Text>
+        <Text style={styles.title}>MY ACCOUNT</Text>
+        <Text style={styles.subtitle}>Easy shopping with Azura</Text>
         <View style={styles.divider} />
       </View>
 
       <View style={styles.optionsContainer}>
-        <Pressable 
+        <TouchableOpacity 
           style={styles.option}
           onPress={() => router.push('/account/country')}
         >
@@ -78,9 +140,10 @@ export default function AccountScreen() {
             <Ionicons name="globe-outline" size={20} color="black" />
             <Text style={styles.optionText}>COUNTRY / REGION</Text>
           </View>
-        </Pressable>
+          <Ionicons name="chevron-forward" size={20} color="black" />
+        </TouchableOpacity>
 
-        <Pressable 
+        <TouchableOpacity 
           style={styles.option}
           onPress={() => router.push('/account/language')}
         >
@@ -88,9 +151,10 @@ export default function AccountScreen() {
             <Ionicons name="language-outline" size={20} color="black" />
             <Text style={styles.optionText}>LANGUAGE</Text>
           </View>
-        </Pressable>
+          <Ionicons name="chevron-forward" size={20} color="black" />
+        </TouchableOpacity>
 
-        <Pressable 
+        <TouchableOpacity 
           style={styles.option}
           onPress={() => router.push('/account/details')}
         >
@@ -98,9 +162,10 @@ export default function AccountScreen() {
             <Ionicons name="person-outline" size={20} color="black" />
             <Text style={styles.optionText}>MY DETAILS</Text>
           </View>
-        </Pressable>
+          <Ionicons name="chevron-forward" size={20} color="black" />
+        </TouchableOpacity>
 
-        <Pressable 
+        <TouchableOpacity 
           style={styles.option}
           onPress={() => router.push('/account/address')}
         >
@@ -108,9 +173,10 @@ export default function AccountScreen() {
             <Ionicons name="location-outline" size={20} color="black" />
             <Text style={styles.optionText}>MY ADDRESS</Text>
           </View>
-        </Pressable>
+          <Ionicons name="chevron-forward" size={20} color="black" />
+        </TouchableOpacity>
 
-        <Pressable 
+        <TouchableOpacity 
           style={styles.option}
           onPress={() => router.push('/orders')}
         >
@@ -118,26 +184,17 @@ export default function AccountScreen() {
             <Ionicons name="receipt-outline" size={20} color="black" />
             <Text style={styles.optionText}>MY ORDERS</Text>
           </View>
-        </Pressable>
+          <Ionicons name="chevron-forward" size={20} color="black" />
+        </TouchableOpacity>
       </View>
 
-      <Pressable 
+      <TouchableOpacity 
         style={styles.logoutButton}
         onPress={handleLogout}
       >
         <Text style={styles.logoutButtonText}>LOGOUT</Text>
-      </Pressable>
-
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>FOLLOW US</Text>
-        <View style={styles.socialIcons}>
-          <Ionicons name="logo-facebook" size={24} color="black" />
-          <Ionicons name="logo-twitter" size={24} color="black" />
-          <Ionicons name="logo-instagram" size={24} color="black" />
-          <Ionicons name="logo-linkedin" size={24} color="black" />
-        </View>
-      </View>
-    </View>
+      </TouchableOpacity>
+    </ScrollView>
   );
 }
 
@@ -145,35 +202,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    padding: 20,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#000',
   },
   header: {
-    marginBottom: 32,
+    padding: 20,
+    paddingTop: 40,
   },
   title: {
-    fontSize: 36,
+    fontSize: 24,
     fontWeight: '600',
-    color: '#000',
-    marginBottom: 8,
-    lineHeight: 40,
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#000',
-    marginBottom: 12,
+    color: '#666',
+    marginBottom: 10,
   },
   divider: {
     height: 1,
-    backgroundColor: '#000',
-    width: '100%',
+    backgroundColor: '#E0E0E0',
+    marginTop: 10,
   },
   optionsContainer: {
-    gap: 24,
+    paddingHorizontal: 20,
   },
   option: {
-    paddingVertical: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: '#E0E0E0',
   },
   optionRow: {
     flexDirection: 'row',
@@ -186,39 +255,30 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     backgroundColor: '#000',
-    paddingVertical: 16,
-    alignItems: 'center',
+    marginHorizontal: 20,
     marginTop: 'auto',
     marginBottom: 32,
-  },
-  logoutButton: {
-    backgroundColor: '#F05454',
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 'auto',
-    marginBottom: 32,
+    borderRadius: 8,
   },
   loginButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
   },
+  logoutButton: {
+    backgroundColor: '#F05454',
+    marginHorizontal: 20,
+    marginTop: 32,
+    marginBottom: 32,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderRadius: 8,
+  },
   logoutButtonText: {
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
-  },
-  footer: {
-    alignItems: 'center',
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 16,
-    fontWeight: '500',
-  },
-  socialIcons: {
-    flexDirection: 'row',
-    gap: 32,
   },
 }); 

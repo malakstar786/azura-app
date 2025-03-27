@@ -1,26 +1,17 @@
 import { create } from 'zustand';
-import { createJSONStorage, persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Product } from '../assets/types/product';
-import { ImageSourcePropType } from 'react-native';
+import { CartItem } from '../utils/api-config';
+import { Toast } from 'react-native-toast-notifications';
 
-export type CartItemType = {
-  id: number;
-  title: string;
-  price: number;
-  heroImage: ImageSourcePropType;
-  quantity: number;
-};
-
-export interface CartStore {
-  items: CartItemType[];
+interface CartStore {
+  items: CartItem[];
   total: number;
-  addItem: (item: CartItemType) => void;
-  removeItem: (itemId: number) => void;
-  updateQuantity: (itemId: number, quantity: number) => void;
-  incrementItem: (itemId: number) => void;
-  decrementItem: (itemId: number) => void;
+  addItem: (item: CartItem) => void;
+  removeItem: (productId: string) => void;
   clearCart: () => void;
+  incrementQuantity: (productId: string) => Promise<void>;
+  decrementQuantity: (productId: string) => void;
   getTotalPrice: () => number;
 }
 
@@ -29,84 +20,95 @@ export const useCartStore = create<CartStore>()(
     (set, get) => ({
       items: [],
       total: 0,
+      getTotalPrice: () => {
+        const state = get();
+        return state.items.reduce((sum, item) => 
+          sum + (parseFloat(item.price) * item.quantity), 0
+        );
+      },
       addItem: (item) => {
-        const { items } = get();
-        const existingItem = items.find((i) => i.id === item.id);
-
-        if (existingItem) {
-          set((state) => ({
-            items: state.items.map((i) =>
-              i.id === item.id ? { ...i, quantity: i.quantity + 1 } : i
-            ),
-            total: state.total + item.price,
-          }));
-        } else {
-          set((state) => ({
-            items: [...state.items, { ...item, quantity: 1 }],
-            total: state.total + item.price,
-          }));
-        }
+        set((state) => {
+          const existingItem = state.items.find((i) => i.product_id === item.product_id);
+          if (existingItem) {
+            const newItems = state.items.map((i) =>
+              i.product_id === item.product_id
+                ? { ...i, quantity: i.quantity + 1 }
+                : i
+            );
+            return {
+              items: newItems,
+              total: get().getTotalPrice(),
+            };
+          }
+          const newItems = [...state.items, item];
+          return {
+            items: newItems,
+            total: get().getTotalPrice(),
+          };
+        });
       },
-      removeItem: (itemId) => {
-        const { items } = get();
-        const item = items.find((i) => i.id === itemId);
-        if (!item) return;
-
-        set((state) => ({
-          items: state.items.filter((i) => i.id !== itemId),
-          total: state.total - item.price * item.quantity,
-        }));
-      },
-      updateQuantity: (itemId, quantity) => {
-        const { items } = get();
-        const item = items.find((i) => i.id === itemId);
-        if (!item) return;
-
-        const oldTotal = item.price * item.quantity;
-        const newTotal = item.price * quantity;
-
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.id === itemId ? { ...i, quantity } : i
-          ),
-          total: state.total - oldTotal + newTotal,
-        }));
-      },
-      incrementItem: (itemId) => {
-        const { items } = get();
-        const item = items.find((i) => i.id === itemId);
-        if (!item) return;
-
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i
-          ),
-          total: state.total + item.price,
-        }));
-      },
-      decrementItem: (itemId) => {
-        const { items } = get();
-        const item = items.find((i) => i.id === itemId);
-        if (!item) return;
-
-        if (item.quantity === 1) {
-          get().removeItem(itemId);
-          return;
-        }
-
-        set((state) => ({
-          items: state.items.map((i) =>
-            i.id === itemId ? { ...i, quantity: i.quantity - 1 } : i
-          ),
-          total: state.total - item.price,
-        }));
+      removeItem: (productId) => {
+        set((state) => {
+          const newItems = state.items.filter((i) => i.product_id !== productId);
+          return {
+            items: newItems,
+            total: get().getTotalPrice(),
+          };
+        });
       },
       clearCart: () => {
         set({ items: [], total: 0 });
       },
-      getTotalPrice: () => {
-        const { items } = get();
-        return items.reduce((total, item) => total + item.price * item.quantity, 0);
+      incrementQuantity: async (productId) => {
+        try {
+          // Fetch current product quantity from API
+          const response = await fetch(`https://new.azurakwt.com/index.php?route=extension/mstore/product|detail&productId=${productId}`);
+          const data = await response.json();
+          
+          if (data.success === 1 && data.data) {
+            const availableQuantity = data.data.quantity;
+            
+            set((state) => {
+              const item = state.items.find((i) => i.product_id === productId);
+              if (!item) return state;
+              
+              if (item.quantity >= availableQuantity) {
+                Toast.show(`Only ${availableQuantity} items available.`, {
+                  type: 'error',
+                  placement: 'bottom',
+                });
+                return state;
+              }
+              
+              const newItems = state.items.map((i) =>
+                i.product_id === productId
+                  ? { ...i, quantity: i.quantity + 1 }
+                  : i
+              );
+              return {
+                items: newItems,
+                total: get().getTotalPrice(),
+              };
+            });
+          }
+        } catch (error) {
+          console.error('Error checking product quantity:', error);
+        }
+      },
+      decrementQuantity: (productId) => {
+        set((state) => {
+          const item = state.items.find((i) => i.product_id === productId);
+          if (!item || item.quantity <= 1) return state;
+          const newItems = state.items.map((i) =>
+            i.product_id === productId
+              ? { ...i, quantity: i.quantity - 1 }
+              : i
+          );
+          return {
+            items: newItems,
+            total: get().getTotalPrice(),
+          };
+        });
       },
     }),
     {
