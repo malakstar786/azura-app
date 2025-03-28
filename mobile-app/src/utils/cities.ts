@@ -1,0 +1,35 @@
+// Kuwait Cities
+export const KUWAIT_CITIES = [
+  'Kuwait City',
+  'Hawalli',
+  'Salmiya',
+  'Fahaheel',
+  'Al Ahmadi',
+  'Sabah Al Salem',
+  'Al Mangaf',
+  'Jahra',
+  'Al Farwaniyah',
+  'Al Fintas',
+  'Salwa',
+  'Rumaithiya',
+  'Abdullah Al-Salem',
+  'Bayan',
+  'Mishref',
+  'Abu Halifa',
+  'Al Rai',
+  'Ardiya',
+  'Khaitan',
+  'Abraq Khaitan',
+  'Jleeb Al-Shuyoukh',
+  'Sulaibiya',
+  'Al Wafra',
+  'Egaila',
+  'Mahboula',
+  'Mubarak Al-Kabeer',
+  'Al Qurain',
+  'Sabah Al-Ahmad',
+  'Al Zour',
+  'Abu Fatira'
+];
+
+export const KUWAIT_COUNTRY_ID = '114'; 

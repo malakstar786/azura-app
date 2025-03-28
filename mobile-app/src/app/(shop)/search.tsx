@@ -71,7 +71,7 @@ export default function SearchScreen() {
 
       try {
         const response = await makeApiCall<ProductsResponse>(
-          '/product', 
+          API_ENDPOINTS.allProducts,
           { method: 'GET' }
         );
 
@@ -80,7 +80,7 @@ export default function SearchScreen() {
           setProductsLoaded(true);
         } else {
           console.error('API error:', response.error);
-          setError(response.error || 'Failed to fetch products');
+          setError(Array.isArray(response.error) ? response.error[0] : 'Failed to fetch products');
         }
       } catch (err: any) {
         console.error('Error fetching products:', err);

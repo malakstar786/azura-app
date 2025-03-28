@@ -1,85 +1,42 @@
-import { API_BASE_URL, getHeaders, ApiRequestConfig, ApiResponse, ApiError, NetworkErrorCodes } from './api-config';
+import { makeApiCall, API_ENDPOINTS } from './api-config';
 import { Product } from '../types/api';
-
-// Generic API call function
-export const makeApiCall = async <T>(
-  endpoint: string,
-  config: ApiRequestConfig = {}
-): Promise<ApiResponse<T>> => {
-  const { method = 'GET', params, data } = config;
-  let url = `${API_BASE_URL}${endpoint}`;
-
-  // Add query parameters if present
-  if (params) {
-    const queryParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      queryParams.append(key, String(value));
-    });
-    url += `&${queryParams.toString()}`;
-  }
-
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-
-    const response = await fetch(url, {
-      method,
-      headers: getHeaders(),
-      body: data ? JSON.stringify(data) : undefined,
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeoutId);
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw {
-        message: errorData.error || `HTTP error! status: ${response.status}`,
-        code: NetworkErrorCodes.SERVER_ERROR,
-        response: {
-          status: response.status,
-          data: errorData,
-        },
-      };
-    }
-
-    const responseData = await response.json();
-    return responseData;
-  } catch (error: any) {
-    if (error.name === 'AbortError') {
-      throw {
-        message: 'Request timeout',
-        code: NetworkErrorCodes.TIMEOUT,
-      };
-    }
-
-    throw {
-      message: error.message || 'Network request failed',
-      code: error.code || NetworkErrorCodes.NO_CONNECTION,
-      response: error.response,
-    };
-  }
-};
 
 // Public endpoints
 export const publicApi = {
   getHomeServiceBlock: () => 
-    makeApiCall<any>('/home|serviceBlock'),
+    makeApiCall<any>(API_ENDPOINTS.homeServiceBlock),
   
   getHomeSliderBlock: () => 
-    makeApiCall<any>('/home|sliderblock'),
+    makeApiCall<any>(API_ENDPOINTS.homeSliderBlock),
   
-  getFeaturesBlock: (blockNumber: number) => 
-    makeApiCall<any>(`/home|featuresblock${blockNumber}`),
+  getFeaturesBlock: (blockNumber: number) => {
+    // Use specific endpoints based on block number
+    switch (blockNumber) {
+      case 1:
+        return makeApiCall<any>(API_ENDPOINTS.featuresBlock1);
+      case 2:
+        return makeApiCall<any>(API_ENDPOINTS.featuresBlock2);
+      case 3:
+        return makeApiCall<any>(API_ENDPOINTS.featuresBlock3);
+      case 4:
+        return makeApiCall<any>(API_ENDPOINTS.featuresBlock4);
+      case 5:
+        return makeApiCall<any>(API_ENDPOINTS.featuresBlock5);
+      case 6:
+        return makeApiCall<any>(API_ENDPOINTS.featuresBlock6);
+      default:
+        throw new Error(`Invalid features block number: ${blockNumber}`);
+    }
+  },
   
   getMainMenu: () => 
-    makeApiCall<any>('/menu'),
+    makeApiCall<any>(API_ENDPOINTS.menu),
   
   getAllProducts: () => 
-    makeApiCall<any>('/product'),
+    makeApiCall<any>(API_ENDPOINTS.allProducts),
   
   getProductsByCategory: (categoryId: string, language?: string) => 
-    makeApiCall<Product[]>('/product', {
+    makeApiCall<Product[]>(API_ENDPOINTS.allProducts, {
       params: {
         category: categoryId,
         ...(language && { language }),
@@ -97,7 +54,7 @@ export const publicApi = {
     }),
   
   getProductDetail: (productId: string) => 
-    makeApiCall<any>('/product|detail', {
+    makeApiCall<any>(API_ENDPOINTS.productDetail, {
       params: { productId },
     }),
 };

@@ -1,8 +1,28 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { makeApiCall, API_ENDPOINTS, NetworkErrorCodes } from '../utils/api-config';
+import { makeApiCall, API_ENDPOINTS, setOCSESSID, getCurrentOCSESSID, NetworkErrorCodes, API_BASE_URL, getOrCreateOCSESSID } from '../utils/api-config';
 import { Alert } from 'react-native';
+
+// Constants imported from api-config
+const OCSESSID_STORAGE_KEY = '@azura_ocsessid';
+
+export interface Address {
+  address_id: string;
+  firstname: string;
+  lastname: string;
+  company: string;
+  address_1: string;
+  address_2: string;
+  postcode: string;
+  city: string;
+  zone_id: string;
+  zone: string;
+  country_id: string;
+  country: string;
+  custom_field: Record<string, any>;
+  default: boolean;
+}
 
 export interface User {
   customer_id: string;
@@ -15,14 +35,18 @@ export interface User {
 
 export interface AuthState {
   user: User | null;
+  addresses: Address[];
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  logout: () => Promise<void>;
+  clearUser: () => void;
   signup: (userData: Omit<User, 'customer_id'> & { password: string }) => Promise<void>;
   updateUser: (userData: Partial<User>) => Promise<void>;
-  forgotPassword: (email: string) => Promise<void>;
+  fetchAddresses: () => Promise<Address[]>;
+  addAddress: (address: Omit<Address, 'address_id'>) => Promise<void>;
+  updateAddress: (address: Address) => Promise<void>;
+  deleteAddress: (addressId: string) => Promise<void>;
   clearError: () => void;
 }
 
@@ -49,6 +73,7 @@ export const useAuthStore = create<AuthState>()(
   persist(
     (set, get) => ({
       user: null,
+      addresses: [],
       isAuthenticated: false,
       isLoading: false,
       error: null,
@@ -59,14 +84,15 @@ export const useAuthStore = create<AuthState>()(
 
           console.log('Attempting login with:', { email });
 
+          // Clear previous stored OCSESSID to ensure a clean login
+          // This can help resolve issues with invalid sessions
+          await AsyncStorage.removeItem(OCSESSID_STORAGE_KEY);
+
           const response = await makeApiCall(API_ENDPOINTS.login, {
             method: 'POST',
             data: { 
               email, 
-              password,
-              // Add required parameters from API docs
-              redirect: '',
-              agree: '1'
+              password
             }
           });
 
@@ -89,23 +115,13 @@ export const useAuthStore = create<AuthState>()(
               error: null
             });
 
-            // Fetch user profile after successful login
+            // After successful login, fetch user addresses
             try {
-              const profileResponse = await makeApiCall(API_ENDPOINTS.profile, {
-                method: 'GET'
-              });
-
-              if (profileResponse.success === 1 && profileResponse.data) {
-                set({
-                  user: {
-                    ...userData,
-                    ...profileResponse.data
-                  }
-                });
-              }
-            } catch (profileError) {
-              console.error('Error fetching profile after login:', profileError);
-              // Don't fail the login if profile fetch fails
+              const addresses = await get().fetchAddresses();
+              set({ addresses });
+            } catch (addressError) {
+              console.error('Failed to fetch addresses after login:', addressError);
+              // Continue even if address fetch fails
             }
           } else {
             throw new Error(
@@ -114,9 +130,20 @@ export const useAuthStore = create<AuthState>()(
           }
         } catch (error: any) {
           console.error('Login error:', error);
+          
+          // Get detailed error information for debugging
+          const errorMessage = error.message || 'Login failed. Please try again.';
+          const errorResponse = error.response?.data?.error || [];
+          
+          console.log('Login error details:', {
+            message: errorMessage,
+            response: error.response,
+            errorData: errorResponse
+          });
+          
           set({ 
             isLoading: false, 
-            error: error.message || 'Login failed. Please try again.',
+            error: errorMessage,
             isAuthenticated: false,
             user: null
           });
@@ -124,32 +151,13 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      logout: async () => {
-        try {
-          set({ isLoading: true });
-          
-          // Attempt to call logout API endpoint, but don't wait for it
-          // This ensures we log out locally even if the API call fails
-          makeApiCall(API_ENDPOINTS.logout, { method: 'POST' })
-            .catch(err => console.error('Logout API error:', err));
-          
-          // Always clear local state
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null
-          });
-        } catch (error) {
-          console.error('Logout error:', error);
-          // Still clear local state even if there's an error
-          set({
-            user: null,
-            isAuthenticated: false,
-            isLoading: false,
-            error: null
-          });
-        }
+      clearUser: () => {
+        set({ 
+          user: null,
+          addresses: [],
+          isAuthenticated: false,
+          error: null
+        });
       },
 
       signup: async (userData) => {
@@ -165,10 +173,12 @@ export const useAuthStore = create<AuthState>()(
           const response = await makeApiCall(API_ENDPOINTS.register, {
             method: 'POST',
             data: {
-              ...userData,
-              // Add required parameters from API docs
-              agree: '1',
-              newsletter: '0'
+              firstname: userData.firstname,
+              lastname: userData.lastname,
+              email: userData.email,
+              telephone: userData.telephone,
+              password: userData.password,
+              agree: '1'
             }
           });
 
@@ -182,11 +192,6 @@ export const useAuthStore = create<AuthState>()(
               console.error('Auto-login after signup failed:', loginError);
               // Still consider signup successful even if auto-login fails
               set({
-                user: {
-                  customer_id: '0',
-                  ...userData,
-                },
-                isAuthenticated: true,
                 isLoading: false,
                 error: null
               });
@@ -219,7 +224,12 @@ export const useAuthStore = create<AuthState>()(
 
           const response = await makeApiCall(API_ENDPOINTS.updateProfile, {
             method: 'POST',
-            data: { ...userData }
+            data: { 
+              firstname: userData.firstname || currentUser.firstname,
+              lastname: userData.lastname || currentUser.lastname,
+              email: userData.email || currentUser.email,
+              telephone: userData.telephone || currentUser.telephone
+            }
           });
 
           if (response.success === 1) {
@@ -241,31 +251,204 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      forgotPassword: async (email) => {
-        try {
-          set({ isLoading: true, error: null });
+      fetchAddresses: async () => {
+        set({ isLoading: true, error: null });
 
-          const response = await makeApiCall(API_ENDPOINTS.forgotPassword, {
+        try {
+          // Must be authenticated
+          const { isAuthenticated } = useAuthStore.getState();
+          if (!isAuthenticated) {
+            set({ isLoading: false });
+            return [];
+          }
+
+          // For listing addresses, we don't send address_id at all
+          // This matches what the OpenCart backend expects
+          const response = await makeApiCall(API_ENDPOINTS.editAddress, {
             method: 'POST',
-            data: { email }
+            data: new FormData() // Empty form data, no address_id
           });
 
+          console.log('Addresses fetch response:', response);
+
+          if (response.success === 1 && Array.isArray(response.data)) {
+            // We got an array of addresses from the server
+            return response.data;
+          } else {
+            // Probably an empty array or an error
+            console.warn('Unexpected address response:', response);
+            return [];
+          }
+        } catch (error: any) {
+          console.error('Error fetching addresses:', error);
+          set({ isLoading: false, error: error.message || 'Failed to fetch addresses' });
+          return [];
+        } finally {
+          set({ isLoading: false });
+        }
+      },
+
+      addAddress: async (address) => {
+        try {
+          set({ isLoading: true, error: null });
+          
+          // Format data as form-data as specified in the documentation
+          const formData = new FormData();
+          formData.append('firstname', address.firstname);
+          formData.append('lastname', address.lastname);
+          formData.append('country_id', '114'); // Kuwait
+          formData.append('zone_id', '0'); // Default zone for Kuwait
+          formData.append('city', address.city);
+          
+          // Handle custom fields for block, street, etc.
+          if (address.custom_field) {
+            formData.append('custom_field[30]', address.custom_field['30'] || ''); // Block
+            formData.append('custom_field[31]', address.custom_field['31'] || ''); // Street
+            formData.append('custom_field[32]', address.custom_field['32'] || ''); // House/Building
+            formData.append('custom_field[33]', address.custom_field['33'] || ''); // Apartment
+          }
+          
+          formData.append('address_2', address.address_2 || '');
+          formData.append('default', address.default ? '1' : '0');
+          
+          console.log('Adding address with data:', {
+            firstname: address.firstname,
+            lastname: address.lastname,
+            country_id: '114',
+            city: address.city,
+            custom_field: address.custom_field,
+            address_2: address.address_2 || '',
+            default: address.default ? '1' : '0'
+          });
+          
+          const response = await makeApiCall(API_ENDPOINTS.editAddress, {
+            method: 'POST',
+            data: formData
+          });
+          
+          console.log('Add address response:', response);
+          
           if (response.success === 1) {
+            // Refresh the addresses list after adding
+            await get().fetchAddresses();
             set({ isLoading: false });
-            Alert.alert(
-              'Password Reset',
-              'Password reset instructions have been sent to your email'
-            );
+            Alert.alert('Success', 'Address added successfully');
           } else {
             throw new Error(
-              Array.isArray(response.error) ? response.error[0] : 'Failed to reset password'
+              Array.isArray(response.error) ? response.error[0] : 'Failed to add address'
             );
           }
         } catch (error: any) {
+          console.error('Add address error:', error);
           set({ 
             isLoading: false, 
-            error: error.message || 'Failed to reset password' 
+            error: error.message || 'Failed to add address' 
           });
+          Alert.alert('Error', error.message || 'Failed to add address');
+          throw error;
+        }
+      },
+
+      updateAddress: async (address) => {
+        try {
+          set({ isLoading: true, error: null });
+          
+          // Use account|edit_address endpoint with POST method as specified in the documentation
+          // Format data as form-data as specified in the documentation
+          const formData = new FormData();
+          
+          // Add address_id for the address to update
+          formData.append('address_id', address.address_id);
+          formData.append('firstname', address.firstname);
+          formData.append('lastname', address.lastname);
+          formData.append('country_id', address.country_id);
+          formData.append('zone_id', address.zone_id);
+          formData.append('city', address.city);
+          
+          // Handle custom fields for block, street, etc.
+          if (address.custom_field) {
+            if (address.custom_field['30']) formData.append('custom_field[30]', address.custom_field['30']);
+            if (address.custom_field['31']) formData.append('custom_field[31]', address.custom_field['31']);
+            if (address.custom_field['32']) formData.append('custom_field[32]', address.custom_field['32']);
+            if (address.custom_field['33']) formData.append('custom_field[33]', address.custom_field['33']);
+          }
+          
+          formData.append('address_2', address.address_2 || '');
+          formData.append('default', address.default ? '1' : '0');
+          
+          const response = await makeApiCall(API_ENDPOINTS.editAddress, {
+            method: 'POST',
+            data: formData
+          });
+          
+          if (response.success === 1) {
+            // Address updated successfully
+            set({ isLoading: false });
+          } else {
+            throw new Error(
+              Array.isArray(response.error) ? response.error[0] : 'Failed to update address'
+            );
+          }
+        } catch (error: any) {
+          console.error('Update address error:', error);
+          set({ 
+            isLoading: false, 
+            error: error.message || 'Failed to update address' 
+          });
+          throw error;
+        }
+      },
+
+      deleteAddress: async (addressId) => {
+        try {
+          set({ isLoading: true, error: null });
+          
+          // Check if user is authenticated
+          if (!get().isAuthenticated || !get().user) {
+            throw new Error('You must be logged in to delete an address');
+          }
+          
+          // Use account|edit_address endpoint with POST method to delete an address
+          const formData = new FormData();
+          formData.append('address_id', addressId);
+          formData.append('remove', '1'); // Flag to indicate deletion
+          
+          // Include user information as required
+          formData.append('firstname', get().user?.firstname || '');
+          formData.append('lastname', get().user?.lastname || '');
+          
+          console.log('Deleting address:', {
+            address_id: addressId,
+            remove: '1'
+          });
+          
+          const response = await makeApiCall(API_ENDPOINTS.editAddress, {
+            method: 'POST',
+            data: formData
+          });
+          
+          console.log('Delete address response:', response);
+          
+          if (response.success === 1) {
+            // Address deleted successfully
+            // Update the local addresses list by removing the deleted address
+            const updatedAddresses = get().addresses.filter(
+              address => address.address_id !== addressId
+            );
+            set({ addresses: updatedAddresses, isLoading: false });
+            Alert.alert('Success', 'Address deleted successfully');
+          } else {
+            throw new Error(
+              Array.isArray(response.error) ? response.error[0] : 'Failed to delete address'
+            );
+          }
+        } catch (error: any) {
+          console.error('Delete address error:', error);
+          set({ 
+            isLoading: false, 
+            error: error.message || 'Failed to delete address' 
+          });
+          Alert.alert('Error', error.message || 'Failed to delete address');
           throw error;
         }
       },
@@ -275,10 +458,6 @@ export const useAuthStore = create<AuthState>()(
     {
       name: 'auth-storage',
       storage: createJSONStorage(() => AsyncStorage),
-      partialize: (state) => ({ 
-        user: state.user, 
-        isAuthenticated: state.isAuthenticated 
-      }),
     }
   )
 ); 

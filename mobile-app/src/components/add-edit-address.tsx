@@ -1,472 +1,375 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Pressable,
-  TextInput,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-  Dimensions,
-  Modal,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useAddressStore, Address } from '../store/address-store';
-import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
+import React, { useState } from 'react';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { useAuthStore, Address as AuthAddress } from '../store/auth-store';
+import { useAddressStore } from '../store/address-store';
+import { KUWAIT_CITIES, KUWAIT_COUNTRY_ID } from '../utils/cities';
 
-type Props = {
-  address?: Address | null;
+interface AddEditAddressProps {
   onClose: () => void;
-};
+  address?: any;
+  isEdit?: boolean;
+}
 
-const SCREEN_HEIGHT = Dimensions.get('window').height;
-
-// List of hardcoded Kuwait cities that users can select from
-const CITIES = [
-  'Kuwait City',
-  'Hawalli',
-  'Salmiya',
-  'Ahmadi',
-  'Jahra',
-  'Farwaniya',
-  'Fahaheel',
-  'Mangaf',
-  'Mubarak Al-Kabeer',
-  'Sabah Al-Salem',
-];
-
-// Kuwait country code for the API
-const KUWAIT_COUNTRY_ID = '114';
-const KUWAIT_ZONE_ID = '1785'; // Default Kuwait zone ID
-
-export default function AddEditAddress({ address, onClose }: Props) {
-  const { addAddress, updateAddress } = useAddressStore();
-  const [showCityPicker, setShowCityPicker] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [formError, setFormError] = useState<string | null>(null);
+const AddEditAddress: React.FC<AddEditAddressProps> = ({ onClose, address, isEdit = false }) => {
+  const authStore = useAuthStore();
+  const addressStore = useAddressStore();
+  const [isLoading, setIsLoading] = useState(false);
   
-  // Form state that matches the API expected fields
-  const [form, setForm] = useState({
-    firstname: address?.firstname || '',
-    lastname: address?.lastname || '',
-    telephone: address?.telephone || '',
-    address_1: address?.address_1 || '',
-    address_2: address?.address_2 || '',
-    city: address?.city || '',
+  // Initialize form with address data or defaults
+  const [formData, setFormData] = useState({
+    firstname: address?.firstname || authStore.user?.firstname || '',
+    lastname: address?.lastname || authStore.user?.lastname || '',
+    country_id: KUWAIT_COUNTRY_ID, // Kuwait
+    zone_id: '0', // Default zone for Kuwait
+    city: address?.city || 'Kuwait City', 
     custom_field: {
       '30': address?.custom_field?.['30'] || '', // Block
       '31': address?.custom_field?.['31'] || '', // Street
       '32': address?.custom_field?.['32'] || '', // House/Building
       '33': address?.custom_field?.['33'] || '', // Apartment
     },
-    country_id: KUWAIT_COUNTRY_ID,
-    zone_id: KUWAIT_ZONE_ID,
-    default: address?.default || '0',
+    address_1: address?.address_1 || '',
+    address_2: address?.address_2 || '',
+    default: address?.default || false,
   });
 
-  const handleInputChange = (field: string, value: string) => {
-    setForm(prev => ({ ...prev, [field]: value }));
-    setFormError(null);
-  };
-
-  const handleCustomFieldChange = (field: string, value: string) => {
-    setForm(prev => ({
-      ...prev,
-      custom_field: {
-        ...prev.custom_field,
-        [field]: value
-      }
-    }));
-    setFormError(null);
-  };
-
-  const handleSelectCity = (city: string) => {
-    setForm(prev => ({ ...prev, city }));
-    setShowCityPicker(false);
-  };
+  const [showCityPicker, setShowCityPicker] = useState(false);
 
   const validateForm = () => {
-    if (!form.firstname.trim()) return 'First name is required';
-    if (!form.lastname.trim()) return 'Last name is required';
-    if (!form.telephone.trim()) return 'Mobile number is required';
-    if (!form.address_1.trim()) return 'Address is required';
-    if (!form.city.trim()) return 'City is required';
-    if (!form.custom_field['30'].trim()) return 'Block is required';
-    if (!form.custom_field['31'].trim()) return 'Street is required';
-    if (!form.custom_field['32'].trim()) return 'House/Building number is required';
-    return null;
+    // Required fields validation
+    if (!formData.firstname) {
+      Alert.alert('Error', 'Please enter your first name');
+      return false;
+    }
+    if (!formData.lastname) {
+      Alert.alert('Error', 'Please enter your last name');
+      return false;
+    }
+    if (!formData.city) {
+      Alert.alert('Error', 'Please select a city');
+      return false;
+    }
+    if (!formData.custom_field['30']) {
+      Alert.alert('Error', 'Please enter your block number');
+      return false;
+    }
+    if (!formData.custom_field['31']) {
+      Alert.alert('Error', 'Please enter your street');
+      return false;
+    }
+    if (!formData.custom_field['32']) {
+      Alert.alert('Error', 'Please enter your building number');
+      return false;
+    }
+    
+    return true;
   };
 
-  const handleSave = async () => {
-    const error = validateForm();
-    if (error) {
-      setFormError(error);
-      return;
-    }
-
-    setLoading(true);
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+    
     try {
-      if (address?.address_id) {
+      setIsLoading(true);
+      
+      // Prepare address data for submission - convert to the AuthAddress format
+      const addressData: Omit<AuthAddress, 'address_id'> = {
+        firstname: formData.firstname,
+        lastname: formData.lastname,
+        company: '',
+        address_1: formData.address_1 || `Block ${formData.custom_field['30']}, Street ${formData.custom_field['31']}, Building ${formData.custom_field['32']}`,
+        address_2: formData.address_2 || '',
+        postcode: '',
+        city: formData.city,
+        zone_id: formData.zone_id,
+        zone: '',
+        country_id: formData.country_id,
+        country: 'Kuwait',
+        custom_field: formData.custom_field,
+        default: formData.default
+      };
+      
+      console.log('Submitting address data:', addressData);
+      
+      if (isEdit && address?.address_id) {
         // Update existing address
-        await updateAddress(address.address_id, form);
+        await authStore.updateAddress({
+          ...addressData,
+          address_id: address.address_id,
+        });
+        Alert.alert('Success', 'Address updated successfully');
       } else {
         // Add new address
-        await addAddress(form);
+        await authStore.addAddress(addressData);
+        Alert.alert('Success', 'Address added successfully');
       }
+      
+      // Refresh both stores to ensure consistency
+      await addressStore.fetchAddresses();
+      
       onClose();
     } catch (error: any) {
-      setFormError(error.message || 'Failed to save address');
+      console.error('Failed to save address:', error);
       Alert.alert('Error', error.message || 'Failed to save address');
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>
-          {address ? 'EDIT' : 'ADD'} ADDRESS
-        </Text>
-        <Pressable onPress={onClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="#000" />
-        </Pressable>
+    <ScrollView style={styles.container}>
+      <Text style={styles.header}>{isEdit ? 'EDIT ADDRESS' : 'ADD ADDRESS'}</Text>
+      
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>First Name *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter first name"
+          value={formData.firstname}
+          onChangeText={(text) => setFormData({ ...formData, firstname: text })}
+        />
+      </View>
+      
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>Last Name *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter last name"
+          value={formData.lastname}
+          onChangeText={(text) => setFormData({ ...formData, lastname: text })}
+        />
       </View>
 
-      <ScrollView style={styles.content}>
-        {formError && (
-          <Text style={styles.errorText}>{formError}</Text>
-        )}
-        
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="First Name"
-            value={form.firstname}
-            onChangeText={(text) => handleInputChange('firstname', text)}
-            placeholderTextColor="#999"
-          />
-
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Last Name"
-            value={form.lastname}
-            onChangeText={(text) => handleInputChange('lastname', text)}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <TextInput
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>City *</Text>
+        <TouchableOpacity 
           style={styles.input}
-          placeholder="Mobile Number"
-          value={form.telephone}
-          onChangeText={(text) => handleInputChange('telephone', text)}
-          keyboardType="phone-pad"
-          placeholderTextColor="#999"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Address Line 1"
-          value={form.address_1}
-          onChangeText={(text) => handleInputChange('address_1', text)}
-          placeholderTextColor="#999"
-        />
-
-        <TextInput
-          style={styles.input}
-          placeholder="Address Line 2 (Optional)"
-          value={form.address_2}
-          onChangeText={(text) => handleInputChange('address_2', text)}
-          placeholderTextColor="#999"
-        />
-
-        <View style={[styles.input, styles.selectInput]}>
-          <Text style={styles.inputText}>Kuwait</Text>
-          <Ionicons name="chevron-down" size={20} color="#999" />
-        </View>
-
-        <Pressable 
-          style={[styles.input, styles.selectInput]}
           onPress={() => setShowCityPicker(true)}
         >
-          <Text style={[styles.inputText, !form.city && styles.placeholder]}>
-            {form.city || 'City'}
-          </Text>
-          <Ionicons name="chevron-down" size={20} color="black" />
-        </Pressable>
-
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Block"
-            value={form.custom_field['30']}
-            onChangeText={(text) => handleCustomFieldChange('30', text)}
-            placeholderTextColor="#999"
-          />
-
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Street"
-            value={form.custom_field['31']}
-            onChangeText={(text) => handleCustomFieldChange('31', text)}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="House/Building No."
-            value={form.custom_field['32']}
-            onChangeText={(text) => handleCustomFieldChange('32', text)}
-            placeholderTextColor="#999"
-          />
-
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Apartment No."
-            value={form.custom_field['33']}
-            onChangeText={(text) => handleCustomFieldChange('33', text)}
-            placeholderTextColor="#999"
-          />
-        </View>
-
-        <View style={styles.defaultAddressContainer}>
-          <Pressable
-            style={styles.checkboxContainer}
-            onPress={() => handleInputChange('default', form.default === '1' ? '0' : '1')}
-          >
-            <View style={[styles.checkbox, form.default === '1' && styles.checkboxChecked]}>
-              {form.default === '1' && <Ionicons name="checkmark" size={16} color="#fff" />}
-            </View>
-            <Text style={styles.checkboxLabel}>Make this my default address</Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Pressable 
-          style={styles.cancelButton}
-          onPress={onClose}
-        >
-          <Text style={styles.cancelButtonText}>CANCEL</Text>
-        </Pressable>
-
-        <Pressable 
-          style={[styles.saveButton, loading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator size="small" color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>SAVE</Text>
-          )}
-        </Pressable>
+          <Text>{formData.city || 'Select City'}</Text>
+        </TouchableOpacity>
       </View>
 
-      <Modal
-        visible={showCityPicker}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setShowCityPicker(false)}
+      {showCityPicker && (
+        <View style={styles.cityPicker}>
+          <ScrollView>
+            {KUWAIT_CITIES.map((city) => (
+              <TouchableOpacity
+                key={city}
+                style={styles.cityItem}
+                onPress={() => {
+                  setFormData({ ...formData, city });
+                  setShowCityPicker(false);
+                }}
+              >
+                <Text>{city}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => setShowCityPicker(false)}
+          >
+            <Text>Close</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>Block *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter block number"
+          value={formData.custom_field['30']}
+          onChangeText={(text) => setFormData({
+            ...formData,
+            custom_field: { ...formData.custom_field, '30': text }
+          })}
+        />
+      </View>
+
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>Street *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter street name/number"
+          value={formData.custom_field['31']}
+          onChangeText={(text) => setFormData({
+            ...formData,
+            custom_field: { ...formData.custom_field, '31': text }
+          })}
+        />
+      </View>
+
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>House/Building Number *</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter house/building number"
+          value={formData.custom_field['32']}
+          onChangeText={(text) => setFormData({
+            ...formData,
+            custom_field: { ...formData.custom_field, '32': text }
+          })}
+        />
+      </View>
+
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>Apartment Number</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter apartment number (optional)"
+          value={formData.custom_field['33']}
+          onChangeText={(text) => setFormData({
+            ...formData,
+            custom_field: { ...formData.custom_field, '33': text }
+          })}
+        />
+      </View>
+
+      <View style={styles.fieldContainer}>
+        <Text style={styles.label}>Additional Details</Text>
+        <TextInput
+          style={styles.input}
+          placeholder="Enter additional address details (optional)"
+          value={formData.address_2}
+          onChangeText={(text) => setFormData({ ...formData, address_2: text })}
+        />
+      </View>
+
+      <TouchableOpacity
+        style={styles.checkbox}
+        onPress={() => setFormData({ ...formData, default: !formData.default })}
       >
-        <Pressable 
-          style={styles.modalOverlay}
-          onPress={() => setShowCityPicker(false)}
+        <View style={[styles.checkboxBox, formData.default && styles.checkboxChecked]} />
+        <Text style={styles.checkboxLabel}>Make this my default address</Text>
+      </TouchableOpacity>
+
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity 
+          style={styles.cancelButton} 
+          onPress={onClose}
+          disabled={isLoading}
         >
-          <View style={styles.pickerContainer}>
-            <View style={styles.pickerHeader}>
-              <Text style={styles.pickerTitle}>Select City</Text>
-              <Pressable onPress={() => setShowCityPicker(false)}>
-                <Ionicons name="close" size={24} color="black" />
-              </Pressable>
-            </View>
-            <ScrollView>
-              {CITIES.map((city) => (
-                <Pressable
-                  key={city}
-                  style={[
-                    styles.cityOption,
-                    city === form.city && styles.selectedCityOption
-                  ]}
-                  onPress={() => handleSelectCity(city)}
-                >
-                  <Text style={styles.cityOptionText}>{city}</Text>
-                  {city === form.city && (
-                    <Ionicons name="checkmark" size={20} color="black" />
-                  )}
-                </Pressable>
-              ))}
-            </ScrollView>
-          </View>
-        </Pressable>
-      </Modal>
-    </KeyboardAvoidingView>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.saveButton} 
+          onPress={handleSubmit}
+          disabled={isLoading}
+        >
+          <Text style={styles.saveButtonText}>
+            {isLoading ? 'Saving...' : 'Save Address'}
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    maxHeight: SCREEN_HEIGHT * 0.9,
+    padding: 20,
+    backgroundColor: 'white',
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  title: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginBottom: 20,
   },
-  closeButton: {
-    padding: 4,
+  fieldContainer: {
+    marginBottom: 15,
   },
-  content: {
-    flex: 1,
-    padding: 20,
-  },
-  errorText: {
-    color: '#ff3b30',
-    marginBottom: 16,
+  label: {
     fontSize: 14,
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    marginBottom: 5,
+    color: '#555',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 16,
-    fontSize: 16,
+    borderColor: '#ddd',
+    padding: 15,
+    borderRadius: 5,
   },
-  halfInput: {
-    width: '48%',
+  cityPicker: {
+    position: 'absolute',
+    top: '20%',
+    left: 20,
+    right: 20,
+    maxHeight: '60%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    zIndex: 1000,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
-  selectInput: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  cityItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  closeButton: {
+    padding: 15,
     alignItems: 'center',
-  },
-  inputText: {
-    fontSize: 16,
-  },
-  placeholder: {
-    color: '#999',
-  },
-  defaultAddressContainer: {
-    marginVertical: 8,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    marginTop: 10,
+    borderRadius: 5,
   },
   checkbox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 10,
+  },
+  checkboxBox: {
     width: 20,
     height: 20,
     borderWidth: 1,
     borderColor: '#000',
-    borderRadius: 4,
-    marginRight: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
+    marginRight: 10,
   },
   checkboxChecked: {
     backgroundColor: '#000',
   },
   checkboxLabel: {
-    fontSize: 14,
+    fontSize: 16,
   },
-  footer: {
+  buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
+    marginTop: 20,
+    marginBottom: 30,
   },
   cancelButton: {
     flex: 1,
-    alignItems: 'center',
-    padding: 14,
+    padding: 15,
+    backgroundColor: 'white',
     borderWidth: 1,
     borderColor: '#000',
-    marginRight: 8,
-    borderRadius: 8,
+    marginRight: 10,
+    borderRadius: 5,
+    alignItems: 'center',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#000',
+    fontWeight: '500',
   },
   saveButton: {
     flex: 1,
-    alignItems: 'center',
-    padding: 14,
+    padding: 15,
     backgroundColor: '#000',
-    marginLeft: 8,
-    borderRadius: 8,
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#ccc',
+    marginLeft: 10,
+    borderRadius: 5,
+    alignItems: 'center',
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    color: 'white',
+    fontWeight: '500',
   },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pickerContainer: {
-    width: '80%',
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    maxHeight: SCREEN_HEIGHT * 0.7,
-    overflow: 'hidden',
-  },
-  pickerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  pickerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  cityOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  selectedCityOption: {
-    backgroundColor: '#F8F8F8',
-  },
-  cityOptionText: {
-    fontSize: 16,
-  },
-}); 
+});
+
+export default AddEditAddress; 

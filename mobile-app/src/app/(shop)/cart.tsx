@@ -86,16 +86,36 @@ const CartItemRow = ({
 }: {
   item: CartItem;
   onRemove: (id: string) => void;
-  onUpdateQuantity: (id: string, quantity: number) => void;
+  onUpdateQuantity: (id: string, quantity: number) => Promise<void>;
   onIncrement: (id: string) => Promise<void>;
   onDecrement: (id: string) => void;
 }) => {
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const quantities = Array.from({ length: 10 }, (_, i) => i + 1);
 
   const handleIncrement = async () => {
-    await onIncrement(item.product_id);
+    setIsUpdating(true);
+    try {
+      await onIncrement(item.product_id);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleDecrement = () => {
+    onDecrement(item.product_id);
+  };
+
+  const handleQuantitySelect = async (qty: number) => {
+    setIsUpdating(true);
+    try {
+      await onUpdateQuantity(item.product_id, qty);
+    } finally {
+      setIsUpdating(false);
+      setShowQuantityModal(false);
+    }
   };
 
   return (
@@ -109,23 +129,26 @@ const CartItemRow = ({
         <Text style={styles.itemTitle}>{item.name.toUpperCase()}</Text>
         <View style={styles.quantityContainer}>
           <TouchableOpacity 
-            onPress={() => onDecrement(item.product_id)}
-            style={styles.quantityButton}
+            onPress={handleDecrement}
+            style={[styles.quantityButton, isUpdating && styles.disabledButton]}
+            disabled={isUpdating || item.quantity <= 1}
           >
-            <Text style={styles.quantityButtonText}>-</Text>
+            <Text style={[styles.quantityButtonText, isUpdating && styles.disabledText]}>-</Text>
           </TouchableOpacity>
           <TouchableOpacity 
-            style={styles.quantitySelector}
-            onPress={() => setShowQuantityModal(true)}
+            style={[styles.quantitySelector, isUpdating && styles.disabledButton]}
+            onPress={() => !isUpdating && setShowQuantityModal(true)}
+            disabled={isUpdating}
           >
-            <Text style={styles.itemQuantity}>QTY: {item.quantity}</Text>
-            <Ionicons name="chevron-down" size={16} color="#000" />
+            <Text style={[styles.itemQuantity, isUpdating && styles.disabledText]}>QTY: {item.quantity}</Text>
+            <Ionicons name="chevron-down" size={16} color={isUpdating ? "#999" : "#000"} />
           </TouchableOpacity>
           <TouchableOpacity 
             onPress={handleIncrement}
-            style={styles.quantityButton}
+            style={[styles.quantityButton, isUpdating && styles.disabledButton]}
+            disabled={isUpdating}
           >
-            <Text style={styles.quantityButtonText}>+</Text>
+            <Text style={[styles.quantityButtonText, isUpdating && styles.disabledText]}>+</Text>
           </TouchableOpacity>
         </View>
         <Text style={styles.itemPrice}>
@@ -169,10 +192,7 @@ const CartItemRow = ({
                     styles.quantityOption,
                     qty === item.quantity && styles.selectedQuantity,
                   ]}
-                  onPress={() => {
-                    onUpdateQuantity(item.product_id, qty);
-                    setShowQuantityModal(false);
-                  }}
+                  onPress={() => handleQuantitySelect(qty)}
                 >
                   <Text style={[
                     styles.quantityOptionText,
@@ -197,22 +217,15 @@ export default function CartScreen() {
     incrementQuantity,
     decrementQuantity,
     getTotalPrice,
+    updateQuantity,
   } = useCartStore();
   const { isAuthenticated } = useAuthStore();
   const { addresses, selectedAddress } = useAddressStore();
   const [editingAddress, setEditingAddress] = useState<Address | null>(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
 
-  const updateQuantity = (productId: string, quantity: number) => {
-    // First decrement to 1
-    while (items.find(item => item.product_id === productId)?.quantity || 0 > 1) {
-      decrementQuantity(productId);
-    }
-    
-    // Then increment to desired quantity
-    for (let i = 1; i < quantity; i++) {
-      incrementQuantity(productId);
-    }
+  const handleUpdateQuantity = async (productId: string, quantity: number) => {
+    await updateQuantity(productId, quantity);
   };
 
   const handleCheckout = async () => {
@@ -302,7 +315,7 @@ export default function CartScreen() {
           <CartItemRow
             item={item}
             onRemove={removeItem}
-            onUpdateQuantity={updateQuantity}
+            onUpdateQuantity={handleUpdateQuantity}
             onIncrement={incrementQuantity}
             onDecrement={decrementQuantity}
           />
@@ -624,5 +637,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 14,
     fontWeight: '600',
+  },
+  disabledButton: {
+    opacity: 0.5,
+  },
+  disabledText: {
+    color: '#999',
   },
 }); 

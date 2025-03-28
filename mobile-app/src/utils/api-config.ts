@@ -1,79 +1,195 @@
+import axios from 'axios';
 import * as Crypto from 'expo-crypto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-// API Configuration
-export const API_BASE_URL = 'https://new.azurakwt.com/index.php?route=extension/mstore';
+// Core API configuration
+export const API_BASE_URL = 'https://new.azurakwt.com';
+
+// API Endpoints
+export const API_ENDPOINTS = {
+  login: '/index.php?route=extension/mstore/account|login',
+  register: '/index.php?route=extension/mstore/account|register',
+  updateProfile: '/index.php?route=extension/mstore/account|edit',
+  editAddress: '/index.php?route=extension/mstore/account|edit_address',
+  homeServiceBlock: '/index.php?route=extension/mstore/home|serviceBlock',
+  homeSliderBlock: '/index.php?route=extension/mstore/home|sliderblock',
+  homeFeaturesBlock1: '/index.php?route=extension/mstore/home|featuresblock1',
+  homeFeaturesBlock2: '/index.php?route=extension/mstore/home|featuresblock2',
+  homeFeaturesBlock3: '/index.php?route=extension/mstore/home|featuresBlock3',
+  homeFeaturesBlock4: '/index.php?route=extension/mstore/home|featuresBlock4',
+  homeFeaturesBlock5: '/index.php?route=extension/mstore/home|featuresBlock5',
+  homeFeaturesBlock6: '/index.php?route=extension/mstore/home|featuresBlock6',
+  mainMenu: '/index.php?route=extension/mstore/menu',
+  allProducts: '/index.php?route=extension/mstore/product',
+  productDetail: '/index.php?route=extension/mstore/product|detail',
+};
+
+// Network error codes
+export enum NetworkErrorCodes {
+  TIMEOUT = 'TIMEOUT',
+  NO_CONNECTION = 'NO_CONNECTION',
+  SERVER_ERROR = 'SERVER_ERROR'
+}
 
 // OCSESSID Management
 const OCSESSID_STORAGE_KEY = '@azura_ocsessid';
-let ocsessid: string | null = null;
 
-// Function to get stored OCSESSID or generate a new one
-export const getOrCreateOCSESSID = async (): Promise<string> => {
+// Generate a random OCSESSID
+export const generateRandomOCSESSID = async (): Promise<string> => {
   try {
-    // Try to get existing OCSESSID from storage
-    const storedOCSESSID = await AsyncStorage.getItem(OCSESSID_STORAGE_KEY);
-    
-    if (storedOCSESSID) {
-      ocsessid = storedOCSESSID;
-      return storedOCSESSID;
-    }
-
-    // If no stored OCSESSID, generate a new one
-    const randomBytes = await Crypto.getRandomBytesAsync(16);
-    const newOCSESSID = Array.from(randomBytes)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-    
-    // Store the new OCSESSID
-    await AsyncStorage.setItem(OCSESSID_STORAGE_KEY, newOCSESSID);
-    ocsessid = newOCSESSID;
-    
-    return newOCSESSID;
+    // Generate a random UUID using expo-crypto
+    const randomId = await Crypto.randomUUID();
+    return randomId.replace(/-/g, '');
   } catch (error) {
-    console.error('Error managing OCSESSID:', error);
-    // If there's any error, generate a new OCSESSID without storing it
-    const randomBytes = await Crypto.getRandomBytesAsync(16);
-    const newOCSESSID = Array.from(randomBytes)
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-    ocsessid = newOCSESSID;
-    return newOCSESSID;
+    // Fallback to a simpler method if expo-crypto fails
+    return Math.random().toString(36).substring(2, 15) + 
+           Math.random().toString(36).substring(2, 15);
   }
 };
 
-// Function to get current OCSESSID without generating a new one
+// Store OCSESSID in AsyncStorage
+export const setOCSESSID = async (ocsessid: string): Promise<void> => {
+  try {
+    await AsyncStorage.setItem(OCSESSID_STORAGE_KEY, ocsessid);
+    console.log(`Stored OCSESSID: ${ocsessid}`);
+  } catch (error) {
+    console.error('Failed to store OCSESSID:', error);
+  }
+};
+
+// Get current OCSESSID from AsyncStorage
 export const getCurrentOCSESSID = async (): Promise<string | null> => {
   try {
-    if (ocsessid) return ocsessid;
-    return await AsyncStorage.getItem(OCSESSID_STORAGE_KEY);
+    const storedOcsessid = await AsyncStorage.getItem(OCSESSID_STORAGE_KEY);
+    return storedOcsessid;
   } catch (error) {
-    console.error('Error getting OCSESSID:', error);
+    console.error('Failed to get OCSESSID:', error);
     return null;
   }
 };
 
-// Function to set a new OCSESSID
-export const setOCSESSID = async (newOcsessid: string): Promise<void> => {
-  try {
-    await AsyncStorage.setItem(OCSESSID_STORAGE_KEY, newOcsessid);
-    ocsessid = newOcsessid;
-  } catch (error) {
-    console.error('Error setting OCSESSID:', error);
+// Get existing OCSESSID or generate a new one
+export const getOrCreateOCSESSID = async (): Promise<string> => {
+  const existingOCSESSID = await getCurrentOCSESSID();
+  
+  if (existingOCSESSID) {
+    return existingOCSESSID;
   }
+  
+  const newOCSESSID = await generateRandomOCSESSID();
+  await setOCSESSID(newOCSESSID);
+  return newOCSESSID;
 };
 
-// API Headers
-export const getHeaders = () => {
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+// Function to check if an error is a network error
+export const isNetworkError = (error: any): boolean => {
+  return error && (
+    error.code === NetworkErrorCodes.NO_CONNECTION ||
+    error.code === NetworkErrorCodes.TIMEOUT ||
+    error.code === 'ERR_NETWORK' ||
+    error.code === 'ECONNABORTED'
+  );
+};
 
-  if (ocsessid) {
-    headers['OCSESSID'] = ocsessid;
+// Function to make API calls
+export const makeApiCall = async <T = any>(
+  endpoint: string,
+  options: { 
+    method?: string; 
+    data?: any; 
+    headers?: Record<string, string>; 
+    params?: Record<string, string> 
+  } = {}
+): Promise<ApiResponse<T>> => {
+  try {
+    // Ensure we have a valid OCSESSID
+    const currentOcsessid = await getOrCreateOCSESSID();
+    
+    // Set default method to GET if not provided
+    const method = options.method || 'GET';
+    
+    // Prepare URL with query params if needed
+    let url = `${API_BASE_URL}${endpoint}`;
+    if (options.params && Object.keys(options.params).length > 0) {
+      const queryParams = new URLSearchParams(options.params).toString();
+      url = `${url}${url.includes('?') ? '&' : '?'}${queryParams}`;
+    }
+    
+    // Set up headers with OCSESSID cookie
+    const headers = {
+      ...(options.headers || {}),
+      Cookie: `OCSESSID=${currentOcsessid}`
+    };
+    
+    // Log request details
+    console.log(`Making ${method} request to ${url}`);
+    if (options.data) {
+      console.log('Request data:', 
+        options.data instanceof FormData 
+          ? 'FormData (not printable)' 
+          : options.data
+      );
+    }
+    
+    // Make the request
+    let response;
+    if (method.toUpperCase() === 'GET') {
+      response = await axios.get(url, { headers });
+    } else {
+      response = await axios.post(url, options.data, { headers });
+    }
+    
+    // Check if response is HTML instead of JSON
+    if (typeof response.data === 'string' && 
+        (response.data.includes('<html>') || response.data.includes('<b>Warning</b>'))) {
+      console.error('Server returned HTML instead of JSON:', response.data);
+      throw new Error('Server returned an error. Please try again later.');
+    }
+    
+    // Log response details
+    console.log(`Response from ${url}:`, response.data);
+    
+    // Handle response
+    return response.data;
+  } catch (error: any) {
+    console.error(`API call error:`, error);
+    
+    // Check if the error is an Axios error with a response
+    if (error.response) {
+      // Log the response for debugging
+      console.error('Error response:', error.response.data);
+      
+      // If the server sent back HTML instead of JSON, provide a clearer error
+      if (typeof error.response.data === 'string' && 
+          (error.response.data.includes('<html>') || error.response.data.includes('<b>Warning</b>'))) {
+        console.error('Server returned HTML instead of JSON:', error.response.data);
+        throw new Error('Server returned an error. Please try again later.');
+      }
+      
+      // If the server provided an error message
+      if (error.response.data && error.response.data.error) {
+        if (Array.isArray(error.response.data.error)) {
+          throw new Error(error.response.data.error[0] || 'Unknown error');
+        } else {
+          throw new Error(error.response.data.error || 'Unknown error');
+        }
+      }
+    }
+    
+    // Network errors
+    if (error.code === 'ECONNABORTED') {
+      error.code = NetworkErrorCodes.TIMEOUT;
+      throw error;
+    }
+    
+    if (error.code === 'ERR_NETWORK') {
+      error.code = NetworkErrorCodes.NO_CONNECTION;
+      throw error;
+    }
+    
+    // Re-throw the error
+    throw error;
   }
-
-  return headers;
 };
 
 // API Request Configuration
@@ -87,7 +203,7 @@ export interface ApiRequestConfig {
 export interface ApiResponse<T = any> {
   success: number;
   data?: T;
-  error?: string;
+  error?: string | string[];
 }
 
 // API Error Type
@@ -99,200 +215,6 @@ export interface ApiError {
     data: any;
   };
 }
-
-// Network error codes
-export const NetworkErrorCodes = {
-  NO_CONNECTION: 'NO_CONNECTION',
-  TIMEOUT: 'TIMEOUT',
-  SERVER_ERROR: 'SERVER_ERROR',
-} as const;
-
-// API Service
-const MAX_RETRIES = 3;
-const RETRY_DELAY = 1000; // 1 second
-const TIMEOUT_DURATION = 10000; // 10 seconds
-
-const wait = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
-const isNetworkError = (error: any): boolean => {
-  return (
-    !error.response || 
-    error.message?.includes('Network') || 
-    error.message?.includes('Failed to fetch') ||
-    error.name === 'TypeError'
-  );
-};
-
-// Create a cacheable version of API calls for endpoints that rarely change
-const apiCache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
-
-export const makeApiCall = async <T = any>(
-  endpoint: string,
-  config: ApiRequestConfig = { method: 'GET' },
-  retryCount = 0,
-  useCache = false
-): Promise<ApiResponse<T>> => {
-  try {
-    const { method = 'GET', params, data } = config;
-    
-    // Construct the full URL with the correct format
-    let url = `${API_BASE_URL}${endpoint}`;
-    
-    // Replace | with / in the endpoint if present
-    url = url.replace(/\|/g, '/');
-
-    // Create a cache key if caching is enabled
-    const cacheKey = useCache ? `${url}:${JSON.stringify(params)}:${JSON.stringify(data)}` : null;
-    
-    // Check cache if it's a GET request and caching is enabled
-    if (cacheKey && method === 'GET') {
-      const cachedData = apiCache.get(cacheKey);
-      if (cachedData && (Date.now() - cachedData.timestamp) < CACHE_DURATION) {
-        return cachedData.data;
-      }
-    }
-
-    // Ensure we have a valid OCSESSID
-    const currentOcsessid = await getOrCreateOCSESSID();
-    
-    // Prepare headers with proper format
-    const headers = {
-      'Content-Type': 'application/json',
-      'Cookie': `OCSESSID=${currentOcsessid}`,
-      'OCSESSID': currentOcsessid
-    };
-
-    // Set up timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_DURATION);
-
-    try {
-      console.log('Making API call:', {
-        url,
-        method,
-        headers,
-        body: data,
-      });
-
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: data ? JSON.stringify(data) : undefined,
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      // Log response status and headers for debugging
-      console.log('API Response:', {
-        status: response.status,
-        statusText: response.statusText,
-        headers: Object.fromEntries(response.headers.entries()),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({ message: `HTTP error! status: ${response.status}` }));
-        throw {
-          message: errorData.error?.[0] || errorData.message || `HTTP error! status: ${response.status}`,
-          code: 'SERVER_ERROR',
-          response: {
-            status: response.status,
-            data: errorData,
-          },
-        };
-      }
-
-      const responseData = await response.json();
-      
-      // Store in cache if it's a GET request and caching is enabled
-      if (cacheKey && method === 'GET') {
-        apiCache.set(cacheKey, { data: responseData, timestamp: Date.now() });
-      }
-      
-      return responseData;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  } catch (error: any) {
-    console.error('API call error:', error);
-
-    // Enhanced error logging
-    if (error.response) {
-      console.log('Error Response:', {
-        status: error.response.status,
-        data: error.response.data,
-        headers: error.response.headers,
-      });
-    }
-
-    // Handle timeout
-    if (error.name === 'AbortError') {
-      throw {
-        message: 'Request timeout',
-        code: NetworkErrorCodes.TIMEOUT,
-      };
-    }
-
-    // Handle network errors with retry
-    if (isNetworkError(error) && retryCount < MAX_RETRIES) {
-      console.log(`Retrying API call (${retryCount + 1}/${MAX_RETRIES})...`);
-      await wait(RETRY_DELAY * Math.pow(2, retryCount)); // Exponential backoff
-      return makeApiCall(endpoint, config, retryCount + 1, useCache);
-    }
-
-    throw {
-      message: error.message || 'Network request failed',
-      code: isNetworkError(error) ? NetworkErrorCodes.NO_CONNECTION : NetworkErrorCodes.SERVER_ERROR,
-      response: error.response,
-    };
-  }
-};
-
-// API Endpoints
-export const API_ENDPOINTS = {
-  // Public Endpoints
-  homeServiceBlock: '/home|serviceBlock',
-  featuresBlock: (blockNumber: number) => `/home|featuresblock${blockNumber}`,
-  productDetail: '/product|detail',
-  categoryProducts: '/product|category',
-  searchProducts: '/product|search',
-
-  // Authentication Endpoints
-  login: '/account/login',
-  register: '/account/register',
-  logout: '/account/logout',
-  forgotPassword: '/account/forgotten',
-  resetPassword: '/account/reset',
-
-  // User Account Endpoints
-  profile: '/account/profile',
-  updateProfile: '/account/edit',
-  addresses: '/account/address',
-  addAddress: '/account/address/add',
-  editAddress: '/account/edit_address',
-  deleteAddress: '/account/address/delete',
-  orders: '/account|orders',
-  orderDetail: '/account|order',
-  wishlist: '/account|wishlist',
-  addToWishlist: '/account|wishlist',
-  removeFromWishlist: '/account|wishlist',
-
-  // Cart Endpoints
-  cart: '/cart/getCart',
-  addToCart: '/cart/add',
-  updateCart: '/cart/update',
-  removeFromCart: '/cart/remove',
-  clearCart: '/cart/clear',
-
-  // Checkout Endpoints
-  checkout: '/checkout|checkout',
-  confirmOrder: '/checkout|confirm',
-  paymentMethods: '/checkout|paymentMethods',
-  shippingMethods: '/checkout|shippingMethods',
-  applyCoupon: '/checkout|applyCoupon',
-  removeCoupon: '/checkout|removeCoupon',
-} as const;
 
 // API Response Types
 export interface Product {

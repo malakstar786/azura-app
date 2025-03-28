@@ -13,6 +13,7 @@ interface CartStore {
   incrementQuantity: (productId: string) => Promise<void>;
   decrementQuantity: (productId: string) => void;
   getTotalPrice: () => number;
+  updateQuantity: (productId: string, newQuantity: number) => Promise<void>;
 }
 
 export const useCartStore = create<CartStore>()(
@@ -93,12 +94,17 @@ export const useCartStore = create<CartStore>()(
           }
         } catch (error) {
           console.error('Error checking product quantity:', error);
+          Toast.show('Failed to update quantity. Please try again.', {
+            type: 'error',
+            placement: 'bottom',
+          });
         }
       },
       decrementQuantity: (productId) => {
         set((state) => {
           const item = state.items.find((i) => i.product_id === productId);
           if (!item || item.quantity <= 1) return state;
+          
           const newItems = state.items.map((i) =>
             i.product_id === productId
               ? { ...i, quantity: i.quantity - 1 }
@@ -109,6 +115,46 @@ export const useCartStore = create<CartStore>()(
             total: get().getTotalPrice(),
           };
         });
+      },
+      updateQuantity: async (productId: string, newQuantity: number) => {
+        try {
+          // Fetch current product quantity from API
+          const response = await fetch(`https://new.azurakwt.com/index.php?route=extension/mstore/product|detail&productId=${productId}`);
+          const data = await response.json();
+          
+          if (data.success === 1 && data.data) {
+            const availableQuantity = data.data.quantity;
+            
+            if (newQuantity > availableQuantity) {
+              Toast.show(`Only ${availableQuantity} items available.`, {
+                type: 'error',
+                placement: 'bottom',
+              });
+              return;
+            }
+            
+            set((state) => {
+              const item = state.items.find((i) => i.product_id === productId);
+              if (!item) return state;
+              
+              const newItems = state.items.map((i) =>
+                i.product_id === productId
+                  ? { ...i, quantity: newQuantity }
+                  : i
+              );
+              return {
+                items: newItems,
+                total: get().getTotalPrice(),
+              };
+            });
+          }
+        } catch (error) {
+          console.error('Error updating quantity:', error);
+          Toast.show('Failed to update quantity. Please try again.', {
+            type: 'error',
+            placement: 'bottom',
+          });
+        }
       },
     }),
     {

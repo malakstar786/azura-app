@@ -13,28 +13,44 @@ import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { useAuthStore } from '../../store/auth-store';
 import { makeApiCall, API_ENDPOINTS } from '../../utils/api-config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function AccountScreen() {
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, isAuthenticated, clearUser } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
   const [userProfile, setUserProfile] = React.useState<any>(null);
 
   // Fetch user profile data
   useEffect(() => {
-    if (isAuthenticated) {
+    if (isAuthenticated && user) {
       fetchUserProfile();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
   const fetchUserProfile = async () => {
+    if (!user) return;
+    
     try {
       setIsLoading(true);
-      const response = await makeApiCall(API_ENDPOINTS.profile, { method: 'GET' });
+      // Use the account|edit endpoint with POST method as documented in instructions.md
+      const response = await makeApiCall(API_ENDPOINTS.updateProfile, {
+        method: 'POST',
+        data: {
+          firstname: user.firstname,
+          lastname: user.lastname,
+          email: user.email,
+          telephone: user.telephone || '',
+        }
+      });
+      
       if (response.success === 1 && response.data) {
         setUserProfile(response.data);
+      } else {
+        throw new Error(Array.isArray(response.error) ? response.error[0] : 'Failed to fetch profile');
       }
     } catch (error: any) {
       console.error('Error fetching user profile:', error);
+      Alert.alert('Error', 'Failed to fetch user profile. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -51,7 +67,10 @@ export default function AccountScreen() {
           onPress: async () => {
             setIsLoading(true);
             try {
-              await logout();
+              // Since there's no logout API endpoint in instructions.md,
+              // we'll just clear the local user data
+              await clearUser();
+              await AsyncStorage.removeItem('@azura_user');
               router.replace('/');
             } catch (error) {
               console.error('Logout error:', error);

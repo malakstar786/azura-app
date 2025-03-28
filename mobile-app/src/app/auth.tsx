@@ -15,7 +15,6 @@ import {
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../store/auth-store';
 import { Ionicons } from '@expo/vector-icons';
-import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
 
 export default function Auth() {
     const { login, signup, isAuthenticated } = useAuthStore();
@@ -28,9 +27,13 @@ export default function Auth() {
     // Redirect if already authenticated
     useEffect(() => {
       if (isAuthenticated) {
-        router.replace('/');
+        if (redirect === 'checkout') {
+          router.replace('/checkout');
+        } else {
+          router.replace('/');
+        }
       }
-    }, [isAuthenticated]);
+    }, [isAuthenticated, redirect]);
 
     // Login form state
     const [loginForm, setLoginForm] = useState({
@@ -40,9 +43,10 @@ export default function Auth() {
 
     // Signup form state
     const [signupForm, setSignupForm] = useState({
-      fullName: '',
+      firstname: '',
+      lastname: '',
       email: '',
-      mobile: '',
+      telephone: '',
       password: '',
     });
 
@@ -62,46 +66,47 @@ export default function Auth() {
 
     const handleLogin = async () => {
       if (!loginForm.email || !loginForm.password) {
-        setErrors({ email: 'Please fill in all fields', password: 'Please fill in all fields' });
+        setErrors({ 
+          email: !loginForm.email ? 'Email is required' : '',
+          password: !loginForm.password ? 'Password is required' : ''
+        });
         return;
       }
-
+      
       setIsLoading(true);
       setErrors({});
-
+      
       try {
-        const response = await makeApiCall(API_ENDPOINTS.login, {
-          method: 'POST',
-          data: {
-            email: loginForm.email,
-            password: loginForm.password
-          }
-        });
-
-        if (response.success === 1) {
-          await login(loginForm.email, loginForm.password);
-          // If we came from checkout, go back there
-          if (redirect === 'checkout') {
-            router.replace('/checkout');
-          } else {
-            router.back();
-          }
-        } else {
-          setErrors({ email: response.error?.[0] || 'Login failed', password: response.error?.[0] || 'Login failed' });
+        console.log('Login attempt with:', { email: loginForm.email });
+        await login(loginForm.email, loginForm.password);
+        
+        // Router will handle redirection in the useEffect hook
+      } catch (error: any) {
+        console.error('Login failed:', error);
+        let errorMessage = error.message || 'An unexpected error occurred';
+        
+        // Handle specific error codes
+        if (error.code === 'SERVER_ERROR' && error.response?.status === 404) {
+          errorMessage = 'The login service is currently unavailable. Please try again later.';
         }
-      } catch (err: any) {
-        setErrors({ email: err.message || 'An error occurred', password: err.message || 'An error occurred' });
+        
+        setErrors({ 
+          email: errorMessage, 
+          password: errorMessage  
+        });
+        Alert.alert('Login Failed', errorMessage);
       } finally {
         setIsLoading(false);
       }
     };
 
     const handleSignup = async () => {
-      if (!signupForm.fullName || !signupForm.email || !signupForm.mobile || !signupForm.password) {
+      if (!signupForm.firstname || !signupForm.lastname || !signupForm.email || !signupForm.telephone || !signupForm.password) {
         setErrors({ 
-          fullName: !signupForm.fullName ? 'Full name is required' : '',
+          firstname: !signupForm.firstname ? 'First name is required' : '',
+          lastname: !signupForm.lastname ? 'Last name is required' : '',
           email: !signupForm.email ? 'Email is required' : '',
-          mobile: !signupForm.mobile ? 'Mobile number is required' : '',
+          telephone: !signupForm.telephone ? 'Mobile number is required' : '',
           password: !signupForm.password ? 'Password is required' : ''
         });
         return;
@@ -111,31 +116,18 @@ export default function Auth() {
       setErrors({});
       
       try {
-        // Extract first and last name from full name
-        const nameParts = signupForm.fullName.split(' ');
-        const firstname = nameParts[0] || '';
-        const lastname = nameParts.slice(1).join(' ') || '';
-        
         await signup({
-          firstname,
-          lastname,
+          firstname: signupForm.firstname,
+          lastname: signupForm.lastname,
           email: signupForm.email,
-          telephone: signupForm.mobile,
+          telephone: signupForm.telephone,
           password: signupForm.password,
         });
         
-        // If we came from checkout, go back there
-        if (redirect === 'checkout') {
-          router.replace('/checkout');
-        } else {
-          router.back();
-        }
+        // Router will handle redirection in the useEffect hook
       } catch (error: any) {
         setErrors({ 
-          fullName: error.message || 'An error occurred during signup',
-          email: error.message || '', 
-          mobile: '', 
-          password: ''  
+          email: error.message || 'An error occurred during signup'
         });
         Alert.alert('Signup Failed', error.message || 'An unexpected error occurred');
       } finally {
@@ -150,10 +142,6 @@ export default function Auth() {
         
         <View style={styles.divider} />
         
-        <Text style={styles.instructionText}>
-          SIGN IN WITH YOUR REGISTERED EMAIL AND PASSWORD
-        </Text>
-        
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -163,6 +151,7 @@ export default function Auth() {
             keyboardType="email-address"
             autoCapitalize="none"
             placeholderTextColor="#999"
+            editable={!isLoading}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
         </View>
@@ -175,16 +164,16 @@ export default function Auth() {
             onChangeText={text => handleLoginInputChange('password', text)}
             secureTextEntry
             placeholderTextColor="#999"
+            editable={!isLoading}
           />
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
         </View>
         
-        <TouchableOpacity 
-          style={styles.forgotPassword}
-          onPress={() => router.push('/forgot-password')}
-        >
-          <Text style={styles.forgotPasswordText}>FORGOT PASSWORD?</Text>
-        </TouchableOpacity>
+        <Link href="/forgot-password" asChild>
+          <TouchableOpacity style={styles.forgotPasswordButton}>
+            <Text style={styles.forgotPasswordText}>FORGOT PASSWORD?</Text>
+          </TouchableOpacity>
+        </Link>
         
         <TouchableOpacity
           style={styles.submitButton}
@@ -202,7 +191,7 @@ export default function Auth() {
           style={styles.switchModeButton}
           onPress={() => setIsLogin(false)}
         >
-          <Text style={styles.switchModeText}>CREATE ACCOUNT?</Text>
+          <Text style={styles.switchModeText}>NEW USER? CREATE ACCOUNT</Text>
         </TouchableOpacity>
       </View>
     );
@@ -221,12 +210,25 @@ export default function Auth() {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="FULL NAME"
-            value={signupForm.fullName}
-            onChangeText={text => handleSignupInputChange('fullName', text)}
+            placeholder="FIRST NAME"
+            value={signupForm.firstname}
+            onChangeText={text => handleSignupInputChange('firstname', text)}
             placeholderTextColor="#999"
+            editable={!isLoading}
           />
-          {errors.fullName && <Text style={styles.errorText}>{errors.fullName}</Text>}
+          {errors.firstname && <Text style={styles.errorText}>{errors.firstname}</Text>}
+        </View>
+        
+        <View style={styles.inputContainer}>
+          <TextInput
+            style={styles.input}
+            placeholder="LAST NAME"
+            value={signupForm.lastname}
+            onChangeText={text => handleSignupInputChange('lastname', text)}
+            placeholderTextColor="#999"
+            editable={!isLoading}
+          />
+          {errors.lastname && <Text style={styles.errorText}>{errors.lastname}</Text>}
         </View>
         
         <View style={styles.inputContainer}>
@@ -238,6 +240,7 @@ export default function Auth() {
             keyboardType="email-address"
             autoCapitalize="none"
             placeholderTextColor="#999"
+            editable={!isLoading}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
         </View>
@@ -245,13 +248,14 @@ export default function Auth() {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="MOBILE"
-            value={signupForm.mobile}
-            onChangeText={text => handleSignupInputChange('mobile', text)}
+            placeholder="MOBILE NUMBER"
+            value={signupForm.telephone}
+            onChangeText={text => handleSignupInputChange('telephone', text)}
             keyboardType="phone-pad"
             placeholderTextColor="#999"
+            editable={!isLoading}
           />
-          {errors.mobile && <Text style={styles.errorText}>{errors.mobile}</Text>}
+          {errors.telephone && <Text style={styles.errorText}>{errors.telephone}</Text>}
         </View>
         
         <View style={styles.inputContainer}>
@@ -262,6 +266,7 @@ export default function Auth() {
             onChangeText={text => handleSignupInputChange('password', text)}
             secureTextEntry
             placeholderTextColor="#999"
+            editable={!isLoading}
           />
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
         </View>
@@ -282,7 +287,7 @@ export default function Auth() {
           style={styles.switchModeButton}
           onPress={() => setIsLogin(true)}
         >
-          <Text style={styles.switchModeText}>ALREADY HAVE ACCOUNT LOGIN?</Text>
+          <Text style={styles.switchModeText}>ALREADY HAVE AN ACCOUNT? LOGIN</Text>
         </TouchableOpacity>
       </View>
     );
@@ -295,103 +300,101 @@ export default function Auth() {
       >
         <Stack.Screen
           options={{
-            headerShown: true,
             title: '',
             headerShadowVisible: false,
             headerLeft: () => (
-              <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color="#000" />
+              <TouchableOpacity onPress={() => router.back()}>
+                <Ionicons name="arrow-back" size={24} color="black" />
               </TouchableOpacity>
             ),
           }}
         />
+        
         <ScrollView
-          contentContainerStyle={styles.scrollContainer}
+          contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
           {isLogin ? renderLoginForm() : renderSignupForm()}
         </ScrollView>
       </KeyboardAvoidingView>
     );
-  }
-  
-  const styles = StyleSheet.create({
+}
+
+const { width } = Dimensions.get('window');
+
+const styles = StyleSheet.create({
     container: {
-      flex: 1,
-      backgroundColor: '#fff',
+        flex: 1,
+        backgroundColor: '#fff',
     },
-    scrollContainer: {
-      flexGrow: 1,
-      paddingHorizontal: 20,
-      paddingBottom: 40,
-    },
-    backButton: {
-      padding: 10,
+    scrollContent: {
+        flexGrow: 1,
+        padding: 20,
     },
     formContainer: {
-      flex: 1,
-      paddingTop: 20,
+        width: '100%',
+        maxWidth: 500,
+        alignSelf: 'center',
+        paddingVertical: 20,
     },
     formTitle: {
-      fontSize: 20,
-      fontWeight: '700',
-      textAlign: 'center',
+        fontSize: 32,
+        fontWeight: 'bold',
+        marginBottom: 5,
     },
     formSubtitle: {
-      fontSize: 14,
-      color: '#000',
-      marginTop: 4,
-      textAlign: 'center',
+        fontSize: 14,
+        color: '#444',
+        marginBottom: 15,
     },
     divider: {
-      height: 1,
-      backgroundColor: '#E0E0E0',
-      marginVertical: 15,
+        height: 2,
+        backgroundColor: '#000',
+        marginBottom: 20,
     },
     instructionText: {
-      fontSize: 12,
-      marginBottom: 20,
-      textAlign: 'center',
+        fontSize: 12,
+        lineHeight: 18,
+        marginBottom: 20,
     },
     inputContainer: {
-      marginBottom: 16,
+        marginBottom: 15,
     },
     input: {
-      borderWidth: 1,
-      borderColor: '#ccc',
-      paddingHorizontal: 15,
-      paddingVertical: 12,
-      fontSize: 16,
+        borderWidth: 1,
+        borderColor: '#000',
+        padding: 15,
+        fontSize: 14,
     },
     errorText: {
-      color: '#FF3B30',
-      fontSize: 12,
-      marginTop: 4,
+        color: 'red',
+        fontSize: 12,
+        marginTop: 5,
     },
-    forgotPassword: {
-      marginBottom: 20,
+    forgotPasswordButton: {
+        alignSelf: 'flex-end',
+        marginBottom: 25,
     },
     forgotPasswordText: {
-      fontSize: 14,
-      color: '#000',
+        fontSize: 12,
+        color: '#000',
     },
     submitButton: {
-      backgroundColor: '#000',
-      paddingVertical: 15,
-      alignItems: 'center',
-      marginTop: 10,
+        backgroundColor: '#000',
+        padding: 15,
+        alignItems: 'center',
+        marginBottom: 20,
     },
     submitButtonText: {
-      color: '#fff',
-      fontSize: 16,
-      fontWeight: '600',
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '600',
     },
     switchModeButton: {
-      marginTop: 20,
-      alignItems: 'center',
+        alignItems: 'center',
     },
     switchModeText: {
-      fontSize: 14,
-      color: '#000',
+        fontSize: 14,
+        color: '#000',
     },
-  });
+});

@@ -1,137 +1,214 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
-  Pressable,
+  TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../store/auth-store';
 
-type EditUserDetailsProps = {
-  onClose: () => void;
-};
+export interface EditUserDetailsProps {
+  userData?: {
+    firstname: string;
+    lastname: string;
+    email: string;
+    telephone: string;
+  };
+  onCancel: () => void;
+  onSubmit: (data: {
+    firstname: string;
+    lastname: string;
+    email: string;
+    telephone: string;
+  }) => void;
+}
 
-export default function EditUserDetails({ onClose }: EditUserDetailsProps) {
+export default function EditUserDetails({ 
+  userData, 
+  onCancel, 
+  onSubmit 
+}: EditUserDetailsProps) {
   const { user, updateUser } = useAuthStore();
-  const [fullName, setFullName] = React.useState(user?.fullName || '');
-  const [email, setEmail] = React.useState(user?.email || '');
-  const [mobileNumber, setMobileNumber] = React.useState(user?.mobileNumber || '');
-  const [password, setPassword] = React.useState('');
-  const [isLoading, setIsLoading] = React.useState(false);
-  const [error, setError] = React.useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Initialize form data with provided userData or fallback to user from store
+  const [formData, setFormData] = useState({
+    firstname: userData?.firstname || user?.firstname || '',
+    lastname: userData?.lastname || user?.lastname || '',
+    email: userData?.email || user?.email || '',
+    telephone: userData?.telephone || user?.telephone || '',
+  });
 
-  const handleSave = async () => {
+  const [errors, setErrors] = useState({
+    firstname: '',
+    lastname: '',
+    email: '',
+    telephone: '',
+  });
+
+  const validate = () => {
+    let isValid = true;
+    const newErrors = {
+      firstname: '',
+      lastname: '',
+      email: '',
+      telephone: '',
+    };
+
+    // Validate firstname
+    if (!formData.firstname.trim()) {
+      newErrors.firstname = 'First name is required';
+      isValid = false;
+    }
+
+    // Validate lastname
+    if (!formData.lastname.trim()) {
+      newErrors.lastname = 'Last name is required';
+      isValid = false;
+    }
+
+    // Validate email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+      isValid = false;
+    } else if (!emailRegex.test(formData.email)) {
+      newErrors.email = 'Enter a valid email address';
+      isValid = false;
+    }
+
+    // Validate telephone
+    if (!formData.telephone.trim()) {
+      newErrors.telephone = 'Mobile number is required';
+      isValid = false;
+    } else if (!/^\d{8,}$/.test(formData.telephone.replace(/\D/g, ''))) {
+      newErrors.telephone = 'Enter a valid mobile number';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
+  const handleSubmit = async () => {
+    if (!validate()) return;
+    
     try {
       setIsLoading(true);
-      setError('');
-
-      const updates = {
-        fullName,
-        email,
-        mobileNumber,
-      };
-
-      await updateUser(updates);
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update details');
+      
+      if (onSubmit) {
+        // Use the provided onSubmit callback
+        onSubmit(formData);
+      } else {
+        // Fallback to direct API call via auth store
+        await updateUser({
+          firstname: formData.firstname,
+          lastname: formData.lastname,
+          email: formData.email,
+          telephone: formData.telephone,
+        });
+        
+        Alert.alert('Success', 'Your details have been updated successfully!');
+        onCancel();
+      }
+    } catch (error: any) {
+      console.error('Error updating user details:', error);
+      Alert.alert('Error', error.message || 'Failed to update details. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <KeyboardAvoidingView 
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <KeyboardAvoidingView
       style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={100}
     >
-      <View style={styles.header}>
-        <Text style={styles.title}>EDIT DETAILS</Text>
-        <Pressable onPress={onClose} style={styles.closeButton}>
-          <Ionicons name="close" size={24} color="black" />
-        </Pressable>
-      </View>
-
-      <ScrollView style={styles.content}>
-        {error ? (
-          <Text style={styles.error}>{error}</Text>
-        ) : null}
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>FULL NAME</Text>
-          <TextInput
-            style={styles.input}
-            value={fullName}
-            onChangeText={setFullName}
-            placeholder="Enter your full name"
-            editable={!isLoading}
-          />
+      <ScrollView>
+        <View style={styles.header}>
+          <Text style={styles.title}>EDIT DETAILS</Text>
+          <Text style={styles.subtitle}>Update your account information</Text>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>EMAIL</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            placeholder="Enter your email"
-            keyboardType="email-address"
-            autoCapitalize="none"
-            editable={!isLoading}
-          />
+        <View style={styles.form}>
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>FIRST NAME</Text>
+            <TextInput
+              style={[styles.input, errors.firstname ? styles.inputError : null]}
+              value={formData.firstname}
+              onChangeText={(text) => setFormData({...formData, firstname: text})}
+              placeholder="Enter your first name"
+              autoCapitalize="words"
+            />
+            {errors.firstname ? <Text style={styles.errorText}>{errors.firstname}</Text> : null}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>LAST NAME</Text>
+            <TextInput
+              style={[styles.input, errors.lastname ? styles.inputError : null]}
+              value={formData.lastname}
+              onChangeText={(text) => setFormData({...formData, lastname: text})}
+              placeholder="Enter your last name"
+              autoCapitalize="words"
+            />
+            {errors.lastname ? <Text style={styles.errorText}>{errors.lastname}</Text> : null}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>EMAIL</Text>
+            <TextInput
+              style={[styles.input, errors.email ? styles.inputError : null]}
+              value={formData.email}
+              onChangeText={(text) => setFormData({...formData, email: text})}
+              placeholder="Enter your email"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            {errors.email ? <Text style={styles.errorText}>{errors.email}</Text> : null}
+          </View>
+
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>MOBILE NUMBER</Text>
+            <TextInput
+              style={[styles.input, errors.telephone ? styles.inputError : null]}
+              value={formData.telephone}
+              onChangeText={(text) => setFormData({...formData, telephone: text})}
+              placeholder="Enter your mobile number"
+              keyboardType="phone-pad"
+            />
+            {errors.telephone ? <Text style={styles.errorText}>{errors.telephone}</Text> : null}
+          </View>
         </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>MOBILE NUMBER</Text>
-          <TextInput
-            style={styles.input}
-            value={mobileNumber}
-            onChangeText={setMobileNumber}
-            placeholder="Enter your mobile number"
-            keyboardType="phone-pad"
-            editable={!isLoading}
-          />
-        </View>
+        <View style={styles.buttonContainer}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={onCancel}
+            disabled={isLoading}
+          >
+            <Text style={styles.cancelButtonText}>CANCEL</Text>
+          </TouchableOpacity>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>PASSWORD</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            placeholder="Enter new password"
-            secureTextEntry
-            editable={!isLoading}
-          />
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            <Text style={styles.saveButtonText}>
+              {isLoading ? 'SAVING...' : 'SAVE CHANGES'}
+            </Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
-
-      <View style={styles.footer}>
-        <Pressable 
-          style={styles.cancelButton} 
-          onPress={onClose}
-          disabled={isLoading}
-        >
-          <Text style={styles.cancelButtonText}>Cancel</Text>
-        </Pressable>
-        <Pressable 
-          style={[styles.saveButton, isLoading && styles.saveButtonDisabled]}
-          onPress={handleSave}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.saveButtonText}>Save Changes</Text>
-          )}
-        </Pressable>
-      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -142,55 +219,58 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    padding: 20,
   },
   title: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '600',
+    marginBottom: 8,
   },
-  closeButton: {
-    padding: 4,
+  subtitle: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 20,
   },
-  content: {
-    flex: 1,
-    padding: 16,
+  form: {
+    padding: 20,
   },
-  error: {
-    color: 'red',
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  inputContainer: {
-    marginBottom: 16,
+  inputGroup: {
+    marginBottom: 20,
   },
   label: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#000',
-    padding: 16,
+    borderColor: '#E0E0E0',
+    borderRadius: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 16,
     fontSize: 16,
   },
-  footer: {
+  inputError: {
+    borderColor: '#F05454',
+  },
+  errorText: {
+    color: '#F05454',
+    fontSize: 12,
+    marginTop: 4,
+  },
+  buttonContainer: {
     flexDirection: 'row',
-    padding: 16,
-    gap: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    justifyContent: 'space-between',
+    padding: 20,
+    marginTop: 10,
+    marginBottom: 30,
   },
   cancelButton: {
-    flex: 1,
-    padding: 16,
     borderWidth: 1,
     borderColor: '#000',
+    borderRadius: 4,
+    paddingVertical: 16,
+    width: '48%',
     alignItems: 'center',
   },
   cancelButtonText: {
@@ -198,13 +278,11 @@ const styles = StyleSheet.create({
     color: '#000',
   },
   saveButton: {
-    flex: 1,
-    padding: 16,
     backgroundColor: '#000',
+    borderRadius: 4,
+    paddingVertical: 16,
+    width: '48%',
     alignItems: 'center',
-  },
-  saveButtonDisabled: {
-    backgroundColor: '#666',
   },
   saveButtonText: {
     fontSize: 16,

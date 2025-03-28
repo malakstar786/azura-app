@@ -6,47 +6,44 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
-import { useForm, Controller } from 'react-hook-form';
-import * as zod from 'zod';
-import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, router } from 'expo-router';
-import { useToast } from 'react-native-toast-notifications';
 import { useAuthStore } from '../store/auth-store';
 import { Ionicons } from '@expo/vector-icons';
-
-const forgotPasswordSchema = zod.object({
-  email: zod.string().email({ message: 'Invalid email address' }),
-});
+import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
 
 export default function ForgotPassword() {
+  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const checkEmail = useAuthStore((state) => state.checkEmail);
-  const toast = useToast();
+  const [error, setError] = useState('');
 
-  const { control, handleSubmit, formState: { errors } } = useForm({
-    resolver: zodResolver(forgotPasswordSchema),
-    defaultValues: {
-      email: '',
-    },
-  });
+  const handleSubmit = async () => {
+    if (!email) {
+      setError('Please enter your email address');
+      return;
+    }
 
-  const onSubmit = async (data: zod.infer<typeof forgotPasswordSchema>) => {
+    setIsLoading(true);
+    setError('');
+
     try {
-      setIsLoading(true);
-      await checkEmail(data.email);
-      toast.show('Password has been sent to your email', {
-        type: 'success',
-        placement: 'top',
-        duration: 3000,
+      const response = await makeApiCall(API_ENDPOINTS.forgotPassword, {
+        method: 'POST',
+        data: { email }
       });
-      router.back();
-    } catch (error) {
-      toast.show(error instanceof Error ? error.message : 'Email not registered', {
-        type: 'error',
-        placement: 'top',
-        duration: 3000,
-      });
+
+      if (response.success === 1) {
+        Alert.alert(
+          'Password Sent',
+          'Password has been sent to your email address',
+          [{ text: 'OK', onPress: () => router.back() }]
+        );
+      } else {
+        setError(response.error?.[0] || 'Email not found');
+      }
+    } catch (error: any) {
+      setError(error.message || 'An error occurred. Please try again later.');
     } finally {
       setIsLoading(false);
     }
@@ -56,13 +53,13 @@ export default function ForgotPassword() {
     <View style={styles.container}>
       <Stack.Screen 
         options={{
+          title: '',
+          headerShadowVisible: false,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
               <Ionicons name="arrow-back" size={24} color="black" />
             </TouchableOpacity>
           ),
-          headerTitle: '',
-          headerShadowVisible: false,
         }} 
       />
 
@@ -76,31 +73,22 @@ export default function ForgotPassword() {
           ENTER YOUR REGISTERED EMAIL
         </Text>
 
-        <Controller
-          control={control}
-          name="email"
-          render={({ field: { value, onChange, onBlur } }) => (
-            <View style={styles.inputContainer}>
-              <TextInput
-                placeholder="REGISTERED EMAIL"
-                style={styles.input}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                editable={!isLoading}
-              />
-              {errors.email && (
-                <Text style={styles.errorText}>{errors.email.message}</Text>
-              )}
-            </View>
-          )}
-        />
+        <View style={styles.inputContainer}>
+          <TextInput
+            placeholder="REGISTERED EMAIL"
+            style={styles.input}
+            value={email}
+            onChangeText={setEmail}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            editable={!isLoading}
+          />
+          {error ? <Text style={styles.errorText}>{error}</Text> : null}
+        </View>
 
         <TouchableOpacity
           style={styles.sendButton}
-          onPress={handleSubmit(onSubmit)}
+          onPress={handleSubmit}
           disabled={isLoading}
         >
           {isLoading ? (
