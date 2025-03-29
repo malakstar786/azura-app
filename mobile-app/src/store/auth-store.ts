@@ -258,25 +258,27 @@ export const useAuthStore = create<AuthState>()(
           // Must be authenticated
           const { isAuthenticated } = useAuthStore.getState();
           if (!isAuthenticated) {
+            console.warn('User not authenticated, cannot fetch addresses');
             set({ isLoading: false });
             return [];
           }
 
-          // For listing addresses, we don't send address_id at all
-          // This matches what the OpenCart backend expects
-          const response = await makeApiCall(API_ENDPOINTS.editAddress, {
-            method: 'POST',
-            data: new FormData() // Empty form data, no address_id
+          console.log('Fetching addresses from server...');
+          
+          // Use the proper addresses endpoint with GET method
+          const response = await makeApiCall(API_ENDPOINTS.addresses, {
+            method: 'GET'
           });
 
           console.log('Addresses fetch response:', response);
 
           if (response.success === 1 && Array.isArray(response.data)) {
             // We got an array of addresses from the server
+            console.log('Successfully retrieved addresses:', response.data);
             return response.data;
           } else {
             // Probably an empty array or an error
-            console.warn('Unexpected address response:', response);
+            console.warn('Unexpected address response format:', response);
             return [];
           }
         } catch (error: any) {
@@ -292,59 +294,69 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
           
-          // Format data as form-data as specified in the documentation
-          const formData = new FormData();
-          formData.append('firstname', address.firstname);
-          formData.append('lastname', address.lastname);
-          formData.append('country_id', '114'); // Kuwait
-          formData.append('zone_id', '0'); // Default zone for Kuwait
-          formData.append('city', address.city);
-          
-          // Handle custom fields for block, street, etc.
-          if (address.custom_field) {
-            formData.append('custom_field[30]', address.custom_field['30'] || ''); // Block
-            formData.append('custom_field[31]', address.custom_field['31'] || ''); // Street
-            formData.append('custom_field[32]', address.custom_field['32'] || ''); // House/Building
-            formData.append('custom_field[33]', address.custom_field['33'] || ''); // Apartment
+          const currentUser = get().user;
+          if (!currentUser) {
+            throw new Error('You must be logged in to add an address');
           }
           
+          // Create FormData for multipart/form-data request
+          const formData = new FormData();
+          
+          // DO NOT include address_id for new addresses
+          // The server expects address_id to be absent for new address creation
+          
+          formData.append('firstname', address.firstname);
+          formData.append('lastname', address.lastname);
+          formData.append('company', address.company || '');
+          formData.append('address_1', address.address_1);
           formData.append('address_2', address.address_2 || '');
+          formData.append('city', address.city);
+          formData.append('postcode', address.postcode || '');
+          formData.append('country_id', address.country_id || '114'); // Kuwait default
+          formData.append('zone_id', address.zone_id || '1785');  // Kuwait City default
+          
+          // Add custom fields
+          if (address.custom_field) {
+            Object.entries(address.custom_field).forEach(([key, value]) => {
+              formData.append(`custom_field[${key}]`, String(value));
+            });
+          }
+          
+          // Add default flag
           formData.append('default', address.default ? '1' : '0');
           
           console.log('Adding address with data:', {
             firstname: address.firstname,
             lastname: address.lastname,
-            country_id: '114',
             city: address.city,
-            custom_field: address.custom_field,
-            address_2: address.address_2 || '',
-            default: address.default ? '1' : '0'
+            custom_fields: address.custom_field
           });
           
           const response = await makeApiCall(API_ENDPOINTS.editAddress, {
             method: 'POST',
-            data: formData
+            data: formData,
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
           });
           
-          console.log('Add address response:', response);
+          console.log('Add address API response:', response);
           
           if (response.success === 1) {
-            // Refresh the addresses list after adding
-            await get().fetchAddresses();
-            set({ isLoading: false });
-            Alert.alert('Success', 'Address added successfully');
+            // Fetch updated addresses
+            const addresses = await get().fetchAddresses();
+            set({ addresses, isLoading: false });
+            return response.data;
           } else {
             throw new Error(
               Array.isArray(response.error) ? response.error[0] : 'Failed to add address'
             );
           }
         } catch (error: any) {
-          console.error('Add address error:', error);
           set({ 
             isLoading: false, 
             error: error.message || 'Failed to add address' 
           });
-          Alert.alert('Error', error.message || 'Failed to add address');
           throw error;
         }
       },

@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
   register: '/index.php?route=extension/mstore/account|register',
   updateProfile: '/index.php?route=extension/mstore/account|edit',
   editAddress: '/index.php?route=extension/mstore/account|edit_address',
+  addresses: '/index.php?route=extension/mstore/account|addresses',
   homeServiceBlock: '/index.php?route=extension/mstore/home|serviceBlock',
   homeSliderBlock: '/index.php?route=extension/mstore/home|sliderblock',
   homeFeaturesBlock1: '/index.php?route=extension/mstore/home|featuresblock1',
@@ -22,6 +23,7 @@ export const API_ENDPOINTS = {
   mainMenu: '/index.php?route=extension/mstore/menu',
   allProducts: '/index.php?route=extension/mstore/product',
   productDetail: '/index.php?route=extension/mstore/product|detail',
+  orderHistory: '/index.php?route=extension/mstore/order|all'
 };
 
 // Network error codes
@@ -116,19 +118,27 @@ export const makeApiCall = async <T = any>(
     }
     
     // Set up headers with OCSESSID cookie
-    const headers = {
+    const headers: Record<string, string> = {
       ...(options.headers || {}),
       Cookie: `OCSESSID=${currentOcsessid}`
     };
+
+    // If data is FormData, ensure proper content type
+    if (options.data instanceof FormData) {
+      headers['Content-Type'] = 'multipart/form-data';
+    }
     
     // Log request details
     console.log(`Making ${method} request to ${url}`);
     if (options.data) {
-      console.log('Request data:', 
-        options.data instanceof FormData 
-          ? 'FormData (not printable)' 
-          : options.data
-      );
+      if (options.data instanceof FormData) {
+        console.log('Request data: FormData');
+        // Since we can't reliably log FormData contents in React Native,
+        // just log that we're sending FormData
+        console.log('Sending FormData object');
+      } else {
+        console.log('Request data:', options.data);
+      }
     }
     
     // Make the request
@@ -136,7 +146,17 @@ export const makeApiCall = async <T = any>(
     if (method.toUpperCase() === 'GET') {
       response = await axios.get(url, { headers });
     } else {
-      response = await axios.post(url, options.data, { headers });
+      response = await axios.post(url, options.data, { 
+        headers,
+        transformRequest: [(data, headers) => {
+          // If it's FormData, return as is
+          if (data instanceof FormData) {
+            return data;
+          }
+          // Otherwise use default transformation
+          return JSON.stringify(data);
+        }]
+      });
     }
     
     // Check if response is HTML instead of JSON
