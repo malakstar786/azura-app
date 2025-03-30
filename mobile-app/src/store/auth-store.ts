@@ -1,7 +1,16 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { makeApiCall, API_ENDPOINTS, setOCSESSID, getCurrentOCSESSID, NetworkErrorCodes, API_BASE_URL, getOrCreateOCSESSID } from '../utils/api-config';
+import { 
+  makeApiCall, 
+  API_ENDPOINTS, 
+  setOCSESSID, 
+  getCurrentOCSESSID, 
+  NetworkErrorCodes, 
+  API_BASE_URL, 
+  getOrCreateOCSESSID,
+  generateRandomOCSESSID 
+} from '../utils/api-config';
 import { Alert } from 'react-native';
 
 // Constants imported from api-config
@@ -170,36 +179,60 @@ export const useAuthStore = create<AuthState>()(
             lastname: userData.lastname 
           });
 
-          const response = await makeApiCall(API_ENDPOINTS.register, {
-            method: 'POST',
-            data: {
-              firstname: userData.firstname,
-              lastname: userData.lastname,
-              email: userData.email,
-              telephone: userData.telephone,
-              password: userData.password,
-              agree: '1'
-            }
-          });
+          // Generate and use a fresh OCSESSID for registration
+          const freshOCSESSID = await generateRandomOCSESSID();
+          await setOCSESSID(freshOCSESSID);
 
-          console.log('Signup response:', response);
+          try {
+            const response = await makeApiCall(API_ENDPOINTS.register, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              data: {
+                firstname: userData.firstname,
+                lastname: userData.lastname,
+                email: userData.email,
+                telephone: userData.telephone,
+                password: userData.password,
+                // Add missing fields that might be required
+                confirm: userData.password, // Password confirmation
+                agree: '1'  // Agreement to terms
+              }
+            });
 
-          if (response.success === 1) {
-            // If signup is successful, automatically log in
-            try {
-              await get().login(userData.email, userData.password);
-            } catch (loginError) {
-              console.error('Auto-login after signup failed:', loginError);
-              // Still consider signup successful even if auto-login fails
-              set({
-                isLoading: false,
-                error: null
-              });
+            console.log('Signup response:', response);
+
+            if (response.success === 1) {
+              // If signup is successful, automatically log in
+              try {
+                await get().login(userData.email, userData.password);
+              } catch (loginError) {
+                console.error('Auto-login after signup failed:', loginError);
+                // Still consider signup successful even if auto-login fails
+                set({
+                  isLoading: false,
+                  error: null
+                });
+              }
+            } else {
+              throw new Error(
+                Array.isArray(response.error) ? response.error[0] : 'Registration failed'
+              );
             }
-          } else {
-            throw new Error(
-              Array.isArray(response.error) ? response.error[0] : 'Registration failed'
-            );
+          } catch (error: any) {
+            console.error('Signup API error:', error);
+            
+            // Check for server-side errors in the response
+            if (error.response?.data && typeof error.response.data === 'string') {
+              // Handle the specific utf8_strlen error from the server
+              if (error.response.data.includes('utf8_strlen()')) {
+                console.error('Server has a function definition error. Treating as temporary server issue.');
+                throw new Error('The registration service is temporarily unavailable. Please try again later or contact support.');
+              }
+            }
+            
+            throw error; // Rethrow for general error handling
           }
         } catch (error: any) {
           console.error('Signup error:', error);

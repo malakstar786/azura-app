@@ -19,9 +19,6 @@ import { useAuthStore } from '../../store/auth-store';
 import { StatusBar } from 'expo-status-bar';
 import { CartItem } from '../../utils/api-config';
 import { useState } from 'react';
-import { useAddressStore, Address } from '../../store/address-store';
-import AddEditAddress from '../../components/add-edit-address';
-import { formatPrice } from '../../utils/format-price';
 
 const { width } = Dimensions.get('window');
 
@@ -220,9 +217,6 @@ export default function CartScreen() {
     updateQuantity,
   } = useCartStore();
   const { isAuthenticated } = useAuthStore();
-  const { addresses, selectedAddress } = useAddressStore();
-  const [editingAddress, setEditingAddress] = useState<Address | null>(null);
-  const [showAddressModal, setShowAddressModal] = useState(false);
 
   const handleUpdateQuantity = async (productId: string, quantity: number) => {
     await updateQuantity(productId, quantity);
@@ -239,29 +233,7 @@ export default function CartScreen() {
       return;
     }
     
-    // If authenticated, proceed with address check
-    if (!selectedAddress) {
-      Alert.alert(
-        'Add Address',
-        'Please add a delivery address to proceed with checkout.',
-        [
-          {
-            text: 'Cancel',
-            style: 'cancel'
-          },
-          {
-            text: 'Add Address',
-            onPress: () => {
-              setEditingAddress(null);
-              setShowAddressModal(true);
-            }
-          }
-        ]
-      );
-      return;
-    }
-    
-    // Navigate to checkout
+    // If authenticated, proceed directly to checkout
     router.push('/checkout');
   };
 
@@ -344,16 +316,6 @@ export default function CartScreen() {
           <Text style={styles.checkoutButtonText}>CHECKOUT</Text>
         </TouchableOpacity>
       </View>
-
-      {showAddressModal && (
-        <AddEditAddress
-          address={editingAddress}
-          onClose={() => {
-            setShowAddressModal(false);
-            setEditingAddress(null);
-          }}
-        />
-      )}
     </View>
   );
 }

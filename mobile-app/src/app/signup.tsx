@@ -24,7 +24,7 @@ const signupSchema = zod.object({
 
 export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
-  const signUp = useAuthStore((state) => state.signUp);
+  const signup = useAuthStore((state) => state.signup);
   const toast = useToast();
 
   const { control, handleSubmit, formState: { errors } } = useForm({
@@ -40,13 +40,57 @@ export default function Signup() {
   const onSubmit = async (data: zod.infer<typeof signupSchema>) => {
     try {
       setIsLoading(true);
-      await signUp(data);
-      router.replace('/');
-    } catch (error) {
-      toast.show(error instanceof Error ? error.message : 'Sign up failed', {
-        type: 'error',
+
+      // Parse full name into first name and last name
+      let firstName = data.fullName;
+      let lastName = '';
+
+      // Split the full name by space and handle different cases
+      const nameParts = data.fullName.trim().split(' ');
+      if (nameParts.length > 1) {
+        firstName = nameParts[0];
+        lastName = nameParts.slice(1).join(' ');
+      }
+
+      // Prepare user data for signup
+      const userData = {
+        firstname: firstName,
+        lastname: lastName,
+        email: data.email,
+        telephone: data.mobile,
+        password: data.password
+      };
+
+      console.log('Signing up with userData:', JSON.stringify(userData, null, 2));
+
+      await signup(userData);
+      
+      toast.show('Account created successfully!', {
+        type: 'success',
         placement: 'top',
         duration: 3000,
+      });
+      
+      router.replace('/');
+    } catch (error) {
+      console.error('Signup error:', error);
+      
+      let errorMessage = 'Sign up failed. Please try again.';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      
+      // Special case for server issues
+      if (errorMessage.includes('temporarily unavailable') || 
+          errorMessage.includes('Server configuration error')) {
+        errorMessage = 'The registration service is currently unavailable. Please try again later or contact support.';
+      }
+      
+      toast.show(errorMessage, {
+        type: 'error',
+        placement: 'top',
+        duration: 4000,
       });
     } finally {
       setIsLoading(false);

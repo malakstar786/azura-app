@@ -1,81 +1,83 @@
+import React, { useEffect } from 'react';
 import {
   FlatList,
-  Image,
-  Pressable,
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { Order, OrderStatus } from '../../../assets/types/order';
-import { ORDERS } from '../../../assets/orders';
 import { Ionicons } from '@expo/vector-icons';
+import { useOrderStore, Order } from '../../store/order-store';
 
-const statusDisplayText: Record<OrderStatus, string> = {
-  Pending: 'Pending',
-  Completed: 'Completed',
-  Shipped: 'Shipped',
-  InTransit: 'In Transit',
-};
+const OrderItem = ({ item }: { item: Order }) => {
+  // Format date from ISO string to "NOVEMBER 26, 2024" format
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    }).toUpperCase();
+  };
 
-const OrderItem = ({ item }: { item: Order }) => (
-  <Pressable 
-    style={styles.orderContainer}
-    onPress={() => router.push(`/product/${item.items[0].slug}`)}
-  >
-    <View style={styles.orderContent}>
-      <Image 
-        source={item.items[0].heroImage} 
-        style={styles.productImage}
-        resizeMode="contain"
-      />
-      <View style={styles.orderDetails}>
-        <View style={styles.orderHeader}>
-          <View>
-            <Text style={styles.productName}>{item.items[0].title.toUpperCase()}</Text>
-            <Text style={styles.sku}>SKU: {item.items[0].id.toString().padStart(8, '0')}</Text>
+  // Format currency with the correct code
+  const formatCurrency = (amount: string, currencyCode: string) => {
+    return `${parseFloat(amount).toFixed(3)} ${currencyCode}`;
+  };
+
+  // Get status color based on status
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'pending':
+        return '#FFA500'; // Orange
+      case 'shipped':
+        return '#4CAF50'; // Green
+      case 'cancelled':
+        return '#FF0000'; // Red
+      default:
+        return '#000000'; // Black
+    }
+  };
+
+  return (
+    <View style={styles.orderContainer}>
+      <View style={styles.orderContent}>
+        <View style={styles.orderDetails}>
+          {/* Order ID and Total */}
+          <View style={styles.headerRow}>
+            <Text style={styles.orderId}>#{item.order_id}</Text>
+            <Text style={styles.total}>{formatCurrency(item.total, item.currency_code)}</Text>
           </View>
-          <View style={[styles.statusBadge, styles[`statusBadge_${item.status}`]]}>
-            <Text style={styles.statusText}>{statusDisplayText[item.status]}</Text>
-          </View>
-        </View>
 
-        <View style={styles.orderInfo}>
-          <View style={styles.infoColumn}>
-            <Text style={styles.label}>ORDER ID</Text>
-            <Text style={styles.value}>#{item.id.padStart(7, '0')}</Text>
+          {/* Order metadata */}
+          <View style={styles.orderMeta}>
+            <Text style={styles.label}>DATE:</Text>
+            <Text style={styles.value}>{formatDate(item.date_added)}</Text>
             
-            <Text style={[styles.label, styles.labelSpacing]}>DATE</Text>
-            <Text style={styles.value}>
-              {new Date(item.date).toLocaleDateString('en-US', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              }).toUpperCase()}
+            <Text style={styles.label}>CUSTOMER:</Text>
+            <Text style={styles.value}>{`${item.firstname} ${item.lastname}`}</Text>
+
+            <Text style={styles.label}>STATUS:</Text>
+            <Text style={[styles.value, styles.status, { color: getStatusColor(item.status) }]}>
+              {item.status.toUpperCase()}
             </Text>
           </View>
-
-          <View style={styles.infoColumn}>
-            <Text style={styles.label}>PAYMENT</Text>
-            <Text style={styles.value}>K-NET</Text>
-
-            <Text style={[styles.label, styles.labelSpacing]}>QTY</Text>
-            <Text style={styles.value}>1</Text>
-          </View>
-        </View>
-
-        <View style={styles.transactionInfo}>
-          <Text style={styles.label}>TRANS ID</Text>
-          <Text style={styles.transactionId}>TT#{item.id.padStart(23, '2')}</Text>
         </View>
       </View>
     </View>
-  </Pressable>
-);
+  );
+};
 
 export default function OrdersScreen() {
+  const { orders, isLoading, error, fetchOrders } = useOrderStore();
+
+  useEffect(() => {
+    fetchOrders();
+  }, []);
+
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen 
@@ -96,13 +98,38 @@ export default function OrdersScreen() {
           headerShadowVisible: false,
         }} 
       />
-      <FlatList
-        data={ORDERS}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => <OrderItem item={item} />}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-      />
+
+      {isLoading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#000" />
+          <Text style={styles.loadingText}>Loading orders...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchOrders}>
+            <Text style={styles.retryButtonText}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      ) : orders.length === 0 ? (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>You have no orders yet.</Text>
+          <TouchableOpacity 
+            style={styles.shopButton}
+            onPress={() => router.replace('/(shop)')}
+          >
+            <Text style={styles.shopButtonText}>START SHOPPING</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={orders}
+          keyExtractor={item => item.order_id}
+          renderItem={({ item }) => <OrderItem item={item} />}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -116,104 +143,117 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   headerTitle: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
     color: '#000',
+    textTransform: 'uppercase',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#ff3b30',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  retryButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    backgroundColor: '#000',
+    borderRadius: 4,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  shopButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    backgroundColor: '#000',
+    borderWidth: 1,
+    borderColor: '#000',
+  },
+  shopButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   listContainer: {
     padding: 16,
-    paddingBottom: 32,
   },
   orderContainer: {
     borderWidth: 1,
     borderColor: '#000',
-    borderRadius: 8,
     marginBottom: 16,
     padding: 16,
     backgroundColor: '#fff',
   },
   orderContent: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 16,
-  },
-  productImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 4,
-    backgroundColor: '#f5f5f5',
+    flex: 1,
   },
   orderDetails: {
     flex: 1,
   },
-  orderHeader: {
+  headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 16,
   },
-  productName: {
+  orderId: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
+  },
+  total: {
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 4,
   },
-  sku: {
-    fontSize: 12,
-    color: '#666',
-  },
-  orderInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  infoColumn: {
-    flex: 1,
+  orderMeta: {
+    marginTop: 8,
   },
   label: {
-    fontSize: 11,
+    fontSize: 14,
+    fontWeight: '400',
     color: '#666',
-    marginBottom: 4,
-  },
-  labelSpacing: {
-    marginTop: 12,
+    marginBottom: 2,
   },
   value: {
-    fontSize: 13,
-    color: '#000',
+    fontSize: 14,
     fontWeight: '500',
-  },
-  transactionInfo: {
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-  },
-  transactionId: {
-    fontSize: 13,
     color: '#000',
-    fontWeight: '500',
-    marginTop: 4,
+    marginBottom: 12,
   },
-  statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 11,
+  status: {
     fontWeight: '600',
-    color: '#fff',
-  },
-  statusBadge_Pending: {
-    backgroundColor: '#F5B100',
-  },
-  statusBadge_Completed: {
-    backgroundColor: '#4CAF50',
-  },
-  statusBadge_Shipped: {
-    backgroundColor: '#2196F3',
-  },
-  statusBadge_InTransit: {
-    backgroundColor: '#FF9800',
+    textTransform: 'uppercase',
   },
 }); 

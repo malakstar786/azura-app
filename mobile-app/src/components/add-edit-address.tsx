@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, SafeAreaView, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore, Address as AuthAddress } from '../store/auth-store';
 import { useAddressStore } from '../store/address-store';
 import { KUWAIT_CITIES, KUWAIT_COUNTRY_ID } from '../utils/cities';
 import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface FormData {
   firstname: string;
@@ -147,281 +149,264 @@ export default function AddEditAddress({ address, onClose, onAddressUpdated }: A
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerRow}>
-          <TouchableOpacity onPress={onClose} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color="black" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{formData.address_id ? 'EDIT ADDRESS' : 'ADD ADDRESS'}</Text>
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={true}
+      onRequestClose={onClose}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <SafeAreaView style={styles.container}>
+            {/* Header */}
+            <View style={styles.header}>
+              <TouchableOpacity onPress={onClose} style={styles.backButton}>
+                <Ionicons name="arrow-back" size={24} color="#000" />
+              </TouchableOpacity>
+              <Text style={styles.title}>{address ? 'EDIT ADDRESS' : 'ADD ADDRESS'}</Text>
+            </View>
+
+            {/* Form Content */}
+            <ScrollView style={styles.formContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="First Name"
+                value={formData.firstname}
+                onChangeText={(text) => setFormData({ ...formData, firstname: text })}
+                placeholderTextColor="#999"
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Last Name"
+                value={formData.lastname}
+                onChangeText={(text) => setFormData({ ...formData, lastname: text })}
+                placeholderTextColor="#999"
+              />
+
+              <TextInput
+                style={styles.input}
+                placeholder="Phone Number"
+                value={formData.lastname}
+                onChangeText={(text) => setFormData({ ...formData, lastname: text })}
+                keyboardType="phone-pad"
+                placeholderTextColor="#999"
+              />
+
+              <TouchableOpacity 
+                style={styles.input}
+                onPress={() => setShowCountryPicker(true)}
+              >
+                <Text style={formData.country_id ? styles.inputText : styles.placeholderText}>
+                  {formData.country_id ? 'Kuwait' : 'Country'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#000" style={styles.dropdownIcon} />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.input}
+                onPress={() => setShowCityPicker(true)}
+              >
+                <Text style={formData.city ? styles.inputText : styles.placeholderText}>
+                  {formData.city || 'City'}
+                </Text>
+                <Ionicons name="chevron-down" size={20} color="#000" style={styles.dropdownIcon} />
+              </TouchableOpacity>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Area"
+                value={formData.address_1}
+                onChangeText={(text) => setFormData({ ...formData, address_1: text })}
+                placeholderTextColor="#999"
+              />
+
+              <View style={styles.rowInputs}>
+                <TextInput
+                  style={[styles.input, styles.halfInput]}
+                  placeholder="Block"
+                  value={formData.custom_field['30']}
+                  onChangeText={(text) => setFormData({
+                    ...formData,
+                    custom_field: { ...formData.custom_field, '30': text }
+                  })}
+                  placeholderTextColor="#999"
+                />
+
+                <TextInput
+                  style={[styles.input, styles.halfInput]}
+                  placeholder="Street"
+                  value={formData.custom_field['31']}
+                  onChangeText={(text) => setFormData({
+                    ...formData,
+                    custom_field: { ...formData.custom_field, '31': text }
+                  })}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <View style={styles.rowInputs}>
+                <TextInput
+                  style={[styles.input, styles.halfInput]}
+                  placeholder="House Building No."
+                  value={formData.custom_field['32']}
+                  onChangeText={(text) => setFormData({
+                    ...formData,
+                    custom_field: { ...formData.custom_field, '32': text }
+                  })}
+                  placeholderTextColor="#999"
+                />
+
+                <TextInput
+                  style={[styles.input, styles.halfInput]}
+                  placeholder="Apartment No."
+                  value={formData.custom_field['33']}
+                  onChangeText={(text) => setFormData({
+                    ...formData,
+                    custom_field: { ...formData.custom_field, '33': text }
+                  })}
+                  placeholderTextColor="#999"
+                />
+              </View>
+
+              <TextInput
+                style={styles.input}
+                placeholder="Address line 2 (Optional)"
+                value={formData.address_2}
+                onChangeText={(text) => setFormData({ ...formData, address_2: text })}
+                placeholderTextColor="#999"
+              />
+            </ScrollView>
+
+            {/* Footer Buttons */}
+            <View style={styles.footer}>
+              <TouchableOpacity 
+                style={[styles.button, styles.cancelButton]} 
+                onPress={onClose}
+              >
+                <Text style={styles.cancelButtonText}>CANCEL</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={[styles.button, styles.saveButton]} 
+                onPress={handleSubmit}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.saveButtonText}>SAVE</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </SafeAreaView>
         </View>
       </View>
-
-      <ScrollView style={styles.scrollContainer}>
-        {/* First Name Input */}
-        <TextInput
-          style={styles.input}
-          placeholder="First Name"
-          value={formData.firstname}
-          onChangeText={(text) => setFormData({ ...formData, firstname: text })}
-        />
-
-        {/* Phone Number Input */}
-        <TextInput
-          style={styles.input}
-          placeholder="Phone Number"
-          value={formData.lastname}  // In the screenshot, this is used for phone
-          onChangeText={(text) => setFormData({ ...formData, lastname: text })}
-          keyboardType="phone-pad"
-        />
-
-        {/* Country Dropdown */}
-        <TouchableOpacity 
-          style={styles.dropdownInput}
-          onPress={() => setShowCountryPicker(true)}
-        >
-          <Text style={formData.country_id === '114' ? styles.dropdownText : styles.dropdownPlaceholder}>
-            {formData.country_id === '114' ? 'Kuwait' : 'Select Country'}
-          </Text>
-          <Ionicons name="chevron-down" size={20} color="black" />
-        </TouchableOpacity>
-
-        {/* City Dropdown */}
-        <TouchableOpacity 
-          style={styles.dropdownInput}
-          onPress={() => setShowCityPicker(true)}
-        >
-          <Text style={formData.city ? styles.dropdownText : styles.dropdownPlaceholder}>
-            {formData.city || 'City'}
-          </Text>
-          <Ionicons name="chevron-down" size={20} color="black" />
-        </TouchableOpacity>
-
-        {/* Area Input */}
-        <TextInput
-          style={styles.input}
-          placeholder="Area"
-          value={formData.address_1}
-          onChangeText={(text) => setFormData({ ...formData, address_1: text })}
-        />
-
-        {/* Block and Street in Row */}
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Block"
-            value={formData.custom_field['30']}
-            onChangeText={(text) => setFormData({
-              ...formData,
-              custom_field: { ...formData.custom_field, '30': text }
-            })}
-            keyboardType="number-pad"
-          />
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Street"
-            value={formData.custom_field['31']}
-            onChangeText={(text) => setFormData({
-              ...formData,
-              custom_field: { ...formData.custom_field, '31': text }
-            })}
-          />
-        </View>
-
-        {/* House/Building No. and Apartment No. in Row */}
-        <View style={styles.row}>
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="House Building No."
-            value={formData.custom_field['32']}
-            onChangeText={(text) => setFormData({
-              ...formData,
-              custom_field: { ...formData.custom_field, '32': text }
-            })}
-          />
-          <TextInput
-            style={[styles.input, styles.halfInput]}
-            placeholder="Apartment No."
-            value={formData.custom_field['33']}
-            onChangeText={(text) => setFormData({
-              ...formData,
-              custom_field: { ...formData.custom_field, '33': text }
-            })}
-          />
-        </View>
-
-        {/* Address Line 2 */}
-        <TextInput
-          style={styles.input}
-          placeholder="Address line 2"
-          value={formData.address_2}
-          onChangeText={(text) => setFormData({ ...formData, address_2: text })}
-        />
-
-        {/* Action Buttons */}
-        <View style={styles.buttonRow}>
-          <TouchableOpacity 
-            style={styles.cancelButton}
-            onPress={onClose}
-          >
-            <Text style={styles.cancelButtonText}>CANCEL</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={styles.saveButton}
-            onPress={handleSubmit}
-            disabled={isLoading || localLoading}
-          >
-            {isLoading || localLoading ? (
-              <ActivityIndicator size="small" color="#fff" />
-            ) : (
-              <Text style={styles.saveButtonText}>SAVE</Text>
-            )}
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-
-      {/* City Picker Modal */}
-      {showCityPicker && (
-        <View style={styles.pickerModal}>
-          <ScrollView>
-            {KUWAIT_CITIES.map((city) => (
-              <TouchableOpacity
-                key={city}
-                style={styles.pickerItem}
-                onPress={() => {
-                  setFormData({ ...formData, city });
-                  setShowCityPicker(false);
-                }}
-              >
-                <Text style={styles.pickerItemText}>{city}</Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-          <TouchableOpacity
-            style={styles.closePickerButton}
-            onPress={() => setShowCityPicker(false)}
-          >
-            <Text style={styles.closePickerButtonText}>Close</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-    </View>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    height: SCREEN_HEIGHT * 0.9,
+  },
   container: {
     flex: 1,
-    backgroundColor: '#fff',
   },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
   },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   backButton: {
     padding: 8,
+    marginRight: 8,
   },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 16,
+  title: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000',
+    flex: 1,
   },
-  scrollContainer: {
+  formContainer: {
     flex: 1,
     padding: 16,
   },
   input: {
+    height: 48,
     borderWidth: 1,
     borderColor: '#E5E5E5',
-    padding: 15,
-    marginBottom: 16,
-    fontSize: 16,
-  },
-  dropdownInput: {
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    padding: 15,
-    marginBottom: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  dropdownText: {
-    fontSize: 16,
+    borderRadius: 4,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    fontSize: 14,
     color: '#000',
+    backgroundColor: '#fff',
+    justifyContent: 'center',
   },
-  dropdownPlaceholder: {
-    fontSize: 16,
-    color: '#999',
-  },
-  row: {
+  rowInputs: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 0,
+    marginBottom: 12,
   },
   halfInput: {
     width: '48%',
+    marginBottom: 0,
   },
-  buttonRow: {
+  inputText: {
+    fontSize: 14,
+    color: '#000',
+  },
+  placeholderText: {
+    fontSize: 14,
+    color: '#999',
+  },
+  dropdownIcon: {
+    position: 'absolute',
+    right: 16,
+  },
+  footer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 16,
-    marginBottom: 32,
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
   },
-  cancelButton: {
-    borderWidth: 1,
-    borderColor: '#000',
-    padding: 15,
-    width: '48%',
+  button: {
+    flex: 1,
+    height: 48,
+    borderRadius: 4,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  cancelButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: 'bold',
+  cancelButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#000',
+    marginRight: 8,
   },
   saveButton: {
     backgroundColor: '#000',
-    padding: 15,
-    width: '48%',
-    alignItems: 'center',
+    marginLeft: 8,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
   },
   saveButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  pickerModal: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
-    maxHeight: '50%',
-  },
-  pickerItem: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
-  },
-  pickerItemText: {
-    fontSize: 16,
-  },
-  closePickerButton: {
-    padding: 15,
-    alignItems: 'center',
-    backgroundColor: '#f8f8f8',
-  },
-  closePickerButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
   },
 }); 

@@ -23,7 +23,11 @@ export const API_ENDPOINTS = {
   mainMenu: '/index.php?route=extension/mstore/menu',
   allProducts: '/index.php?route=extension/mstore/product',
   productDetail: '/index.php?route=extension/mstore/product|detail',
-  orderHistory: '/index.php?route=extension/mstore/order|all'
+  orderHistory: '/index.php?route=extension/mstore/order|all',
+  checkout: '/index.php?route=extension/mstore/checkout',
+  shippingMethods: '/index.php?route=extension/mstore/shipping|methods',
+  paymentMethods: '/index.php?route=extension/mstore/payment|methods',
+  confirmOrder: '/index.php?route=extension/mstore/checkout|confirm'
 };
 
 // Network error codes
@@ -123,6 +127,12 @@ export const makeApiCall = async <T = any>(
       Cookie: `OCSESSID=${currentOcsessid}`
     };
 
+    // If Content-Type is not explicitly set and data is not FormData,
+    // default to application/json
+    if (!(options.data instanceof FormData) && !headers['Content-Type']) {
+      headers['Content-Type'] = 'application/json';
+    }
+    
     // If data is FormData, ensure proper content type
     if (options.data instanceof FormData) {
       headers['Content-Type'] = 'multipart/form-data';
@@ -160,10 +170,34 @@ export const makeApiCall = async <T = any>(
     }
     
     // Check if response is HTML instead of JSON
-    if (typeof response.data === 'string' && 
-        (response.data.includes('<html>') || response.data.includes('<b>Warning</b>'))) {
-      console.error('Server returned HTML instead of JSON:', response.data);
-      throw new Error('Server returned an error. Please try again later.');
+    if (typeof response.data === 'string') {
+      // Check for specific server errors
+      if (response.data.includes('utf8_strlen()')) {
+        console.error('Server has a utf8_strlen() function definition error:', response.data);
+        throw {
+          message: 'The service is temporarily unavailable. Please try again later or contact support.',
+          response: {
+            data: { 
+              error: ['Server configuration error. Please contact support.'] 
+            }
+          },
+          handled: true  // Mark as handled to prevent duplicate alerts
+        };
+      }
+      
+      // Generic HTML response error
+      if (response.data.includes('<html>') || response.data.includes('<b>Error</b>') || response.data.includes('<b>Warning</b>')) {
+        console.error('Server returned HTML instead of JSON:', response.data);
+        throw {
+          message: 'Server returned an error. Please try again later.',
+          response: {
+            data: { 
+              error: ['Server returned HTML instead of JSON. Please try again later.'] 
+            }
+          },
+          handled: true
+        };
+      }
     }
     
     // Log response details
@@ -180,10 +214,22 @@ export const makeApiCall = async <T = any>(
       console.error('Error response:', error.response.data);
       
       // If the server sent back HTML instead of JSON, provide a clearer error
-      if (typeof error.response.data === 'string' && 
-          (error.response.data.includes('<html>') || error.response.data.includes('<b>Warning</b>'))) {
-        console.error('Server returned HTML instead of JSON:', error.response.data);
-        throw new Error('Server returned an error. Please try again later.');
+      if (typeof error.response.data === 'string') {
+        if (error.response.data.includes('utf8_strlen()')) {
+          error.handled = true;
+          error.response.data = { 
+            error: ['The service is temporarily unavailable. Please try again later.'],
+            success: 0
+          };
+        }
+        else if (error.response.data.includes('<html>') || error.response.data.includes('<b>Error</b>') || error.response.data.includes('<b>Warning</b>')) {
+          console.error('Server returned HTML instead of JSON:', error.response.data);
+          error.handled = true;
+          error.response.data = { 
+            error: ['Server returned HTML instead of JSON. Please try again later.'],
+            success: 0
+          };
+        }
       }
       
       // If the server provided an error message

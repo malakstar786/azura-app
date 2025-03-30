@@ -6,7 +6,7 @@ import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
 import { useAuthStore } from './auth-store';
 
 // Define Address interface for UI usage
-interface Address {
+export interface Address {
   id: string;
   firstName: string;
   lastName: string;
@@ -20,7 +20,7 @@ interface Address {
 }
 
 // Convert UI address format to API format
-const convertToApiAddress = (address: Address | Omit<Address, 'id'>, addressId: string = '') => {
+export const convertToApiAddress = (address: Address | Omit<Address, 'id'>, addressId: string = '') => {
   const formData = new FormData();
   
   // Add address_id if provided
