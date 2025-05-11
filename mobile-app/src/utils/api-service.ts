@@ -1,45 +1,82 @@
 import { makeApiCall, API_ENDPOINTS } from './api-config';
 import { Product } from '../types/api';
+import { useLanguageStore } from '../store/language-store';
+
+// Get current language from store
+const getCurrentLanguage = () => {
+  const { currentLanguage } = useLanguageStore.getState();
+  return currentLanguage;
+};
 
 // Public endpoints
 export const publicApi = {
-  getHomeServiceBlock: () => 
-    makeApiCall<any>(API_ENDPOINTS.homeServiceBlock),
+  getHomeServiceBlock: () => {
+    const language = getCurrentLanguage();
+    return makeApiCall<any>(API_ENDPOINTS.homeServiceBlock, {
+      params: language === 'ar' ? { language: 'ar' } : undefined,
+    });
+  },
   
-  getHomeSliderBlock: () => 
-    makeApiCall<any>(API_ENDPOINTS.homeSliderBlock),
+  getHomeSliderBlock: () => {
+    const language = getCurrentLanguage();
+    return makeApiCall<any>(API_ENDPOINTS.homeSliderBlock, {
+      params: language === 'ar' ? { language: 'ar' } : undefined,
+    });
+  },
   
   getFeaturesBlock: (blockNumber: number) => {
+    const language = getCurrentLanguage();
     // Use specific endpoints based on block number
+    let endpoint;
     switch (blockNumber) {
       case 1:
-        return makeApiCall<any>(API_ENDPOINTS.featuresBlock1);
+        endpoint = API_ENDPOINTS.homeFeaturesBlock1;
+        break;
       case 2:
-        return makeApiCall<any>(API_ENDPOINTS.featuresBlock2);
+        endpoint = API_ENDPOINTS.homeFeaturesBlock2;
+        break;
       case 3:
-        return makeApiCall<any>(API_ENDPOINTS.featuresBlock3);
+        endpoint = API_ENDPOINTS.homeFeaturesBlock3;
+        break;
       case 4:
-        return makeApiCall<any>(API_ENDPOINTS.featuresBlock4);
+        endpoint = API_ENDPOINTS.homeFeaturesBlock4;
+        break;
       case 5:
-        return makeApiCall<any>(API_ENDPOINTS.featuresBlock5);
+        endpoint = API_ENDPOINTS.homeFeaturesBlock5;
+        break;
       case 6:
-        return makeApiCall<any>(API_ENDPOINTS.featuresBlock6);
+        endpoint = API_ENDPOINTS.homeFeaturesBlock6;
+        break;
       default:
         throw new Error(`Invalid features block number: ${blockNumber}`);
     }
+    
+    return makeApiCall<any>(endpoint, {
+      params: language === 'ar' ? { language: 'ar' } : undefined,
+    });
   },
   
-  getMainMenu: () => 
-    makeApiCall<any>(API_ENDPOINTS.menu),
+  getMainMenu: () => {
+    const language = getCurrentLanguage();
+    return makeApiCall<any>(API_ENDPOINTS.mainMenu, {
+      params: language === 'ar' ? { language: 'ar' } : undefined,
+    });
+  },
   
-  getAllProducts: () => 
-    makeApiCall<any>(API_ENDPOINTS.allProducts),
+  getAllProducts: () => {
+    const language = getCurrentLanguage();
+    return makeApiCall<any>(API_ENDPOINTS.allProducts, {
+      params: language === 'ar' ? { language: 'ar' } : undefined,
+    });
+  },
   
-  getProductsByCategory: (categoryId: string, language?: string) => 
-    makeApiCall<Product[]>(API_ENDPOINTS.allProducts, {
+  getProductsByCategory: (categoryId: string) => {
+    const language = getCurrentLanguage();
+    
+    return makeApiCall<Product[]>(API_ENDPOINTS.allProducts, {
       params: {
         category: categoryId,
-        ...(language && { language }),
+        ...(language === 'ar' ? { language: 'ar' } : {}),
       },
     }).then(response => {
       // Ensure we have a valid response with products array
@@ -51,10 +88,16 @@ export const publicApi = {
         ...response,
         data: Array.isArray(response.data) ? response.data : []
       };
-    }),
+    });
+  },
   
-  getProductDetail: (productId: string) => 
-    makeApiCall<any>(API_ENDPOINTS.productDetail, {
-      params: { productId },
-    }),
+  getProductDetail: (productId: string) => {
+    const language = getCurrentLanguage();
+    return makeApiCall<any>(API_ENDPOINTS.productDetail, {
+      params: { 
+        productId,
+        ...(language === 'ar' ? { language: 'ar' } : {}),
+      },
+    });
+  },
 };

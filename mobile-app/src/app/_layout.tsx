@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import { View } from 'react-native';
 import CustomSplashScreen from '../components/custom-splash-screen';
+import LanguageSelection from '../components/language-selection';
 import { getOrCreateOCSESSID } from '../utils/api-config';
+import { useLanguageStore } from '../store/language-store';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -14,12 +16,17 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
+  const { isFirstTime, isLoading, initialize } = useLanguageStore();
+  const [showLanguageSelection, setShowLanguageSelection] = useState(false);
 
   useEffect(() => {
     async function prepare() {
       try {
         // Initialize OCSESSID first
         await getOrCreateOCSESSID();
+        
+        // Initialize language store
+        await initialize();
         
         // Simulate any other initialization if needed
         await new Promise(resolve => setTimeout(resolve, 2000));
@@ -44,14 +51,22 @@ export default function RootLayout() {
       // Show our custom splash for 1 second after initialization
       const timer = setTimeout(() => {
         setShowSplash(false);
+        // Check if it's first time use to show language selection
+        if (!isLoading && isFirstTime) {
+          setShowLanguageSelection(true);
+        }
       }, 1000);
 
       return () => clearTimeout(timer);
     }
-  }, [isReady]);
+  }, [isReady, isLoading, isFirstTime]);
 
   if (!isReady || showSplash) {
     return <CustomSplashScreen />;
+  }
+
+  if (showLanguageSelection) {
+    return <LanguageSelection onLanguageSelected={() => setShowLanguageSelection(false)} />;
   }
 
   return (
