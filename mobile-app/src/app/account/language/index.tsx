@@ -1,83 +1,109 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useLanguageStore, Language } from '../../../store/language-store';
+import { useLanguageStore } from '../../../store/language-store';
+import { useTranslation } from '../../../utils/translations';
 
 export default function LanguageScreen() {
-  const { currentLanguage, setLanguage, isLoading } = useLanguageStore();
+  const router = useRouter();
+  const { currentLanguage, setLanguage } = useLanguageStore();
+  const { t } = useTranslation();
+  const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'ar'>(currentLanguage);
 
-  const handleLanguageChange = async (language: Language) => {
-    await setLanguage(language);
-    
-    // Navigate back to the account screen
-    router.back();
+  // Track when language is actually changed
+  useEffect(() => {
+    setSelectedLanguage(currentLanguage);
+  }, [currentLanguage]);
+
+  const handleLanguageChange = (language: 'en' | 'ar') => {
+    // Only update if actually changing
+    if (language !== currentLanguage) {
+      setSelectedLanguage(language);
+      setLanguage(language);
+      
+      // Show confirmation and navigate back
+      Alert.alert(
+        language === 'en' ? 'Language Updated' : 'تم تحديث اللغة',
+        language === 'en' 
+          ? 'The app language has been changed to English.'
+          : 'تم تغيير لغة التطبيق إلى العربية.',
+        [
+          { 
+            text: 'OK', 
+            onPress: () => {
+              // Navigate home first to refresh content with new language
+              router.push('/(shop)');
+            }
+          }
+        ]
+      );
+    } else {
+      // If same language selected, just go back
+      router.back();
+    }
   };
 
-  if (isLoading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000" />
-      </View>
-    );
-  }
-
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="arrow-back" size={24} color="black" />
-        </TouchableOpacity>
-        <Text style={styles.title}>LANGUAGE</Text>
-      </View>
+    <SafeAreaView style={styles.container}>
+      <Stack.Screen 
+        options={{ 
+          title: t('account.language'),
+          headerStyle: {
+            backgroundColor: '#fff',
+          },
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color="black" />
+            </TouchableOpacity>
+          ),
+        }} 
+      />
 
-      <View style={styles.divider} />
-
-      <View style={styles.languagesContainer}>
-        <TouchableOpacity
-          style={[
-            styles.languageOption,
-            currentLanguage === 'en' && styles.selectedLanguage,
-          ]}
-          onPress={() => handleLanguageChange('en')}
-        >
-          <Text
+      <View style={styles.content}>
+        <Text style={styles.title}>{t('language.select')}</Text>
+        <Text style={styles.subtitle}>{t('language.subtitle')}</Text>
+        
+        <View style={styles.divider} />
+        
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity 
             style={[
-              styles.languageText,
-              currentLanguage === 'en' && styles.selectedLanguageText,
-            ]}
+              styles.languageButton, 
+              selectedLanguage === 'en' && styles.selectedButton
+            ]} 
+            onPress={() => handleLanguageChange('en')}
           >
-            English
-          </Text>
-          {currentLanguage === 'en' && (
-            <Ionicons name="checkmark" size={24} color="black" />
-          )}
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.languageOption,
-            currentLanguage === 'ar' && styles.selectedLanguage,
-          ]}
-          onPress={() => handleLanguageChange('ar')}
-        >
-          <Text
+            <Text style={selectedLanguage === 'en' ? styles.selectedText : styles.languageText}>
+              {t('language.english')}
+            </Text>
+            {selectedLanguage === 'en' && (
+              <View style={styles.checkIcon}>
+                <Ionicons name="checkmark" size={16} color="black" />
+              </View>
+            )}
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
             style={[
-              styles.languageText,
-              currentLanguage === 'ar' && styles.selectedLanguageText,
-            ]}
+              styles.languageButton,
+              selectedLanguage === 'ar' && styles.selectedButton
+            ]} 
+            onPress={() => handleLanguageChange('ar')}
           >
-            العربية
-          </Text>
-          {currentLanguage === 'ar' && (
-            <Ionicons name="checkmark" size={24} color="black" />
-          )}
-        </TouchableOpacity>
+            <Text style={selectedLanguage === 'ar' ? styles.selectedText : styles.languageText}>
+              {t('language.arabic')}
+            </Text>
+            {selectedLanguage === 'ar' && (
+              <View style={styles.checkIcon}>
+                <Ionicons name="checkmark" size={16} color="black" />
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -86,53 +112,62 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  content: {
     padding: 20,
-    paddingTop: 60,
-  },
-  backButton: {
-    marginRight: 15,
   },
   title: {
     fontSize: 24,
-    fontWeight: '600',
+    fontWeight: 'bold',
+    marginBottom: 4,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 10,
   },
   divider: {
     height: 1,
-    backgroundColor: '#e0e0e0',
-    marginHorizontal: 20,
-    marginBottom: 20,
+    backgroundColor: '#E0E0E0',
+    marginVertical: 20,
   },
-  languagesContainer: {
-    padding: 20,
-  },
-  languageOption: {
+  buttonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 5,
-    marginBottom: 15,
+    marginTop: 20,
   },
-  selectedLanguage: {
+  languageButton: {
+    width: '48%',
+    height: 140,
+    borderWidth: 1,
     borderColor: '#000',
-    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    position: 'relative',
+  },
+  selectedButton: {
+    backgroundColor: '#fff',
+    borderWidth: 2,
   },
   languageText: {
     fontSize: 18,
+    fontWeight: 'bold',
   },
-  selectedLanguageText: {
-    fontWeight: '600',
+  selectedText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000',
   },
+  checkIcon: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
 }); 

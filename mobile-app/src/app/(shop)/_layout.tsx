@@ -14,7 +14,15 @@ function TabBarIcon(props: {
 
 const TabsLayout = () => {
   const cartItems = useCartStore(state => state.items);
-  const cartItemsCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
+  
+  // Calculate total items, properly handling string and number quantities
+  const cartItemsCount = cartItems.reduce((sum, item) => {
+    const itemQuantity = typeof item.quantity === 'string' 
+      ? parseInt(item.quantity, 10) 
+      : (typeof item.quantity === 'number' ? item.quantity : 0);
+    
+    return sum + itemQuantity;
+  }, 0);
 
   return (
     <SafeAreaView edges={['top']} style={styles.safeArea}>

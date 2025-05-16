@@ -56,6 +56,86 @@ const translations: TranslationMap = {
     en: 'Explore',
     ar: 'استكشف',
   },
+  'home.services': {
+    en: 'Our Services',
+    ar: 'خدماتنا',
+  },
+  'home.features': {
+    en: 'Features',
+    ar: 'المميزات',
+  },
+  'home.fragrance': {
+    en: 'OUR NEW FRAGRANCE',
+    ar: 'عطرنا الجديد',
+  },
+  'home.nailcare': {
+    en: 'Nail Polish Remover',
+    ar: 'مزيل طلاء الأظافر',
+  },
+  'home.perfumes': {
+    en: 'PERFUMES',
+    ar: 'العطور',
+  },
+  'home.cologne': {
+    en: 'COLOGNE',
+    ar: 'كولونيا',
+  },
+  
+  // Categories
+  'categories.fragrance_description': {
+    en: 'Our new collection of fragrances offers a unique experience of freshness, where each spray takes you on a special journey.',
+    ar: 'تقدم مجموعتنا الجديدة من العطور تجربة فريدة من الانتعاش، حيث تأخذك كل رشة في رحلة خاصة.',
+  },
+  'categories.nailcare_description': {
+    en: 'Azura provides premium nail care products designed to promote the growth of long, strong, and healthy nails',
+    ar: 'توفر أزورا منتجات عناية بالأظافر متميزة مصممة لتعزيز نمو أظافر طويلة وقوية وصحية',
+  },
+  'categories.makeup_description': {
+    en: 'Premium makeup for every occasion',
+    ar: 'مكياج فاخر لكل مناسبة',
+  },
+  'categories.products': {
+    en: 'PRODUCTS',
+    ar: 'منتجات',
+  },
+  
+  // Product Details
+  'product.newArrival': {
+    en: 'NEW ARRIVAL',
+    ar: 'وصل حديثًا',
+  },
+  'product.readMore': {
+    en: 'READ MORE',
+    ar: 'قراءة المزيد',
+  },
+  'product.outOfStock': {
+    en: 'Out of Stock',
+    ar: 'نفذ من المخزون',
+  },
+  'product.inStock': {
+    en: 'In Stock',
+    ar: 'متوفر',
+  },
+  'product.limitedStock': {
+    en: 'Only {0} items available.',
+    ar: 'متوفر {0} قطع فقط.',
+  },
+  'product.addedToCart': {
+    en: 'Product has been added to your cart.',
+    ar: 'تمت إضافة المنتج إلى سلة التسوق الخاصة بك.',
+  },
+  'product.quantity': {
+    en: 'Quantity',
+    ar: 'الكمية',
+  },
+  'product.goBack': {
+    en: 'Go Back',
+    ar: 'الرجوع',
+  },
+  'product.productNotFound': {
+    en: 'Product not found',
+    ar: 'المنتج غير موجود',
+  },
   
   // Account
   'account.title': {
@@ -127,11 +207,11 @@ const translations: TranslationMap = {
   
   // Product
   'product.addToCart': {
-    en: 'Add to Cart',
+    en: 'ADD TO CART',
     ar: 'أضف إلى السلة',
   },
   'product.buyNow': {
-    en: 'Buy Now',
+    en: 'BUY NOW',
     ar: 'اشتر الآن',
   },
   

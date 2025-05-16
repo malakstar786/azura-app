@@ -14,11 +14,14 @@ import { router } from 'expo-router';
 import { useAuthStore } from '../../store/auth-store';
 import { makeApiCall, API_ENDPOINTS } from '../../utils/api-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Link } from 'expo-router';
+import { useTranslation } from '../../utils/translations';
 
 export default function AccountScreen() {
   const { user, isAuthenticated, clearUser } = useAuthStore();
   const [isLoading, setIsLoading] = React.useState(false);
   const [userProfile, setUserProfile] = React.useState<any>(null);
+  const { t } = useTranslation();
 
   // Fetch user profile data
   useEffect(() => {
@@ -131,6 +134,11 @@ export default function AccountScreen() {
           onPress={() => router.push('/auth')}
         >
           <Text style={styles.loginButtonText}>LOGIN / REGISTER</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
+          <Text style={styles.menuItemText}>{t('account.logout')}</Text>
+          <Ionicons name="chevron-forward" size={24} color="#000" />
         </TouchableOpacity>
       </View>
     );
@@ -299,5 +307,17 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '500',
+  },
+  menuItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  menuItemText: {
+    fontSize: 16,
+    color: '#000',
   },
 }); 

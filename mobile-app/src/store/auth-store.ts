@@ -12,6 +12,7 @@ import {
   generateRandomOCSESSID 
 } from '../utils/api-config';
 import { Alert } from 'react-native';
+import { useCartStore } from './cart-store';
 
 // Constants imported from api-config
 const OCSESSID_STORAGE_KEY = '@azura_ocsessid';
@@ -57,6 +58,7 @@ export interface AuthState {
   updateAddress: (address: Address) => Promise<void>;
   deleteAddress: (addressId: string) => Promise<void>;
   clearError: () => void;
+  logout: () => void;
 }
 
 // Function to handle common API errors
@@ -93,9 +95,9 @@ export const useAuthStore = create<AuthState>()(
 
           console.log('Attempting login with:', { email });
 
-          // Clear previous stored OCSESSID to ensure a clean login
-          // This can help resolve issues with invalid sessions
-          await AsyncStorage.removeItem(OCSESSID_STORAGE_KEY);
+          // Generate and set a new OCSESSID for the session
+          const ocsessid = await getOrCreateOCSESSID();
+          await setOCSESSID(ocsessid);
 
           const response = await makeApiCall(API_ENDPOINTS.login, {
             method: 'POST',
@@ -131,6 +133,16 @@ export const useAuthStore = create<AuthState>()(
             } catch (addressError) {
               console.error('Failed to fetch addresses after login:', addressError);
               // Continue even if address fetch fails
+            }
+
+            // Fetch cart after successful login
+            try {
+              console.log('Fetching cart after successful login');
+              await useCartStore.getState().getCart();
+              console.log('Cart fetched successfully after login');
+            } catch (cartError) {
+              console.error('Failed to fetch cart after login:', cartError);
+              // Continue even if cart fetch fails - don't block login
             }
           } else {
             throw new Error(
@@ -195,9 +207,11 @@ export const useAuthStore = create<AuthState>()(
                 email: userData.email,
                 telephone: userData.telephone,
                 password: userData.password,
-                // Add missing fields that might be required
                 confirm: userData.password, // Password confirmation
-                agree: '1'  // Agreement to terms
+                agree: '1',  // Agreement to terms
+                newsletter: '0', // Default to not subscribing to newsletter
+                customer_group_id: '1', // Default customer group
+                custom_field: {} // Empty custom fields object
               }
             });
 
@@ -498,7 +512,19 @@ export const useAuthStore = create<AuthState>()(
         }
       },
 
-      clearError: () => set({ error: null })
+      clearError: () => set({ error: null }),
+
+      logout: () => {
+        set({ 
+          isAuthenticated: false, 
+          user: null,
+          addresses: [],
+          isLoading: false,
+          error: null
+        });
+        // Clear cart when logging out
+        useCartStore.getState().clearCart();
+      }
     }),
     {
       name: 'auth-storage',

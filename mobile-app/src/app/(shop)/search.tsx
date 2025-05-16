@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { makeApiCall, API_ENDPOINTS, ApiResponse } from '../../utils/api-config';
+import { publicApi } from '../../utils/api-service';
 
 const { width } = Dimensions.get('window');
 
@@ -65,31 +66,22 @@ export default function SearchScreen() {
   useEffect(() => {
     const fetchAllProducts = async () => {
       if (productsLoaded) return;
-      
       setIsLoading(true);
       setError(null);
-
       try {
-        const response = await makeApiCall<ProductsResponse>(
-          API_ENDPOINTS.allProducts,
-          { method: 'GET' }
-        );
-
+        const response = await publicApi.getAllProducts();
         if (response.success === 1 && response.data) {
           setAllProducts(response.data.products || []);
           setProductsLoaded(true);
         } else {
-          console.error('API error:', response.error);
           setError(Array.isArray(response.error) ? response.error[0] : 'Failed to fetch products');
         }
       } catch (err: any) {
-        console.error('Error fetching products:', err);
-        setError('Error loading products. Please try again.');
+        setError('Network error: Unable to load products. Please check your connection and try again.');
       } finally {
         setIsLoading(false);
       }
     };
-
     fetchAllProducts();
   }, [productsLoaded]);
 

@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { publicApi } from "../../utils/api-service";
 import { NetworkErrorCodes } from "../../utils/api-config";
 import { LinearGradient } from 'expo-linear-gradient';
+import { useLanguageStore } from "../../store/language-store";
+import { useTranslation } from "../../utils/translations";
 
 const { width, height } = Dimensions.get("window");
 
@@ -88,6 +90,8 @@ export default function HomeScreen() {
   const [serviceData, setServiceData] = useState<ServiceBlock | null>(null);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const { currentLanguage, lastUpdated } = useLanguageStore();
+  const { t } = useTranslation();
 
   const getErrorMessage = (error: any) => {
     if (error.code === NetworkErrorCodes.NO_CONNECTION) {
@@ -106,33 +110,20 @@ export default function HomeScreen() {
         setIsLoading(true);
         setError(null);
 
-        // Fetch slider block data
-        const sliderResponse = await fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|sliderblock');
-        if (!sliderResponse.ok) {
-          throw new Error('Failed to fetch slider data');
+        // Fetch slider block data using publicApi
+        const sliderResponse = await publicApi.getHomeSliderBlock();
+        if (sliderResponse.success === 1 && sliderResponse.data.ishiservices.length > 0) {
+          setSliderData(sliderResponse.data.ishiservices[0]);
         }
 
-        const sliderData = await sliderResponse.json() as SliderResponse;
-        if (sliderData.success === 1 && sliderData.data.ishiservices.length > 0) {
-          setSliderData(sliderData.data.ishiservices[0]);
-        }
-
-        // Fetch all feature blocks in parallel
-        const [block1Res, block2Res, block3Res, block4Res, block5Res] = await Promise.all([
-          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock1'),
-          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock2'),
-          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock3'),
-          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock4'),
-          fetch('https://new.azurakwt.com/index.php?route=extension/mstore/home|featuresblock5')
-        ]);
-
+        // Fetch all feature blocks in parallel using publicApi
         const [block1Data, block2Data, block3Data, block4Data, block5Data] = await Promise.all([
-          block1Res.json(),
-          block2Res.json(),
-          block3Res.json(),
-          block4Res.json(),
-          block5Res.json()
-        ]) as [FeaturesResponse, FeaturesResponse, FeaturesResponse, FeaturesResponse, FeaturesResponse];
+          publicApi.getFeaturesBlock(1),
+          publicApi.getFeaturesBlock(2),
+          publicApi.getFeaturesBlock(3),
+          publicApi.getFeaturesBlock(4),
+          publicApi.getFeaturesBlock(5)
+        ]);
 
         setFeatureBlocks({
           block1: block1Data.success === 1 ? block1Data.data : null,
@@ -157,7 +148,7 @@ export default function HomeScreen() {
     };
 
     fetchHomeData();
-  }, []);
+  }, [currentLanguage, lastUpdated]);
 
   const handleExplorePress = (category: string) => {
     // For fragrance blocks, always use 'perfumes' as the slug
@@ -280,7 +271,9 @@ export default function HomeScreen() {
               style={styles.mainButton}
               onPress={() => handleExplorePress('nail-care')}
             >
-              <Text style={styles.mainButtonText}>{sliderData.btntext}</Text>
+              <Text style={styles.mainButtonText}>
+                {sliderData.btntext || t('home.explore')}
+              </Text>
             </TouchableOpacity>
           </View>
         </LinearGradient>
@@ -321,7 +314,7 @@ export default function HomeScreen() {
                     onPress={() => handleExplorePress(category)}
                   >
                     <Text style={styles.mainButtonText}>
-                      {block.btntext}
+                      {block.btntext || t('home.explore')}
                     </Text>
                   </TouchableOpacity>
                 )}

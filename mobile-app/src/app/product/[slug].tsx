@@ -12,6 +12,9 @@ import {
 } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
 import { useCartStore } from '../../store/cart-store';
+import { useLanguageStore } from '../../store/language-store';
+import { useTranslation } from '../../utils/translations';
+import { publicApi } from '../../utils/api-service';
 
 const { width } = Dimensions.get('window');
 
@@ -40,13 +43,15 @@ interface ApiResponse {
 const ProductDetails = () => {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const toast = useToast();
+  const { t } = useTranslation();
+  const { currentLanguage, lastUpdated } = useLanguageStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
 
-  const { items, addItem, incrementQuantity, decrementQuantity } = useCartStore();
+  const { items, addToCart, incrementQuantity, decrementQuantity } = useCartStore();
   const cartItem = items.find(item => item.product_id === slug);
 
   useEffect(() => {
@@ -55,34 +60,29 @@ const ProductDetails = () => {
         setIsLoading(true);
         setError(null);
 
-        const response = await fetch(`https://new.azurakwt.com/index.php?route=extension/mstore/product|detail&productId=${slug}`);
+        const response = await publicApi.getProductDetail(slug);
+        console.log('Product detail response:', response);
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! Status: ${response.status}`);
-        }
-
-        const data = await response.json() as ApiResponse;
-        
-        if (data.success === 1 && data.data) {
-          setProduct(data.data);
+        if (response.success === 1 && response.data) {
+          setProduct(response.data);
           
           // If this product is in the cart, set the initial quantity
           if (cartItem) {
-            setQuantity(cartItem.quantity);
+            setQuantity(typeof cartItem.quantity === 'string' ? parseInt(cartItem.quantity, 10) : cartItem.quantity);
           }
         } else {
-          throw new Error(data.error || 'Failed to load product');
+          throw new Error(Array.isArray(response.error) ? response.error[0] : 'Failed to load product');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching product details:', err);
-        setError('Could not load product details. Please try again.');
+        setError(err.message || 'Could not load product details. Please try again.');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProductDetails();
-  }, [slug, cartItem]);
+  }, [slug, cartItem, currentLanguage, lastUpdated]);
 
   const handleIncrement = () => {
     if (quantity < 10) {
@@ -121,19 +121,7 @@ const ProductDetails = () => {
       return;
     }
 
-    addItem({
-      cart_id: product.product_id,
-      product_id: product.product_id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: quantity,
-    });
-
-    toast.show('Product has been added to your cart.', {
-      type: 'success',
-      placement: 'bottom',
-    });
+    addToCart(product.product_id, quantity);
   };
 
   const handleBuyNow = () => {

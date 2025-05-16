@@ -5,6 +5,7 @@ import { useLanguageStore } from '../store/language-store';
 // Get current language from store
 const getCurrentLanguage = () => {
   const { currentLanguage } = useLanguageStore.getState();
+  console.log(`API Service: Current language is ${currentLanguage}`);
   return currentLanguage;
 };
 
@@ -12,6 +13,7 @@ const getCurrentLanguage = () => {
 export const publicApi = {
   getHomeServiceBlock: () => {
     const language = getCurrentLanguage();
+    console.log(`Making serviceBlock API call with language: ${language}`);
     return makeApiCall<any>(API_ENDPOINTS.homeServiceBlock, {
       params: language === 'ar' ? { language: 'ar' } : undefined,
     });
@@ -19,6 +21,7 @@ export const publicApi = {
   
   getHomeSliderBlock: () => {
     const language = getCurrentLanguage();
+    console.log(`Making sliderBlock API call with language: ${language}`);
     return makeApiCall<any>(API_ENDPOINTS.homeSliderBlock, {
       params: language === 'ar' ? { language: 'ar' } : undefined,
     });
@@ -51,52 +54,68 @@ export const publicApi = {
         throw new Error(`Invalid features block number: ${blockNumber}`);
     }
     
+    console.log(`Making featuresBlock ${blockNumber} API call with language: ${language}`);
     return makeApiCall<any>(endpoint, {
-      params: language === 'ar' ? { language: 'ar' } : undefined,
+      params: { language }, // Always include language parameter
     });
   },
   
   getMainMenu: () => {
     const language = getCurrentLanguage();
-    return makeApiCall<any>(API_ENDPOINTS.mainMenu, {
-      params: language === 'ar' ? { language: 'ar' } : undefined,
+    console.log(`Making mainMenu API call with language: ${language}`);
+    return makeApiCall<any>(API_ENDPOINTS.menu, {
+      params: { language }, // Always include language parameter
     });
   },
   
   getAllProducts: () => {
     const language = getCurrentLanguage();
-    return makeApiCall<any>(API_ENDPOINTS.allProducts, {
-      params: language === 'ar' ? { language: 'ar' } : undefined,
+    console.log(`Making allProducts API call with language: ${language}`);
+    return makeApiCall<any>(API_ENDPOINTS.products, {
+      params: { language }, // Always include language parameter
     });
   },
   
   getProductsByCategory: (categoryId: string) => {
     const language = getCurrentLanguage();
+    console.log(`Making productsByCategory API call for category ${categoryId} with language: ${language}`);
     
-    return makeApiCall<Product[]>(API_ENDPOINTS.allProducts, {
+    return makeApiCall<any>(API_ENDPOINTS.products, {
       params: {
         category: categoryId,
-        ...(language === 'ar' ? { language: 'ar' } : {}),
+        language, // Always include language parameter
       },
     }).then(response => {
-      // Ensure we have a valid response with products array
-      if (response.success === 1 && Array.isArray(response.data)) {
-        return response;
+      console.log(`Response for category ${categoryId}:`, response);
+      
+      // Check if the response is successful
+      if (response.success === 1 && response.data) {
+        // Handle both response formats (direct array or nested within object)
+        if (response.data.products && Array.isArray(response.data.products)) {
+          return {
+            ...response,
+            data: response.data
+          };
+        } else if (Array.isArray(response.data)) {
+          return {
+            ...response,
+            data: { products: response.data, product_total: response.data.length }
+          };
+        }
       }
-      // If data is not an array, wrap it in an array or return empty array
-      return {
-        ...response,
-        data: Array.isArray(response.data) ? response.data : []
-      };
+      
+      // Return original response if no products found
+      return response;
     });
   },
   
   getProductDetail: (productId: string) => {
     const language = getCurrentLanguage();
+    console.log(`Making productDetail API call for product ${productId} with language: ${language}`);
     return makeApiCall<any>(API_ENDPOINTS.productDetail, {
       params: { 
         productId,
-        ...(language === 'ar' ? { language: 'ar' } : {}),
+        language, // Always include language parameter
       },
     });
   },

@@ -11,17 +11,11 @@ export const ProductListItem = ({
   product: Product;
 }) => {
   const toast = useToast();
-  const { addItem, items, incrementItem, decrementItem } = useCartStore();
+  const { addToCart, items, incrementQuantity, decrementQuantity } = useCartStore();
   const cartItem = items.find(item => item.product_id === product.product_id);
 
   const handleAddToCart = () => {
-    addItem({
-      product_id: product.product_id,
-      name: product.name,
-      price: parseFloat(product.price.replace(' KD', '')),
-      image: product.image,
-      quantity: 1,
-    });
+    addToCart(product.product_id, 1);
     toast.show('Added to cart', {
       type: 'success',
       placement: 'top',
@@ -38,7 +32,7 @@ export const ProductListItem = ({
 
   const handleIncrement = () => {
     if (cartItem) {
-      incrementItem(product.product_id);
+      incrementQuantity(product.product_id);
       toast.show('Quantity increased', {
         type: 'success',
         placement: 'top',
@@ -48,13 +42,19 @@ export const ProductListItem = ({
   };
 
   const handleDecrement = () => {
-    if (cartItem && cartItem.quantity > 1) {
-      decrementItem(product.product_id);
-      toast.show('Quantity decreased', {
-        type: 'success',
-        placement: 'top',
-        duration: 1500,
-      });
+    if (cartItem) {
+      const currentQuantity = typeof cartItem.quantity === 'string' 
+        ? parseInt(cartItem.quantity, 10) 
+        : cartItem.quantity;
+        
+      if (currentQuantity > 1) {
+        decrementQuantity(product.product_id);
+        toast.show('Quantity decreased', {
+          type: 'success',
+          placement: 'top',
+          duration: 1500,
+        });
+      }
     }
   };
 

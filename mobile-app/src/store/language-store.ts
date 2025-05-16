@@ -1,70 +1,79 @@
 import { create } from 'zustand';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export type Language = 'en' | 'ar';
 
 interface LanguageState {
   currentLanguage: Language;
-  isFirstTime: boolean;
+  isFirstTimeUser: boolean;
   isLoading: boolean;
-  setLanguage: (language: Language) => Promise<void>;
-  setFirstTimeComplete: () => Promise<void>;
-  initialize: () => Promise<{ language: Language; isFirstTime: boolean }>;
+  lastUpdated: number; // Add timestamp to track updates
+  setLanguage: (language: Language) => void;
+  setIsFirstTimeUser: (isFirstTimeUser: boolean) => void;
+  initialize: () => Promise<void>;
 }
 
-const LANGUAGE_STORAGE_KEY = '@azura_language';
-const FIRST_TIME_STORAGE_KEY = '@azura_first_time';
-
-export const useLanguageStore = create<LanguageState>((set, get) => ({
-  currentLanguage: 'en',
-  isFirstTime: true,
-  isLoading: true,
-
-  setLanguage: async (language: Language) => {
-    try {
-      await AsyncStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-      set({ currentLanguage: language });
-    } catch (error) {
-      console.error('Failed to store language preference:', error);
+// Create store with persistence
+export const useLanguageStore = create<LanguageState>()(
+  persist(
+    (set, get) => ({
+      // Default state
+      currentLanguage: 'en',
+      isFirstTimeUser: true,
+      isLoading: true,
+      lastUpdated: Date.now(), // Initialize with current timestamp
+      
+      // Update language and log for debugging
+      setLanguage: (language: Language) => {
+        console.log(`Setting language to: ${language}`);
+        set({ 
+          currentLanguage: language,
+          lastUpdated: Date.now() // Update timestamp to force subscribers to re-render
+        });
+      },
+      
+      // Update first-time user flag
+      setIsFirstTimeUser: (isFirstTimeUser: boolean) => {
+        console.log(`Setting isFirstTimeUser to: ${isFirstTimeUser}`);
+        set({ isFirstTimeUser });
+      },
+      
+      // Initialize store
+      initialize: async () => {
+        try {
+          console.log("Initializing language store...");
+          
+          // Check if storage has values already to determine if it's actually first time
+          const storedState = await AsyncStorage.getItem('language-storage');
+          if (storedState) {
+            try {
+              const parsedState = JSON.parse(storedState);
+              console.log("Found stored state:", parsedState);
+              
+              // Only update if we have valid stored values
+              if (parsedState && parsedState.state) {
+                const { currentLanguage, isFirstTimeUser } = parsedState.state;
+                console.log(`Stored values - language: ${currentLanguage}, isFirstTimeUser: ${isFirstTimeUser}`);
+              }
+            } catch (e) {
+              console.error("Error parsing stored state:", e);
+            }
+          } else {
+            console.log("No stored state found, assumed first time user");
+          }
+          
+          // Mark as loaded
+          set({ isLoading: false });
+        } catch (error) {
+          console.error('Failed to initialize language store:', error);
+          set({ isLoading: false });
+        }
+      }
+    }),
+    {
+      name: 'language-storage',
+      storage: createJSONStorage(() => AsyncStorage),
     }
-  },
-
-  setFirstTimeComplete: async () => {
-    try {
-      await AsyncStorage.setItem(FIRST_TIME_STORAGE_KEY, 'false');
-      set({ isFirstTime: false });
-    } catch (error) {
-      console.error('Failed to update first time status:', error);
-    }
-  },
-
-  initialize: async () => {
-    try {
-      set({ isLoading: true });
-      
-      // Check if it's first time
-      const firstTimeValue = await AsyncStorage.getItem(FIRST_TIME_STORAGE_KEY);
-      const isFirstTime = firstTimeValue === null || firstTimeValue === 'true';
-      
-      // Get stored language or default to English
-      const storedLanguage = await AsyncStorage.getItem(LANGUAGE_STORAGE_KEY);
-      const language = (storedLanguage === 'ar' ? 'ar' : 'en') as Language;
-      
-      set({ 
-        currentLanguage: language,
-        isFirstTime,
-        isLoading: false 
-      });
-      
-      return { language, isFirstTime };
-    } catch (error) {
-      console.error('Failed to initialize language store:', error);
-      set({ 
-        currentLanguage: 'en',
-        isFirstTime: false,
-        isLoading: false 
-      });
-      return { language: 'en' as Language, isFirstTime: false };
-    }
-  }
-})); 
+  )
+); 

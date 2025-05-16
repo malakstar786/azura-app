@@ -50,7 +50,7 @@ const DeleteConfirmationModal = ({ visible, onClose, onConfirm, item }: DeleteMo
             <Text style={styles.deleteModalItemTitle}>{item.name.toUpperCase()}</Text>
             <Text style={styles.deleteModalQuantity}>QTY: {item.quantity}</Text>
             <Text style={styles.deleteModalPrice}>
-              {(parseFloat(item.price) * item.quantity).toFixed(3)} KD
+              {(parseFloat(item.price) * Number(item.quantity)).toFixed(3)} KD
             </Text>
           </View>
         </View>
@@ -93,22 +93,25 @@ const CartItemRow = ({
   const quantities = Array.from({ length: 10 }, (_, i) => i + 1);
 
   const handleIncrement = async () => {
+    if (item.maximum) return;
     setIsUpdating(true);
     try {
-      await onIncrement(item.product_id);
+      await onIncrement(item.cart_id);
     } finally {
       setIsUpdating(false);
     }
   };
 
   const handleDecrement = () => {
-    onDecrement(item.product_id);
+    if (item.minimum) return;
+    onDecrement(item.cart_id);
   };
 
   const handleQuantitySelect = async (qty: number) => {
+    if (!item.stock) return;
     setIsUpdating(true);
     try {
-      await onUpdateQuantity(item.product_id, qty);
+      await onUpdateQuantity(item.cart_id, qty);
     } finally {
       setIsUpdating(false);
       setShowQuantityModal(false);
@@ -118,38 +121,38 @@ const CartItemRow = ({
   return (
     <View style={styles.cartItemRow}>
       <Image 
-        source={{ uri: `https://new.azurakwt.com/image/${item.image}` }} 
+        source={{ uri: `https://new.azurakwt.com/image/${item.thumb || item.image}` }} 
         style={styles.itemImage} 
       />
       <View style={styles.itemDetails}>
-        <Text style={styles.itemSku}>SKU: {item.product_id}</Text>
+        <Text style={styles.itemSku}>SKU: {item.sku || item.product_id}</Text>
         <Text style={styles.itemTitle}>{item.name.toUpperCase()}</Text>
         <View style={styles.quantityContainer}>
           <TouchableOpacity 
             onPress={handleDecrement}
-            style={[styles.quantityButton, isUpdating && styles.disabledButton]}
-            disabled={isUpdating || item.quantity <= 1}
+            style={[styles.quantityButton, (isUpdating || item.minimum) && styles.disabledButton]}
+            disabled={isUpdating || item.minimum}
           >
-            <Text style={[styles.quantityButtonText, isUpdating && styles.disabledText]}>-</Text>
+            <Text style={[styles.quantityButtonText, (isUpdating || item.minimum) && styles.disabledText]}>-</Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={[styles.quantitySelector, isUpdating && styles.disabledButton]}
             onPress={() => !isUpdating && setShowQuantityModal(true)}
-            disabled={isUpdating}
+            disabled={isUpdating || !item.stock}
           >
             <Text style={[styles.itemQuantity, isUpdating && styles.disabledText]}>QTY: {item.quantity}</Text>
             <Ionicons name="chevron-down" size={16} color={isUpdating ? "#999" : "#000"} />
           </TouchableOpacity>
           <TouchableOpacity 
             onPress={handleIncrement}
-            style={[styles.quantityButton, isUpdating && styles.disabledButton]}
-            disabled={isUpdating}
+            style={[styles.quantityButton, (isUpdating || item.maximum) && styles.disabledButton]}
+            disabled={isUpdating || item.maximum}
           >
-            <Text style={[styles.quantityButtonText, isUpdating && styles.disabledText]}>+</Text>
+            <Text style={[styles.quantityButtonText, (isUpdating || item.maximum) && styles.disabledText]}>+</Text>
           </TouchableOpacity>
         </View>
         <Text style={styles.itemPrice}>
-          {(parseFloat(item.price) * item.quantity).toFixed(3)} KD
+          {item.total || (parseFloat(item.price) * Number(item.quantity)).toFixed(3)} KD
         </Text>
       </View>
       <TouchableOpacity 
@@ -163,7 +166,7 @@ const CartItemRow = ({
         visible={showDeleteModal}
         onClose={() => setShowDeleteModal(false)}
         onConfirm={() => {
-          onRemove(item.product_id);
+          onRemove(item.cart_id);
           setShowDeleteModal(false);
         }}
         item={item}
@@ -215,8 +218,10 @@ export default function CartScreen() {
     decrementQuantity,
     getTotalPrice,
     updateQuantity,
+    clearCart,
   } = useCartStore();
   const { isAuthenticated } = useAuthStore();
+  const [showClearCartModal, setShowClearCartModal] = useState(false);
 
   const handleUpdateQuantity = async (productId: string, quantity: number) => {
     await updateQuantity(productId, quantity);
@@ -274,7 +279,7 @@ export default function CartScreen() {
       <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
 
       <View>
-        <Text style={styles.title}>MY{'\n'}CART</Text>
+        <Text style={styles.title}>{'MY\nCART'}</Text>
         <View style={styles.dividerContainer}>
           <View style={styles.divider} />
         </View>
@@ -282,7 +287,7 @@ export default function CartScreen() {
 
       <FlatList
         data={items}
-        keyExtractor={item => item.product_id}
+        keyExtractor={item => item.cart_id}
         renderItem={({ item }) => (
           <CartItemRow
             item={item}
@@ -294,6 +299,45 @@ export default function CartScreen() {
         )}
         contentContainerStyle={styles.cartItemsList}
       />
+
+      {/* Empty Cart Button */}
+      <TouchableOpacity
+        style={styles.emptyCartButton}
+        onPress={() => setShowClearCartModal(true)}
+      >
+        <Text style={styles.emptyCartButtonText}>EMPTY CART</Text>
+      </TouchableOpacity>
+
+      {/* Empty Cart Confirmation Modal */}
+      <Modal
+        visible={showClearCartModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowClearCartModal(false)}
+      >
+        <View style={styles.deleteModalOverlay}>
+          <View style={styles.deleteModalContent}>
+            <Text style={styles.deleteModalTitle}>Remove all items from cart?</Text>
+            <View style={styles.deleteModalButtons}>
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.cancelButton]}
+                onPress={() => setShowClearCartModal(false)}
+              >
+                <Text style={styles.cancelButtonText}>CANCEL</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deleteModalButton, styles.confirmButton]}
+                onPress={async () => {
+                  await clearCart();
+                  setShowClearCartModal(false);
+                }}
+              >
+                <Text style={styles.confirmButtonText}>YES, REMOVE ALL</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <View style={styles.summaryContainer}>
         <View style={styles.summaryRow}>
@@ -605,5 +649,19 @@ const styles = StyleSheet.create({
   },
   disabledText: {
     color: '#999',
+  },
+  emptyCartButton: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#000',
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  emptyCartButtonText: {
+    color: '#000',
+    fontSize: 14,
+    fontWeight: '600',
   },
 }); 

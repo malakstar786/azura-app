@@ -101,14 +101,37 @@ export default function Auth() {
     };
 
     const handleSignup = async () => {
-      if (!signupForm.firstname || !signupForm.lastname || !signupForm.email || !signupForm.telephone || !signupForm.password) {
-        setErrors({ 
-          firstname: !signupForm.firstname ? 'First name is required' : '',
-          lastname: !signupForm.lastname ? 'Last name is required' : '',
-          email: !signupForm.email ? 'Email is required' : '',
-          telephone: !signupForm.telephone ? 'Mobile number is required' : '',
-          password: !signupForm.password ? 'Password is required' : ''
-        });
+      // Validate all required fields
+      const validationErrors: Record<string, string> = {};
+      
+      if (!signupForm.firstname?.trim()) {
+        validationErrors.firstname = 'First name is required';
+      }
+      
+      if (!signupForm.lastname?.trim()) {
+        validationErrors.lastname = 'Last name is required';
+      }
+      
+      if (!signupForm.email?.trim()) {
+        validationErrors.email = 'Email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(signupForm.email)) {
+        validationErrors.email = 'Please enter a valid email address';
+      }
+      
+      if (!signupForm.telephone?.trim()) {
+        validationErrors.telephone = 'Mobile number is required';
+      } else if (!/^\d{8,}$/.test(signupForm.telephone.replace(/\D/g, ''))) {
+        validationErrors.telephone = 'Please enter a valid mobile number';
+      }
+      
+      if (!signupForm.password?.trim()) {
+        validationErrors.password = 'Password is required';
+      } else if (signupForm.password.length < 6) {
+        validationErrors.password = 'Password must be at least 6 characters long';
+      }
+      
+      if (Object.keys(validationErrors).length > 0) {
+        setErrors(validationErrors);
         return;
       }
       
@@ -117,19 +140,31 @@ export default function Auth() {
       
       try {
         await signup({
-          firstname: signupForm.firstname,
-          lastname: signupForm.lastname,
-          email: signupForm.email,
-          telephone: signupForm.telephone,
+          firstname: signupForm.firstname.trim(),
+          lastname: signupForm.lastname.trim(),
+          email: signupForm.email.trim(),
+          telephone: signupForm.telephone.trim(),
           password: signupForm.password,
         });
         
         // Router will handle redirection in the useEffect hook
       } catch (error: any) {
+        console.error('Signup error:', error);
+        
+        let errorMessage = error.message || 'An error occurred during signup';
+        
+        // Handle specific error cases
+        if (errorMessage.includes('temporarily unavailable')) {
+          errorMessage = 'The registration service is currently unavailable. Please try again later.';
+        } else if (errorMessage.includes('already exists')) {
+          errorMessage = 'An account with this email already exists. Please try logging in instead.';
+        }
+        
         setErrors({ 
-          email: error.message || 'An error occurred during signup'
+          email: errorMessage
         });
-        Alert.alert('Signup Failed', error.message || 'An unexpected error occurred');
+        
+        Alert.alert('Signup Failed', errorMessage);
       } finally {
         setIsLoading(false);
       }

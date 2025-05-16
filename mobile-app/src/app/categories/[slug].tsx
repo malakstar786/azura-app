@@ -14,7 +14,11 @@ import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cart-store';
+import { useLanguageStore } from '../../store/language-store';
+import { useTranslation } from '../../utils/translations';
 import { useToast } from 'react-native-toast-notifications';
+import { publicApi } from '../../utils/api-service';
+import { Product as ApiProduct } from '../../types/api';
 
 const { width } = Dimensions.get('window');
 const COLUMN_GAP = 15;
@@ -29,24 +33,53 @@ const CATEGORY_MAP: { [key: string]: string } = {
   'makeup': '18'
 };
 
-interface Product {
-  product_id: string;
-  name: string;
-  price: string;
-  image: string;
+interface Product extends ApiProduct {
   stock_status: string;
   date_added: string;
-  category_id: string;
   quantity: number;
+  sku: string;
+  meta_title: string;
+  meta_description: string;
+  meta_keyword: string;
+  tag: string;
+  model: string;
+  upc: string;
+  ean: string;
+  jan: string;
+  isbn: string;
+  mpn: string;
+  location: string;
+  manufacturer_id: string | null;
+  manufacturer: string | null;
+  reward: string | null;
+  points: string;
+  tax_class_id: string;
+  date_available: string;
+  weight: string;
+  weight_class_id: string;
+  length: string;
+  width: string;
+  height: string;
+  length_class_id: string;
+  subtract: string;
+  rating: number;
+  reviews: number;
+  minimum: string;
+  sort_order: string;
+  status: string;
+  date_modified: string;
+  options: any[];
+}
+
+interface ProductResponse {
+  product_total: number;
+  products: Product[];
 }
 
 interface ApiResponse {
   success: number;
-  error: string | undefined;
-  data: {
-    product_total: number;
-    products: Product[];
-  };
+  error: string[] | undefined;
+  data: ProductResponse | Product[];
 }
 
 interface FeaturesBlock {
@@ -67,16 +100,19 @@ export default function CategoryScreen() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categoryImage, setCategoryImage] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
-  const { addItem } = useCartStore();
   const toast = useToast();
+  const { t } = useTranslation();
+  const { currentLanguage, lastUpdated } = useLanguageStore();
 
   const getCategoryDescription = (categorySlug: string) => {
     switch(categorySlug) {
       case 'fragrance':
       case 'perfumes':
-        return 'Our new collection of fragrances offers a unique experience of freshness, where each spray takes you on a special journey.';
+        return t('categories.fragrance_description') || 'Our new collection of fragrances offers a unique experience of freshness, where each spray takes you on a special journey.';
       case 'nail-care':
-        return 'Azura provides premium nail care products designed to promote the growth of long, strong, and healthy nails';
+        return t('categories.nailcare_description') || 'Azura provides premium nail care products designed to promote the growth of long, strong, and healthy nails';
+      case 'makeup':
+        return t('categories.makeup_description') || 'Premium makeup for every occasion';
       default:
         return '';
     }
@@ -94,42 +130,38 @@ export default function CategoryScreen() {
         }
 
         // Fetch feature block based on category
-        const featureBlockEndpoint = slug === 'nail-care' ? 'featuresblock2' :
-                                   slug === 'makeup' ? 'featuresblock5' : 'featuresblock1';
+        const featureBlockNumber = slug === 'nail-care' ? 2 :
+                                   slug === 'makeup' ? 5 : 1;
         
-        const featureResponse = await fetch(`https://new.azurakwt.com/index.php?route=extension/mstore/home|${featureBlockEndpoint}`);
-        if (featureResponse.ok) {
-          const featureData = await featureResponse.json() as FeaturesResponse;
-          if (featureData.success === 1 && featureData.data) {
-            setCategoryImage(featureData.data.image);
+        const featureResponse = await publicApi.getFeaturesBlock(featureBlockNumber);
+        if (featureResponse.success === 1 && featureResponse.data) {
+          setCategoryImage(featureResponse.data.image);
+        }
+
+        // Fetch products by category
+        const response = await publicApi.getProductsByCategory(categoryId);
+        console.log('Category products response:', response);
+        
+        if (response.success === 1 && response.data) {
+          // The API service now always returns data in the format { products: Product[], product_total: number }
+          if (response.data.products && Array.isArray(response.data.products)) {
+            setProducts(response.data.products as Product[]);
+          } else {
+            setProducts([]);
           }
-        }
-
-        // Fetch products
-        const response = await fetch('https://new.azurakwt.com/index.php?route=extension/mstore/product');
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json() as ApiResponse;
-        if (data.success === 1 && Array.isArray(data.data.products)) {
-          const categoryProducts = data.data.products.filter(
-            product => product.category_id === categoryId
-          );
-          setProducts(categoryProducts);
         } else {
-          throw new Error(data.error || 'Invalid response format');
+          throw new Error(Array.isArray(response.error) ? response.error[0] : 'Invalid response format');
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error('Error fetching data:', err);
-        setError('Failed to load content. Please try again.');
+        setError(err.message || 'Failed to load content. Please try again.');
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchData();
-  }, [slug]);
+  }, [slug, currentLanguage, lastUpdated]);
 
   const isNewArrival = (product: Product) => {
     const isInStock = product.stock_status === "2-3 Days";
@@ -147,14 +179,7 @@ export default function CategoryScreen() {
       });
       return;
     }
-    useCartStore.getState().addItem({
-      cart_id: product.product_id,
-      product_id: product.product_id,
-      name: product.name,
-      price: product.price,
-      image: product.image,
-      quantity: 1,
-    });
+    useCartStore.getState().addToCart(product.product_id, 1);
     toast.show('Product has been added to your cart.', {
       type: 'success',
       placement: 'bottom',
@@ -195,7 +220,7 @@ export default function CategoryScreen() {
             onPress={() => addToCart(item)}
             disabled={item.stock_status !== "2-3 Days"}
           >
-            <Text style={styles.buttonText}>ADD TO CART</Text>
+            <Text style={styles.buttonText}>{t('product.addToCart')}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -203,12 +228,12 @@ export default function CategoryScreen() {
             onPress={() => handleBuyNow(item)}
             disabled={item.stock_status !== "2-3 Days"}
           >
-            <Text style={[styles.buttonText, styles.buyNowButtonText]}>BUY NOW</Text>
+            <Text style={[styles.buttonText, styles.buyNowButtonText]}>{t('product.buyNow')}</Text>
           </TouchableOpacity>
         </View>
         
         <Text style={styles.stockStatus}>
-          {item.stock_status === "2-3 Days" ? "In Stock" : "Out of Stock"}
+          {item.stock_status === "2-3 Days" ? t('product.inStock') : t('product.outOfStock')}
         </Text>
       </View>
     </View>
@@ -268,7 +293,9 @@ export default function CategoryScreen() {
           <Text style={styles.categoryDescription}>
             {getCategoryDescription(slug as string)}
           </Text>
-          <Text style={styles.productCount}>{products.length} PRODUCTS</Text>
+          <Text style={styles.productCount}>
+            {products.length} {t('categories.products')}
+          </Text>
         </View>
 
         {/* Products Grid */}

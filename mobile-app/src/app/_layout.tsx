@@ -1,10 +1,8 @@
-import { Stack } from "expo-router";
+import { Stack, useRouter } from "expo-router";
 import { ToastProvider } from "react-native-toast-notifications";
 import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
-import { View } from 'react-native';
 import CustomSplashScreen from '../components/custom-splash-screen';
-import LanguageSelection from '../components/language-selection';
 import { getOrCreateOCSESSID } from '../utils/api-config';
 import { useLanguageStore } from '../store/language-store';
 
@@ -16,57 +14,52 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const { isFirstTime, isLoading, initialize } = useLanguageStore();
-  const [showLanguageSelection, setShowLanguageSelection] = useState(false);
+  const { isFirstTimeUser, initialize } = useLanguageStore();
+  const router = useRouter();
 
   useEffect(() => {
     async function prepare() {
       try {
         // Initialize OCSESSID first
         await getOrCreateOCSESSID();
-        
         // Initialize language store
         await initialize();
-        
         // Simulate any other initialization if needed
         await new Promise(resolve => setTimeout(resolve, 2000));
-        
         // Hide the native splash screen
         await SplashScreen.hideAsync();
-        
         // Mark the app as ready
         setIsReady(true);
       } catch (e) {
         console.warn('Error preparing app:', e);
-        // Even if there's an error, we should proceed to show the app
         setIsReady(true);
       }
     }
-
     prepare();
   }, []);
 
   useEffect(() => {
     if (isReady) {
-      // Show our custom splash for 1 second after initialization
+      // Show our custom splash for 3 seconds as per requirements
       const timer = setTimeout(() => {
         setShowSplash(false);
-        // Check if it's first time use to show language selection
-        if (!isLoading && isFirstTime) {
-          setShowLanguageSelection(true);
-        }
-      }, 1000);
-
+      }, 3000);
       return () => clearTimeout(timer);
     }
-  }, [isReady, isLoading, isFirstTime]);
+  }, [isReady]);
+
+  useEffect(() => {
+    if (!showSplash && isFirstTimeUser) {
+      console.log("First time user detected, navigating to language selection");
+      // Need to navigate to the index file within the directory
+      router.replace("language-selection");
+    } else if (!showSplash) {
+      console.log("Not first time user, staying on main screen");
+    }
+  }, [showSplash, isFirstTimeUser, router]);
 
   if (!isReady || showSplash) {
     return <CustomSplashScreen />;
-  }
-
-  if (showLanguageSelection) {
-    return <LanguageSelection onLanguageSelected={() => setShowLanguageSelection(false)} />;
   }
 
   return (
@@ -109,7 +102,14 @@ export default function RootLayout() {
             presentation: 'modal'
           }}
         />
+        <Stack.Screen
+          name="language-selection"
+          options={{
+            headerShown: false
+          }}
+        />
       </Stack>
     </ToastProvider>
   );
 }
+
