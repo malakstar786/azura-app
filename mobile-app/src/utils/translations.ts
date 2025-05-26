@@ -146,6 +146,10 @@ const translations: TranslationMap = {
     en: 'Easy shopping with Azura',
     ar: 'تسوق سهل مع أزورا',
   },
+  'account.subtitleUpper': {
+    en: 'EASY SHOPPING WITH AZURA',
+    ar: 'تسوق سهل مع أزورا',
+  },
   'account.country': {
     en: 'COUNTRY / REGION',
     ar: 'البلد / المنطقة',
@@ -166,6 +170,10 @@ const translations: TranslationMap = {
     en: 'MY ORDERS',
     ar: 'طلباتي',
   },
+  'account.policies': {
+    en: 'POLICIES',
+    ar: 'السياسات',
+  },
   'account.login': {
     en: 'LOGIN / REGISTER',
     ar: 'تسجيل الدخول / التسجيل',
@@ -173,6 +181,62 @@ const translations: TranslationMap = {
   'account.logout': {
     en: 'LOGOUT',
     ar: 'تسجيل الخروج',
+  },
+  'account.followUs': {
+    en: 'FOLLOW US',
+    ar: 'تابعنا',
+  },
+  'account.loading': {
+    en: 'Loading...',
+    ar: 'جاري التحميل...',
+  },
+  
+  // My Details
+  'details.title': {
+    en: 'MY DETAILS',
+    ar: 'بياناتي',
+  },
+  'details.fullName': {
+    en: 'FULL NAME',
+    ar: 'الاسم الكامل',
+  },
+  'details.email': {
+    en: 'EMAIL',
+    ar: 'البريد الإلكتروني',
+  },
+  'details.mobile': {
+    en: 'MOBILE NUMBER',
+    ar: 'رقم الجوال',
+  },
+  'details.password': {
+    en: 'PASSWORD',
+    ar: 'كلمة المرور',
+  },
+  'details.editButton': {
+    en: 'EDIT DETAILS',
+    ar: 'تعديل البيانات',
+  },
+  
+  // Policies
+  'policies.title': {
+    en: 'POLICIES',
+    ar: 'السياسات',
+  },
+  'policies.aboutUs': {
+    en: 'ABOUT US',
+    ar: 'من نحن',
+  },
+  'policies.contactUs': {
+    en: 'CONTACT US',
+    ar: 'اتصل بنا',
+  },
+  'policies.terms': {
+    en: 'TERMS & CONDITIONS',
+    ar: 'الشروط والأحكام',
+  },
+  'policies.privacy': {
+    en: 'PRIVACY & RETURN POLICY',
+    ar: 'سياسة الخصوصية والإرجاع',
   },
   
   // Cart

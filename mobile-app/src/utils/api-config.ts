@@ -38,6 +38,9 @@ export const API_ENDPOINTS = {
   changeCurrency: '/index.php?route=extension/mstore/currency|Save',
   countries: '/index.php?route=extension/mstore/account|getCountries',
   governoratesAndAreas: '/index.php?route=localisation/country',
+  // New address endpoints (currently have server-side issues)
+  shippingAddressSave: '/index.php?route=extension/mstore/shipping_address|save',
+  paymentAddressSave: '/index.php?route=extension/mstore/payment_address|save',
 };
 
 // Network error codes

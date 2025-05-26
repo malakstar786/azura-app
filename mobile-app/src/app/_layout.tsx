@@ -5,6 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import CustomSplashScreen from '../components/custom-splash-screen';
 import { getOrCreateOCSESSID } from '../utils/api-config';
 import { useLanguageStore } from '../store/language-store';
+import { theme } from '../theme';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -67,9 +68,9 @@ export default function RootLayout() {
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: '#fff',
+            backgroundColor: theme.colors.white,
           },
-          headerTintColor: '#000',
+          headerTintColor: theme.colors.black,
         }}
       >
         <Stack.Screen
@@ -107,6 +108,10 @@ export default function RootLayout() {
           options={{
             headerShown: false
           }}
+        />
+        <Stack.Screen 
+          name="policies" 
+          options={{ headerShown: true }} 
         />
       </Stack>
     </ToastProvider>

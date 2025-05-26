@@ -14,6 +14,7 @@ import { Stack, router } from 'expo-router';
 import { useToast } from 'react-native-toast-notifications';
 import { useAuthStore } from '../store/auth-store';
 import { Ionicons } from '@expo/vector-icons';
+import { theme } from '../theme';
 
 const signupSchema = zod.object({
   fullName: zod.string().min(1, { message: 'Full name is required' }),
@@ -24,6 +25,7 @@ const signupSchema = zod.object({
 
 export default function Signup() {
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const signup = useAuthStore((state) => state.signup);
   const toast = useToast();
 
@@ -133,6 +135,7 @@ export default function Signup() {
                 onChangeText={onChange}
                 onBlur={onBlur}
                 autoCapitalize="words"
+                placeholderTextColor={theme.colors.mediumGray}
                 editable={!isLoading}
               />
               {errors.fullName && (
@@ -155,6 +158,7 @@ export default function Signup() {
                 onBlur={onBlur}
                 autoCapitalize="none"
                 keyboardType="email-address"
+                placeholderTextColor={theme.colors.mediumGray}
                 editable={!isLoading}
               />
               {errors.email && (
@@ -176,6 +180,7 @@ export default function Signup() {
                 onChangeText={onChange}
                 onBlur={onBlur}
                 keyboardType="phone-pad"
+                placeholderTextColor={theme.colors.mediumGray}
                 editable={!isLoading}
               />
               {errors.mobile && (
@@ -190,16 +195,29 @@ export default function Signup() {
           name="password"
           render={({ field: { value, onChange, onBlur } }) => (
             <View style={styles.inputContainer}>
-              <TextInput
-                placeholder="PASSWORD"
-                style={styles.input}
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                secureTextEntry
-                autoCapitalize="none"
-                editable={!isLoading}
-              />
+              <View style={styles.passwordContainer}>
+                <TextInput
+                  placeholder="PASSWORD"
+                  style={styles.passwordInput}
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  placeholderTextColor={theme.colors.mediumGray}
+                  editable={!isLoading}
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                >
+                  <Ionicons
+                    name={showPassword ? "eye-off" : "eye"}
+                    size={20}
+                    color={theme.colors.mediumGray}
+                  />
+                </TouchableOpacity>
+              </View>
               {errors.password && (
                 <Text style={styles.errorText}>{errors.password.message}</Text>
               )}
@@ -213,7 +231,7 @@ export default function Signup() {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.white} />
           ) : (
             <Text style={styles.signupButtonText}>SIGN UP</Text>
           )}
@@ -230,60 +248,82 @@ export default function Signup() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.md,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    marginBottom: 4,
+    fontSize: theme.typography.sizes.xxxl,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.xs,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#4A4A4A',
-    marginBottom: 16,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
+    fontWeight: theme.typography.weights.medium as any,
+    marginBottom: theme.spacing.md,
   },
   divider: {
     height: 2,
-    backgroundColor: '#000',
-    marginBottom: 24,
+    backgroundColor: theme.colors.black,
+    marginBottom: theme.spacing.lg,
   },
   instruction: {
-    fontSize: 12,
-    marginBottom: 24,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.lg,
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.md,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#000',
-    padding: 12,
-    fontSize: 14,
+    borderColor: theme.colors.black,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
+    backgroundColor: theme.colors.white,
+  },
+  passwordContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.black,
+    backgroundColor: theme.colors.white,
+  },
+  passwordInput: {
+    flex: 1,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
+  },
+  eyeButton: {
+    padding: theme.spacing.md,
   },
   errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginTop: 4,
+    color: theme.colors.red,
+    fontSize: theme.typography.sizes.sm,
+    marginTop: theme.spacing.xs,
   },
   signupButton: {
-    backgroundColor: '#000',
-    padding: 16,
+    backgroundColor: theme.colors.black,
+    padding: theme.spacing.md,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: theme.spacing.lg,
   },
   signupButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold as any,
   },
   loginLink: {
-    fontSize: 12,
-    color: '#000',
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
     textAlign: 'center',
+    fontWeight: theme.typography.weights.medium as any,
   },
 }); 

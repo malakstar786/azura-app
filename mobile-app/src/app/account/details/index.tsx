@@ -9,13 +9,17 @@ import {
   Alert,
   ScrollView
 } from 'react-native';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../../store/auth-store';
 import { makeApiCall, API_ENDPOINTS } from '../../../utils/api-config';
 import EditUserDetails from '../../../components/edit-user-details';
+import { theme } from '../../../theme';
+import { useTranslation } from '../../../utils/translations';
 
 export default function MyDetailsScreen() {
   const { user, isAuthenticated, updateUser } = useAuthStore();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   const [userDetails, setUserDetails] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -80,8 +84,8 @@ export default function MyDetailsScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <ActivityIndicator size="large" color={theme.colors.black} />
+        <Text style={styles.loadingText}>{t('account.loading')}</Text>
       </View>
     );
   }
@@ -99,108 +103,148 @@ export default function MyDetailsScreen() {
   const displayData = userDetails || user;
   
   return (
-    <ScrollView style={styles.container}>
-      <Stack.Screen options={{ title: 'MY DETAILS' }} />
+    <View style={styles.container}>
+      <Stack.Screen 
+        options={{ 
+          title: '',
+          headerShadowVisible: false,
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <Ionicons name="arrow-back" size={24} color={theme.colors.black} />
+            </TouchableOpacity>
+          ),
+        }} 
+      />
       
-      <View style={styles.fieldsContainer}>
-        <View style={styles.fieldWrapper}>
-          <Text style={styles.fieldLabel}>FULL NAME</Text>
-          <TextInput
-            style={styles.textInput}
-            value={`${displayData?.firstname} ${displayData?.lastname}`}
-            editable={false}
-          />
+      <ScrollView style={styles.content}>
+        <Text style={styles.title}>{t('details.title')}</Text>
+        <View style={styles.divider} />
+        
+        <View style={styles.fieldsContainer}>
+          <View style={styles.fieldWrapper}>
+            <Text style={styles.fieldLabel}>{t('details.fullName')}</Text>
+            <TextInput
+              style={styles.textInput}
+              value={`${displayData?.firstname} ${displayData?.lastname}`}
+              editable={false}
+              placeholderTextColor={theme.colors.mediumGray}
+            />
+          </View>
+          
+          <View style={styles.fieldWrapper}>
+            <Text style={styles.fieldLabel}>{t('details.email')}</Text>
+            <TextInput
+              style={styles.textInput}
+              value={displayData?.email}
+              editable={false}
+              keyboardType="email-address"
+              placeholderTextColor={theme.colors.mediumGray}
+            />
+          </View>
+          
+          <View style={styles.fieldWrapper}>
+            <Text style={styles.fieldLabel}>{t('details.mobile')}</Text>
+            <TextInput
+              style={styles.textInput}
+              value={displayData?.telephone}
+              editable={false}
+              keyboardType="phone-pad"
+              placeholderTextColor={theme.colors.mediumGray}
+            />
+          </View>
+          
+          <View style={styles.fieldWrapper}>
+            <Text style={styles.fieldLabel}>{t('details.password')}</Text>
+            <TextInput
+              style={styles.textInput}
+              value="********"
+              editable={false}
+              secureTextEntry
+              placeholderTextColor={theme.colors.mediumGray}
+            />
+          </View>
         </View>
         
-        <View style={styles.fieldWrapper}>
-          <Text style={styles.fieldLabel}>EMAIL</Text>
-          <TextInput
-            style={styles.textInput}
-            value={displayData?.email}
-            editable={false}
-            keyboardType="email-address"
-          />
-        </View>
-        
-        <View style={styles.fieldWrapper}>
-          <Text style={styles.fieldLabel}>MOBILE NUMBER</Text>
-          <TextInput
-            style={styles.textInput}
-            value={displayData?.telephone}
-            editable={false}
-            keyboardType="phone-pad"
-          />
-        </View>
-        
-        <View style={styles.fieldWrapper}>
-          <Text style={styles.fieldLabel}>PASSWORD</Text>
-          <TextInput
-            style={styles.textInput}
-            value="********"
-            editable={false}
-            secureTextEntry
-          />
-        </View>
-      </View>
-      
-      <TouchableOpacity 
-        style={styles.editButton}
-        onPress={() => setIsEditing(true)}
-      >
-        <Text style={styles.editButtonText}>EDIT DETAILS</Text>
-      </TouchableOpacity>
-    </ScrollView>
+        <TouchableOpacity 
+          style={styles.editButton}
+          onPress={() => setIsEditing(true)}
+        >
+          <Text style={styles.editButtonText}>{t('details.editButton')}</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
+  },
+  content: {
+    flex: 1,
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.md,
+  },
+  title: {
+    fontSize: theme.typography.sizes.xxxl,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.xs,
+  },
+  subtitle: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
+    fontWeight: theme.typography.weights.medium as any,
+    marginBottom: theme.spacing.md,
+  },
+  divider: {
+    height: 2,
+    backgroundColor: theme.colors.black,
+    marginBottom: theme.spacing.lg,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#000',
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.sizes.lg,
+    color: theme.colors.black,
   },
   fieldsContainer: {
-    padding: 20,
+    marginBottom: theme.spacing.lg,
   },
   fieldWrapper: {
-    marginBottom: 20,
+    marginBottom: theme.spacing.lg,
   },
   fieldLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 6,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.sm,
+    fontWeight: theme.typography.weights.bold as any,
   },
   textInput: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 4,
-    paddingHorizontal: 12,
-    paddingVertical: 16,
-    fontSize: 16,
-    color: '#000',
+    borderColor: theme.colors.black,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
+    backgroundColor: theme.colors.white,
   },
   editButton: {
-    backgroundColor: '#000',
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 32,
-    paddingVertical: 16,
+    backgroundColor: theme.colors.black,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
-    borderRadius: 8,
   },
   editButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold as any,
   },
 }); 

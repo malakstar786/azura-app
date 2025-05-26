@@ -6,6 +6,7 @@ export const theme = {
     darkGray: '#231F20',
     mediumGray: '#5D5D5D',
     lightGray: '#EFEFEF',
+    red: '#FF3131',
     
     // Legacy aliases for backward compatibility
     primary: '#000000',

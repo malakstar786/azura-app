@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Modal, SafeAreaView, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  StyleSheet, 
+  TouchableOpacity, 
+  ScrollView, 
+  Alert, 
+  ActivityIndicator, 
+  Modal, 
+  SafeAreaView, 
+  Dimensions,
+  FlatList 
+} from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore, Address as AuthAddress } from '../store/auth-store';
+import { useAuthStore } from '../store/auth-store';
 import { useAddressStore } from '../store/address-store';
-import { KUWAIT_CITIES, KUWAIT_COUNTRY_ID } from '../utils/cities';
-import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
+import { LocationService, Country, Governorate, Zone } from '../utils/location-service';
+import { theme } from '../theme';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -29,19 +42,17 @@ interface FormData {
   address_id?: string;
 }
 
-interface AddEditAddressProps {
+interface ImprovedAddEditAddressProps {
   address?: FormData;
   onClose: () => void;
   onAddressUpdated?: () => void;
 }
 
-export default function AddEditAddress({ address, onClose, onAddressUpdated }: AddEditAddressProps) {
-  const authStore = useAuthStore();
+export default function ImprovedAddEditAddress({ address, onClose, onAddressUpdated }: ImprovedAddEditAddressProps) {
+  const { user } = useAuthStore();
   const { addAddress, updateAddress, isLoading, fetchAddresses } = useAddressStore();
-  const [error, setError] = useState('');
-  const [localLoading, setLocalLoading] = useState(false);
-
-  // Initialize form with address data or defaults
+  
+  // Form state
   const [formData, setFormData] = useState<FormData>({
     firstname: address?.firstname || '',
     lastname: address?.lastname || '',
@@ -49,10 +60,10 @@ export default function AddEditAddress({ address, onClose, onAddressUpdated }: A
     company: address?.company || '',
     address_1: address?.address_1 || '',
     address_2: address?.address_2 || '',
-    city: address?.city || 'Kuwait City', // Default to Kuwait City
+    city: address?.city || '',
     postcode: address?.postcode || '',
     country_id: address?.country_id || '114', // Kuwait
-    zone_id: address?.zone_id || '1785', // Al Asimah (Kuwait City)
+    zone_id: address?.zone_id || '',
     custom_field: {
       '30': address?.custom_field?.['30'] || '',
       '31': address?.custom_field?.['31'] || '',
@@ -60,35 +71,182 @@ export default function AddEditAddress({ address, onClose, onAddressUpdated }: A
       '33': address?.custom_field?.['33'] || ''
     },
     default: address?.default || false,
-    address_id: address?.address_id // Only present for edit
+    address_id: address?.address_id
   });
 
-  const [showCountryPicker, setShowCountryPicker] = useState(false);
-  const [showCityPicker, setShowCityPicker] = useState(false);
+  // Location data state
+  const [countries, setCountries] = useState<Country[]>([]);
+  const [governorates, setGovernorates] = useState<Governorate[]>([]);
+  const [areas, setAreas] = useState<Zone[]>([]);
+  const [selectedCountry, setSelectedCountry] = useState<Country | null>(null);
+  const [selectedGovernorate, setSelectedGovernorate] = useState<Governorate | null>(null);
+  const [selectedArea, setSelectedArea] = useState<Zone | null>(null);
+
+  // Modal states
+  const [showCountryModal, setShowCountryModal] = useState(false);
+  const [showGovernorateModal, setShowGovernorateModal] = useState(false);
+  const [showAreaModal, setShowAreaModal] = useState(false);
+  
+  // Loading states
+  const [loadingCountries, setLoadingCountries] = useState(false);
+  const [loadingGovernorates, setLoadingGovernorates] = useState(false);
+  const [loadingAreas, setLoadingAreas] = useState(false);
+
+  // Load countries on component mount
+  useEffect(() => {
+    loadCountries();
+  }, []);
+
+  // Load governorates when country is selected
+  useEffect(() => {
+    if (formData.country_id) {
+      loadGovernorates(formData.country_id);
+    }
+  }, [formData.country_id]);
+
+  // Pre-populate form when editing an address
+  useEffect(() => {
+    if (address) {
+      // Pre-populate form with existing address data
+      setFormData({
+        firstname: address.firstname || '',
+        lastname: address.lastname || '',
+        phone: address.phone || '',
+        company: address.company || '',
+        address_1: address.address_1 || '',
+        address_2: address.address_2 || '',
+        city: address.city || '',
+        postcode: address.postcode || '',
+        country_id: address.country_id || '114',
+        zone_id: address.zone_id || '',
+        custom_field: address.custom_field || {
+          '30': '',
+          '31': '',
+          '32': '',
+          '33': ''
+        },
+        default: address.default || false,
+        address_id: address.address_id
+      });
+      
+      // Set selected country
+      if (address.country_id && countries.length > 0) {
+        const country = countries.find(c => c.country_id === address.country_id);
+        if (country) {
+          setSelectedCountry(country);
+        }
+      }
+      
+      // Set selected governorate
+      if (address.zone_id && governorates.length > 0) {
+        const governorate = governorates.find(g => g.governorate_id === address.zone_id);
+        if (governorate) {
+          setSelectedGovernorate(governorate);
+          loadAreas(address.zone_id);
+        }
+      }
+    }
+    // Note: For new addresses, we keep the form empty (no pre-filling with user data)
+  }, [address, countries, governorates]);
+
+  const loadCountries = async () => {
+    try {
+      setLoadingCountries(true);
+      const countriesData = await LocationService.getCountries();
+      setCountries(countriesData);
+      
+      // Set Kuwait as default if available
+      const kuwait = countriesData.find(c => c.country_id === '114');
+      if (kuwait) {
+        setSelectedCountry(kuwait);
+      }
+    } catch (error) {
+      console.error('Error loading countries:', error);
+      Alert.alert('Error', 'Failed to load countries');
+    } finally {
+      setLoadingCountries(false);
+    }
+  };
+
+  const loadGovernorates = async (countryId: string) => {
+    try {
+      setLoadingGovernorates(true);
+      const locationData = await LocationService.getGovernoratesAndAreas(countryId);
+      setGovernorates(locationData.governorates || []);
+      setAreas([]); // Clear areas when country changes
+      setSelectedGovernorate(null);
+      setSelectedArea(null);
+    } catch (error) {
+      console.error('Error loading governorates:', error);
+      Alert.alert('Error', 'Failed to load governorates');
+    } finally {
+      setLoadingGovernorates(false);
+    }
+  };
+
+  const loadAreas = async (governorateId: string) => {
+    try {
+      setLoadingAreas(true);
+      const areasData = await LocationService.getAreasByGovernorate(formData.country_id, governorateId);
+      setAreas(areasData);
+      setSelectedArea(null);
+    } catch (error) {
+      console.error('Error loading areas:', error);
+      Alert.alert('Error', 'Failed to load areas');
+    } finally {
+      setLoadingAreas(false);
+    }
+  };
+
+  const handleCountrySelect = (country: Country) => {
+    setSelectedCountry(country);
+    setFormData({ ...formData, country_id: country.country_id, zone_id: '' });
+    setShowCountryModal(false);
+  };
+
+  const handleGovernorateSelect = (governorate: Governorate) => {
+    setSelectedGovernorate(governorate);
+    setFormData({ ...formData, city: governorate.name });
+    loadAreas(governorate.governorate_id);
+    setShowGovernorateModal(false);
+  };
+
+  const handleAreaSelect = (area: Zone) => {
+    setSelectedArea(area);
+    setFormData({ ...formData, zone_id: area.zone_id });
+    setShowAreaModal(false);
+  };
 
   const validateForm = () => {
-    // Required fields validation
-    if (!formData.firstname) {
-      Alert.alert('Error', 'Please enter your first name');
+    if (!formData.firstname.trim()) {
+      Alert.alert('Error', 'Please enter your name');
       return false;
     }
-    if (!formData.lastname) {
-      Alert.alert('Error', 'Please enter your last name');
+    if (!formData.phone.trim()) {
+      Alert.alert('Error', 'Please enter your phone number');
       return false;
     }
-    if (!formData.city) {
-      Alert.alert('Error', 'Please select a city');
+    if (!formData.country_id) {
+      Alert.alert('Error', 'Please select a country');
       return false;
     }
-    if (!formData.custom_field['30']) {
+    if (!formData.city.trim()) {
+      Alert.alert('Error', 'Please select a city/governorate');
+      return false;
+    }
+    if (!formData.zone_id) {
+      Alert.alert('Error', 'Please select an area');
+      return false;
+    }
+    if (!formData.custom_field['30'].trim()) {
       Alert.alert('Error', 'Please enter your block number');
       return false;
     }
-    if (!formData.custom_field['31']) {
-      Alert.alert('Error', 'Please enter your street');
+    if (!formData.custom_field['31'].trim()) {
+      Alert.alert('Error', 'Please enter your street number');
       return false;
     }
-    if (!formData.custom_field['32']) {
+    if (!formData.custom_field['32'].trim()) {
       Alert.alert('Error', 'Please enter your house/building number');
       return false;
     }
@@ -97,19 +255,12 @@ export default function AddEditAddress({ address, onClose, onAddressUpdated }: A
   };
 
   const handleSubmit = async () => {
-    try {
-      setLocalLoading(true);
-      setError('');
-      
-      if (!validateForm()) {
-        setLocalLoading(false);
-        return;
-      }
+    if (!validateForm()) return;
 
-      // Create an address object that matches the Address interface from the store
+    try {
       const addressData = {
         firstName: formData.firstname,
-        lastName: formData.lastname,
+        lastName: formData.lastname || '', // Ensure lastName is always a string
         phone: formData.phone,
         city: formData.city,
         block: formData.custom_field['30'],
@@ -120,208 +271,285 @@ export default function AddEditAddress({ address, onClose, onAddressUpdated }: A
         isDefault: formData.default
       };
 
-      console.log('Form data being submitted:', formData);
-      console.log('Converted store data:', addressData);
-
       if (formData.address_id) {
-        // Update existing address - MUST include address_id
-        console.log(`Updating address with ID: ${formData.address_id}`);
         await updateAddress(formData.address_id, addressData);
       } else {
-        // Add new address - MUST NOT include address_id
-        console.log('Adding new address');
         await addAddress(addressData);
       }
 
-      // Refresh address list
+      // Auto-refresh addresses
       await fetchAddresses();
       
-      // Close modal and refresh addresses
       if (onAddressUpdated) {
         onAddressUpdated();
       }
       
-      setLocalLoading(false);
       onClose();
-    } catch (err: any) {
-      console.error('Failed to save address:', err);
-      setError(err.message || 'Failed to save address');
-      Alert.alert('Error', err.message || 'Could not save address. Please try again.');
-      setLocalLoading(false);
+    } catch (error: any) {
+      console.error('Failed to save address:', error);
+      Alert.alert('Error', error.message || 'Failed to save address');
     }
   };
 
-  return (
-    <View style={styles.modalOverlay}>
-      <View style={styles.modalContent}>
-        <SafeAreaView style={styles.container}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={onClose} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="#000" />
+  const renderDropdownModal = (
+    visible: boolean,
+    onClose: () => void,
+    title: string,
+    data: any[],
+    onSelect: (item: any) => void,
+    loading: boolean,
+    renderItem: (item: any) => string
+  ) => (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={styles.modalOverlay}>
+        <View style={styles.dropdownModal}>
+          <View style={styles.dropdownHeader}>
+            <Text style={styles.dropdownTitle}>{title}</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Ionicons name="close" size={24} color="#000" />
             </TouchableOpacity>
-            <Text style={styles.title}>{address ? 'EDIT ADDRESS' : 'ADD ADDRESS'}</Text>
           </View>
-
-          {/* Form Content */}
-          <ScrollView style={styles.formContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="First Name"
-              value={formData.firstname}
-              onChangeText={(text) => setFormData({ ...formData, firstname: text })}
-              placeholderTextColor="#999"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Last Name"
-              value={formData.lastname}
-              onChangeText={(text) => setFormData({ ...formData, lastname: text })}
-              placeholderTextColor="#999"
-            />
-
-            <TextInput
-              style={styles.input}
-              placeholder="Phone Number"
-              value={formData.phone}
-              onChangeText={(text) => setFormData({ ...formData, phone: text })}
-              keyboardType="phone-pad"
-              placeholderTextColor="#999"
-            />
-
-            <TouchableOpacity 
-              style={styles.input}
-              onPress={() => setShowCountryPicker(true)}
-            >
-              <Text style={formData.country_id ? styles.inputText : styles.placeholderText}>
-                {formData.country_id ? 'Kuwait' : 'Country'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#000" style={styles.dropdownIcon} />
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={styles.input}
-              onPress={() => setShowCityPicker(true)}
-            >
-              <Text style={formData.city ? styles.inputText : styles.placeholderText}>
-                {formData.city || 'City'}
-              </Text>
-              <Ionicons name="chevron-down" size={20} color="#000" style={styles.dropdownIcon} />
-            </TouchableOpacity>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Area"
-              value={formData.address_1}
-              onChangeText={(text) => setFormData({ ...formData, address_1: text })}
-              placeholderTextColor="#999"
-            />
-
-            <View style={styles.rowInputs}>
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="Block"
-                value={formData.custom_field['30']}
-                onChangeText={(text) => setFormData({
-                  ...formData,
-                  custom_field: { ...formData.custom_field, '30': text }
-                })}
-                placeholderTextColor="#999"
-              />
-
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="Street"
-                value={formData.custom_field['31']}
-                onChangeText={(text) => setFormData({
-                  ...formData,
-                  custom_field: { ...formData.custom_field, '31': text }
-                })}
-                placeholderTextColor="#999"
-              />
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.colors.black} />
             </View>
-
-            <View style={styles.rowInputs}>
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="House Building No."
-                value={formData.custom_field['32']}
-                onChangeText={(text) => setFormData({
-                  ...formData,
-                  custom_field: { ...formData.custom_field, '32': text }
-                })}
-                placeholderTextColor="#999"
-              />
-
-              <TextInput
-                style={[styles.input, styles.halfInput]}
-                placeholder="Apartment No."
-                value={formData.custom_field['33']}
-                onChangeText={(text) => setFormData({
-                  ...formData,
-                  custom_field: { ...formData.custom_field, '33': text }
-                })}
-                placeholderTextColor="#999"
-              />
-            </View>
-
-            <TextInput
-              style={styles.input}
-              placeholder="Address line 2 (Optional)"
-              value={formData.address_2}
-              onChangeText={(text) => setFormData({ ...formData, address_2: text })}
-              placeholderTextColor="#999"
-            />
-          </ScrollView>
-
-          {/* Footer Buttons */}
-          <View style={styles.footer}>
-            <TouchableOpacity 
-              style={[styles.button, styles.cancelButton]} 
-              onPress={onClose}
-            >
-              <Text style={styles.cancelButtonText}>CANCEL</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[styles.button, styles.saveButton]} 
-              onPress={handleSubmit}
-              disabled={isLoading}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" />
-              ) : (
-                <Text style={styles.saveButtonText}>SAVE</Text>
+          ) : (
+            <FlatList
+              data={data}
+              keyExtractor={(item, index) => {
+                // Create unique keys based on the modal type and item properties
+                if (title === 'Select Country') {
+                  return `country-${item.country_id || index}`;
+                } else if (title === 'Select City') {
+                  return `governorate-${item.governorate_id || index}`;
+                } else if (title === 'Select Area') {
+                  return `area-${item.zone_id || index}`;
+                }
+                return `${title}-${index}`;
+              }}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={styles.dropdownItem}
+                  onPress={() => onSelect(item)}
+                >
+                  <Text style={styles.dropdownItemText}>{renderItem(item)}</Text>
+                </TouchableOpacity>
               )}
-            </TouchableOpacity>
-          </View>
-        </SafeAreaView>
+            />
+          )}
+        </View>
       </View>
-    </View>
+    </Modal>
+  );
+
+  return (
+    <Modal visible={true} animationType="slide" presentationStyle="pageSheet">
+      <SafeAreaView style={styles.container}>
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={onClose} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#000" />
+          </TouchableOpacity>
+          <Text style={styles.title}>
+            {address ? 'EDIT ADDRESS' : 'ADD ADDRESS'}
+          </Text>
+        </View>
+
+        {/* Form Content */}
+        <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+          {/* Full Name Field */}
+          <TextInput
+            style={styles.input}
+            placeholder="Ahmed"
+            value={formData.firstname + (formData.lastname ? ' ' + formData.lastname : '')}
+            onChangeText={(text) => {
+              // Split the full name into first and last name
+              const nameParts = text.trim().split(' ');
+              const firstName = nameParts[0] || '';
+              const lastName = nameParts.slice(1).join(' ') || '';
+              setFormData({ 
+                ...formData, 
+                firstname: firstName,
+                lastname: lastName
+              });
+            }}
+            placeholderTextColor="#999"
+          />
+
+          {/* Phone Field */}
+          <TextInput
+            style={styles.input}
+            placeholder="+965 66112321"
+            value={formData.phone}
+            onChangeText={(text) => setFormData({ ...formData, phone: text })}
+            keyboardType="phone-pad"
+            placeholderTextColor="#999"
+          />
+
+          {/* Country Dropdown */}
+          <TouchableOpacity 
+            style={styles.dropdownInput}
+            onPress={() => setShowCountryModal(true)}
+          >
+            <Text style={selectedCountry ? styles.inputText : styles.placeholderText}>
+              {selectedCountry ? selectedCountry.name : 'Kuwait'}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#000" />
+          </TouchableOpacity>
+
+          {/* City/Governorate Dropdown */}
+          <TouchableOpacity 
+            style={styles.dropdownInput}
+            onPress={() => setShowGovernorateModal(true)}
+            disabled={!formData.country_id}
+          >
+            <Text style={selectedGovernorate ? styles.inputText : styles.placeholderText}>
+              {selectedGovernorate ? selectedGovernorate.name : 'City'}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#000" />
+          </TouchableOpacity>
+
+          {/* Area Dropdown */}
+          <TouchableOpacity 
+            style={styles.dropdownInput}
+            onPress={() => setShowAreaModal(true)}
+            disabled={!selectedGovernorate}
+          >
+            <Text style={selectedArea ? styles.inputText : styles.placeholderText}>
+              {selectedArea ? selectedArea.name : 'Area'}
+            </Text>
+            <Ionicons name="chevron-down" size={20} color="#000" />
+          </TouchableOpacity>
+
+          {/* Block and Street Row */}
+          <View style={styles.rowInputs}>
+            <TextInput
+              style={[styles.input, styles.halfInput]}
+              placeholder="Block"
+              value={formData.custom_field['30']}
+              onChangeText={(text) => setFormData({
+                ...formData,
+                custom_field: { ...formData.custom_field, '30': text }
+              })}
+              placeholderTextColor="#999"
+            />
+
+            <TextInput
+              style={[styles.input, styles.halfInput]}
+              placeholder="Street"
+              value={formData.custom_field['31']}
+              onChangeText={(text) => setFormData({
+                ...formData,
+                custom_field: { ...formData.custom_field, '31': text }
+              })}
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          {/* House Building and Apartment Row */}
+          <View style={styles.rowInputs}>
+            <TextInput
+              style={[styles.input, styles.halfInput]}
+              placeholder="House Building No."
+              value={formData.custom_field['32']}
+              onChangeText={(text) => setFormData({
+                ...formData,
+                custom_field: { ...formData.custom_field, '32': text }
+              })}
+              placeholderTextColor="#999"
+            />
+
+            <TextInput
+              style={[styles.input, styles.halfInput]}
+              placeholder="Apartment No."
+              value={formData.custom_field['33']}
+              onChangeText={(text) => setFormData({
+                ...formData,
+                custom_field: { ...formData.custom_field, '33': text }
+              })}
+              placeholderTextColor="#999"
+            />
+          </View>
+
+          {/* Address Line 2 */}
+          <TextInput
+            style={styles.input}
+            placeholder="Address line 2"
+            value={formData.address_2}
+            onChangeText={(text) => setFormData({ ...formData, address_2: text })}
+            placeholderTextColor="#999"
+            multiline
+          />
+        </ScrollView>
+
+        {/* Footer Buttons */}
+        <View style={styles.footer}>
+          <TouchableOpacity 
+            style={styles.cancelButton} 
+            onPress={onClose}
+          >
+            <Text style={styles.cancelButtonText}>CANCEL</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.saveButton} 
+            onPress={handleSubmit}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
+              <Text style={styles.saveButtonText}>SAVE</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        {/* Dropdown Modals */}
+        {renderDropdownModal(
+          showCountryModal,
+          () => setShowCountryModal(false),
+          'Select Country',
+          countries,
+          handleCountrySelect,
+          loadingCountries,
+          (country: Country) => country.name
+        )}
+
+        {renderDropdownModal(
+          showGovernorateModal,
+          () => setShowGovernorateModal(false),
+          'Select City',
+          governorates,
+          handleGovernorateSelect,
+          loadingGovernorates,
+          (governorate: Governorate) => governorate.name
+        )}
+
+        {renderDropdownModal(
+          showAreaModal,
+          () => setShowAreaModal(false),
+          'Select Area',
+          areas,
+          handleAreaSelect,
+          loadingAreas,
+          (area: Zone) => area.name
+        )}
+      </SafeAreaView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    height: SCREEN_HEIGHT * 0.9,
-  },
   container: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: '#E5E5E5',
   },
@@ -330,7 +558,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   title: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#000',
     flex: 1,
@@ -340,69 +568,109 @@ const styles = StyleSheet.create({
     padding: 16,
   },
   input: {
-    height: 48,
+    height: 56,
     borderWidth: 1,
-    borderColor: '#E5E5E5',
-    borderRadius: 4,
+    borderColor: '#000',
+    borderRadius: 0,
     paddingHorizontal: 16,
-    marginBottom: 12,
-    fontSize: 14,
+    marginBottom: 16,
+    fontSize: 16,
     color: '#000',
     backgroundColor: '#fff',
-    justifyContent: 'center',
+  },
+  dropdownInput: {
+    height: 56,
+    borderWidth: 1,
+    borderColor: '#000',
+    borderRadius: 0,
+    paddingHorizontal: 16,
+    marginBottom: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
   },
   rowInputs: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
   halfInput: {
     width: '48%',
-    marginBottom: 0,
   },
   inputText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#000',
   },
   placeholderText: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#999',
-  },
-  dropdownIcon: {
-    position: 'absolute',
-    right: 16,
   },
   footer: {
     flexDirection: 'row',
     padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    gap: 16,
   },
-  button: {
+  cancelButton: {
     flex: 1,
     height: 48,
-    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  saveButton: {
+    flex: 1,
+    height: 48,
+    backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  cancelButton: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#000',
-    marginRight: 8,
-  },
-  saveButton: {
-    backgroundColor: '#000',
-    marginLeft: 8,
-  },
   cancelButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#000',
   },
   saveButtonText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
     color: '#fff',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  dropdownModal: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: SCREEN_HEIGHT * 0.7,
+  },
+  dropdownHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+  },
+  dropdownTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  dropdownItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  dropdownItemText: {
+    fontSize: 16,
+    color: '#000',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
   },
 }); 

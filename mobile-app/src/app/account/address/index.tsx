@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAddressStore } from '../../../store/address-store';
 import AddEditAddress from '../../../components/add-edit-address';
 import { useAuthStore } from '../../../store/auth-store';
+import { theme } from '../../../theme';
 
 // Define the interface for Address from store
 interface Address {
@@ -20,11 +21,12 @@ interface Address {
   isDefault: boolean;
 }
 
-// Define the interface for AddressFormData
+// Define the interface for AddressFormData to match AddEditAddress component
 interface AddressFormData {
   address_id?: string;
   firstname: string;
   lastname: string;
+  phone: string;
   company: string;
   address_1: string;
   address_2: string;
@@ -77,8 +79,9 @@ export default function AddressScreen() {
       address_id: address.id,
       firstname: address.firstName,
       lastname: address.lastName,
+      phone: '+965 66112321', // Default phone for now
       city: address.city,
-      address_1: '',
+      address_1: `Block ${address.block}, Street ${address.street}, House/Building ${address.houseNumber}${address.apartmentNumber ? ', Apt ' + address.apartmentNumber : ''}`,
       address_2: address.additionalDetails,
       company: '',
       postcode: '',
@@ -100,25 +103,26 @@ export default function AddressScreen() {
   const handleCloseModal = () => {
     setIsModalVisible(false);
     setEditingAddress(undefined);
-    fetchAddresses(); // Refresh the addresses after modal is closed
+    // Auto-refresh will be handled by the improved component
+  };
+
+  const handleAddressUpdated = async () => {
+    // Auto-refresh addresses when an address is added/updated
+    await fetchAddresses();
   };
 
   const renderAddress = (address: Address) => (
     <View key={address.id} style={styles.addressCard}>
       <View style={styles.addressContent}>
         <Text style={styles.name}>{address.firstName} {address.lastName}</Text>
+        <Text style={styles.phone}>+965 66112321</Text>
+        <Text style={styles.addressText}>Kuwait,</Text>
+        <Text style={styles.addressText}>{address.city || 'Salmiya'}, Area</Text>
         <Text style={styles.addressText}>
-          Kuwait,
-        </Text>
-        <Text style={styles.addressText}>
-          {address.city}
-        </Text>
-        <Text style={styles.addressText}>
-          Block {address.block}, Street {address.street}, House Building {address.houseNumber}
-          {address.apartmentNumber ? `, Apartment ${address.apartmentNumber}` : ''}
+          Block -{address.block}, Street-{address.street}, House Building -{address.houseNumber}
         </Text>
         {address.additionalDetails ? (
-          <Text style={styles.addressText}>{address.additionalDetails}</Text>
+          <Text style={styles.addressText}>Address Line 2 ({address.additionalDetails})</Text>
         ) : null}
       </View>
       <Pressable 
@@ -147,7 +151,7 @@ export default function AddressScreen() {
 
       {isLoading ? (
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#000" />
+          <ActivityIndicator size="large" color={theme.colors.black} />
         </View>
       ) : (
         <ScrollView 
@@ -155,12 +159,18 @@ export default function AddressScreen() {
           contentContainerStyle={styles.scrollContent}
         >
           {addresses.length === 0 ? (
-            <Pressable 
-              style={styles.addAddressButton}
-              onPress={handleAddAddress}
-            >
-              <Text style={styles.addAddressText}>Add Address</Text>
-            </Pressable>
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.emptyStateTitle}>NO ADDRESS ADDED</Text>
+              <Text style={styles.emptyStateSubtitle}>
+                Add your address to make shopping easier
+              </Text>
+              <Pressable 
+                style={styles.addAddressButton}
+                onPress={handleAddAddress}
+              >
+                <Text style={styles.addAddressText}>ADD ADDRESS</Text>
+              </Pressable>
+            </View>
           ) : (
             <>
               {addresses.map(renderAddress)}
@@ -168,25 +178,21 @@ export default function AddressScreen() {
                 style={[styles.addAddressButton, styles.addMoreButton]}
                 onPress={handleAddAddress}
               >
-                <Text style={styles.addAddressText}>Add Another Address</Text>
+                <Ionicons name="add" size={20} color={theme.colors.black} style={styles.addIcon} />
+                <Text style={styles.addAddressText}>ADD ANOTHER ADDRESS</Text>
               </Pressable>
             </>
           )}
         </ScrollView>
       )}
 
-      <Modal
-        visible={isModalVisible}
-        animationType="slide"
-        presentationStyle="formSheet"
-        onRequestClose={handleCloseModal}
-      >
+      {isModalVisible && (
         <AddEditAddress
           address={editingAddress}
           onClose={handleCloseModal}
-          onAddressUpdated={fetchAddresses}
+          onAddressUpdated={handleAddressUpdated}
         />
-      </Modal>
+      )}
     </View>
   );
 }
@@ -194,10 +200,10 @@ export default function AddressScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   backButton: {
-    padding: 8,
+    padding: theme.spacing.sm,
   },
   loadingContainer: {
     flex: 1,
@@ -208,54 +214,84 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    padding: theme.spacing.lg,
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl * 2,
+  },
+  emptyStateTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: '700',
+    color: theme.colors.black,
+    marginBottom: theme.spacing.sm,
+    textAlign: 'center',
+  },
+  emptyStateSubtitle: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.mediumGray,
+    marginBottom: theme.spacing.xl,
+    textAlign: 'center',
   },
   addAddressButton: {
     borderWidth: 1,
-    borderColor: '#000',
-    padding: 16,
+    borderColor: theme.colors.black,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
     alignItems: 'center',
-    marginBottom: 20,
+    justifyContent: 'center',
+    flexDirection: 'row',
+    marginBottom: theme.spacing.lg,
   },
   addMoreButton: {
-    marginTop: 12,
+    marginTop: theme.spacing.md,
+  },
+  addIcon: {
+    marginRight: theme.spacing.sm,
   },
   addAddressText: {
-    fontSize: 16,
-    color: '#000',
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
     fontWeight: '500',
   },
   addressCard: {
-    borderWidth: 1,
-    borderColor: '#E5E5E5',
-    padding: 16,
-    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: theme.colors.black,
+    padding: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   addressContent: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.md,
   },
   name: {
-    fontSize: 16,
+    fontSize: theme.typography.sizes.md,
     fontWeight: '500',
-    color: '#000',
-    marginBottom: 4,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.xs,
+  },
+  phone: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.mediumGray,
+    marginBottom: theme.spacing.xs,
   },
   addressText: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 2,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.mediumGray,
+    marginBottom: theme.spacing.xs / 2,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 8,
-    paddingTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: '#E5E5E5',
+    gap: theme.spacing.sm,
+    paddingTop: theme.spacing.md,
+    borderTopWidth: 1.5,
+    borderTopColor: theme.colors.black,
   },
   editButtonText: {
-    fontSize: 14,
-    color: '#000',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.black,
   },
 }); 

@@ -12,6 +12,7 @@ import { Stack, router } from 'expo-router';
 import { useAuthStore } from '../store/auth-store';
 import { Ionicons } from '@expo/vector-icons';
 import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
+import { theme } from '../theme';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -64,7 +65,7 @@ export default function ForgotPassword() {
       />
 
       <View style={styles.content}>
-        <Text style={styles.title}>FORGOT PASSWORD</Text>
+        <Text style={styles.title}>FORGOT PASSWORD?</Text>
         <Text style={styles.subtitle}>PASSWORD WILL BE SENT ON EMAIL</Text>
 
         <View style={styles.divider} />
@@ -81,6 +82,7 @@ export default function ForgotPassword() {
             onChangeText={setEmail}
             autoCapitalize="none"
             keyboardType="email-address"
+            placeholderTextColor={theme.colors.mediumGray}
             editable={!isLoading}
           />
           {error ? <Text style={styles.errorText}>{error}</Text> : null}
@@ -92,7 +94,7 @@ export default function ForgotPassword() {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="#fff" />
+            <ActivityIndicator color={theme.colors.white} />
           ) : (
             <Text style={styles.sendButtonText}>SEND</Text>
           )}
@@ -105,55 +107,60 @@ export default function ForgotPassword() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   content: {
     flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.md,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    marginBottom: 4,
+    fontSize: theme.typography.sizes.xxxl,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.xs,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#4A4A4A',
-    marginBottom: 16,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
+    fontWeight: theme.typography.weights.medium as any,
+    marginBottom: theme.spacing.md,
   },
   divider: {
     height: 2,
-    backgroundColor: '#000',
-    marginBottom: 24,
+    backgroundColor: theme.colors.black,
+    marginBottom: theme.spacing.lg,
   },
   instruction: {
-    fontSize: 12,
-    marginBottom: 24,
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.lg,
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.md,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#000',
-    padding: 12,
-    fontSize: 14,
+    borderColor: theme.colors.black,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
+    backgroundColor: theme.colors.white,
   },
   errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginTop: 4,
+    color: theme.colors.red,
+    fontSize: theme.typography.sizes.sm,
+    marginTop: theme.spacing.xs,
   },
   sendButton: {
-    backgroundColor: '#000',
-    padding: 16,
+    backgroundColor: theme.colors.black,
+    padding: theme.spacing.md,
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: theme.spacing.lg,
   },
   sendButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold as any,
   },
 }); 

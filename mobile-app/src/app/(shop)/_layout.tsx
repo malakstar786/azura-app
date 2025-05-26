@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cart-store';
+import { theme } from '../../theme';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof Ionicons>['name'];
@@ -28,17 +29,17 @@ const TabsLayout = () => {
     <SafeAreaView edges={['top']} style={styles.safeArea}>
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: '#000',
-          tabBarInactiveTintColor: 'gray',
+          tabBarActiveTintColor: theme.colors.black,
+          tabBarInactiveTintColor: theme.colors.mediumGray,
           tabBarLabelStyle: { 
-            fontSize: 12,
-            marginBottom: 8,
+            fontSize: theme.typography.sizes.sm,
+            marginBottom: theme.spacing.sm,
           },
           tabBarStyle: {
             borderTopWidth: 0,
             elevation: 0,
             height: 85,
-            paddingTop: 10,
+            paddingTop: theme.spacing.sm,
             paddingBottom: 25,
           },
           headerShown: false,
@@ -99,13 +100,13 @@ export default TabsLayout;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   badge: {
     position: 'absolute',
     right: -6,
     top: -3,
-    backgroundColor: '#000',
+    backgroundColor: theme.colors.black,
     borderRadius: 10,
     width: 20,
     height: 20,
@@ -113,8 +114,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   badgeText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.bold as any,
   },
 });

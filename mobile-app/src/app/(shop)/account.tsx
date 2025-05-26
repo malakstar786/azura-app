@@ -15,7 +15,6 @@ import { router } from 'expo-router';
 import { useAuthStore } from '../../store/auth-store';
 import { makeApiCall, API_ENDPOINTS } from '../../utils/api-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Link } from 'expo-router';
 import { useTranslation } from '../../utils/translations';
 import { theme } from '../../theme';
 import CurrencyDropdown from '../../components/CurrencyDropdown';
@@ -93,8 +92,8 @@ export default function AccountScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000" />
-        <Text style={styles.loadingText}>Loading...</Text>
+        <ActivityIndicator size="large" color={theme.colors.black} />
+        <Text style={styles.loadingText}>{t('account.loading')}</Text>
       </View>
     );
   }
@@ -103,8 +102,8 @@ export default function AccountScreen() {
     return (
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>MY{'\n'}ACCOUNT</Text>
-          <Text style={styles.subtitle}>EASY SHOPPING WITH AZURA</Text>
+          <Text style={styles.title}>{t('account.title')}</Text>
+          <Text style={styles.subtitle}>{t('account.subtitleUpper')}</Text>
           <View style={styles.divider} />
         </View>
 
@@ -115,7 +114,7 @@ export default function AccountScreen() {
                 source={require('../../assets/account_tab/location_icon.png')} 
                 style={styles.optionIcon}
               />
-              <Text style={styles.optionText}>COUNTRY / REGION</Text>
+              <Text style={styles.optionText}>{t('account.country')}</Text>
             </View>
             <CurrencyDropdown />
           </View>
@@ -129,7 +128,7 @@ export default function AccountScreen() {
                 source={require('../../assets/account_tab/language_icon.png')} 
                 style={styles.optionIcon}
               />
-              <Text style={styles.optionText}>LANGUAGE</Text>
+              <Text style={styles.optionText}>{t('account.language')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
           </TouchableOpacity>
@@ -143,7 +142,7 @@ export default function AccountScreen() {
                 source={require('../../assets/account_tab/policies_icon.png')} 
                 style={styles.optionIcon}
               />
-              <Text style={styles.optionText}>POLICIES</Text>
+              <Text style={styles.optionText}>{t('account.policies')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
           </TouchableOpacity>
@@ -153,11 +152,11 @@ export default function AccountScreen() {
           style={styles.loginButton}
           onPress={() => router.push('/auth')}
         >
-          <Text style={styles.loginButtonText}>LOGIN / REGISTER</Text>
+          <Text style={styles.loginButtonText}>{t('account.login')}</Text>
         </TouchableOpacity>
 
         <View style={styles.socialSection}>
-          <Text style={styles.followUsText}>FOLLOW US</Text>
+          <Text style={styles.followUsText}>{t('account.followUs')}</Text>
           <View style={styles.socialIcons}>
             <TouchableOpacity 
               style={styles.socialIcon}
@@ -213,32 +212,35 @@ export default function AccountScreen() {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>MY ACCOUNT</Text>
-        <Text style={styles.subtitle}>Easy shopping with Azura</Text>
+        <Text style={styles.title}>{t('account.title')}</Text>
+        <Text style={styles.subtitle}>{t('account.subtitle')}</Text>
         <View style={styles.divider} />
       </View>
 
       <View style={styles.optionsContainer}>
-        <TouchableOpacity 
-          style={styles.option}
-          onPress={() => router.push('/account/country')}
-        >
+        <View style={styles.option}>
           <View style={styles.optionRow}>
-            <Ionicons name="globe-outline" size={20} color="black" />
-            <Text style={styles.optionText}>COUNTRY / REGION</Text>
+            <Image 
+              source={require('../../assets/account_tab/location_icon.png')} 
+              style={styles.optionIcon}
+            />
+            <Text style={styles.optionText}>{t('account.country')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="black" />
-        </TouchableOpacity>
+          <CurrencyDropdown />
+        </View>
 
         <TouchableOpacity 
           style={styles.option}
           onPress={() => router.push('/account/language')}
         >
           <View style={styles.optionRow}>
-            <Ionicons name="language-outline" size={20} color="black" />
-            <Text style={styles.optionText}>LANGUAGE</Text>
+            <Image 
+              source={require('../../assets/account_tab/language_icon.png')} 
+              style={styles.optionIcon}
+            />
+            <Text style={styles.optionText}>{t('account.language')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="black" />
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -246,10 +248,13 @@ export default function AccountScreen() {
           onPress={() => router.push('/account/details')}
         >
           <View style={styles.optionRow}>
-            <Ionicons name="person-outline" size={20} color="black" />
-            <Text style={styles.optionText}>MY DETAILS</Text>
+            <Image 
+              source={require('../../assets/account_tab/details_icon.png')} 
+              style={styles.optionIcon}
+            />
+            <Text style={styles.optionText}>{t('account.details')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="black" />
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -257,10 +262,13 @@ export default function AccountScreen() {
           onPress={() => router.push('/account/address')}
         >
           <View style={styles.optionRow}>
-            <Ionicons name="location-outline" size={20} color="black" />
-            <Text style={styles.optionText}>MY ADDRESS</Text>
+            <Image 
+              source={require('../../assets/account_tab/location_icon.png')} 
+              style={styles.optionIcon}
+            />
+            <Text style={styles.optionText}>{t('account.address')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="black" />
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -268,10 +276,27 @@ export default function AccountScreen() {
           onPress={() => router.push('/orders')}
         >
           <View style={styles.optionRow}>
-            <Ionicons name="receipt-outline" size={20} color="black" />
-            <Text style={styles.optionText}>MY ORDERS</Text>
+            <Image 
+              source={require('../../assets/account_tab/orders_icon.png')} 
+              style={styles.optionIcon}
+            />
+            <Text style={styles.optionText}>{t('account.orders')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color="black" />
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.option}
+          onPress={() => router.push('/policies')}
+        >
+          <View style={styles.optionRow}>
+            <Image 
+              source={require('../../assets/account_tab/policies_icon.png')} 
+              style={styles.optionIcon}
+            />
+            <Text style={styles.optionText}>{t('account.policies')}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
         </TouchableOpacity>
       </View>
 
@@ -279,8 +304,53 @@ export default function AccountScreen() {
         style={styles.logoutButton}
         onPress={handleLogout}
       >
-        <Text style={styles.logoutButtonText}>LOGOUT</Text>
+        <Text style={styles.logoutButtonText}>{t('account.logout')}</Text>
       </TouchableOpacity>
+
+      <View style={styles.socialSection}>
+        <Text style={styles.followUsText}>{t('account.followUs')}</Text>
+        <View style={styles.socialIcons}>
+          <TouchableOpacity 
+            style={styles.socialIcon}
+            onPress={() => Linking.openURL('https://www.facebook.com/azura.com.kw/')}
+          >
+            <Image 
+              source={require('../../assets/account_tab/facebook_icon.png')} 
+              style={styles.socialIconImage}
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.socialIcon}
+            onPress={() => Linking.openURL('https://www.instagram.com/azuranails/')}
+          >
+            <Image 
+              source={require('../../assets/account_tab/instagram_icon.png')} 
+              style={styles.socialIconImage}
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.socialIcon}
+            onPress={() => Linking.openURL('https://api.whatsapp.com/send?phone=96599779566')}
+          >
+            <Image 
+              source={require('../../assets/account_tab/whatsapp_icon.png')} 
+              style={styles.socialIconImage}
+            />
+          </TouchableOpacity>
+          
+          <TouchableOpacity 
+            style={styles.socialIcon}
+            onPress={() => Linking.openURL('mailto:contact-us@azura.com.kw')}
+          >
+            <Image 
+              source={require('../../assets/account_tab/email.png')} 
+              style={styles.socialIconImage}
+            />
+          </TouchableOpacity>
+        </View>
+      </View>
     </ScrollView>
   );
 }
@@ -366,7 +436,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   logoutButton: {
-    backgroundColor: '#F05454',
+    backgroundColor: theme.colors.red,
     marginHorizontal: theme.spacing.md,
     marginTop: theme.spacing.xl,
     marginBottom: theme.spacing.xl,

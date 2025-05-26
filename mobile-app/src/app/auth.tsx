@@ -15,12 +15,15 @@ import {
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '../store/auth-store';
 import { Ionicons } from '@expo/vector-icons';
+import { theme } from '../theme';
 
 export default function Auth() {
     const { login, signup, isAuthenticated } = useAuthStore();
     const [isLogin, setIsLogin] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
+    const [showLoginPassword, setShowLoginPassword] = useState(false);
+    const [showSignupPassword, setShowSignupPassword] = useState(false);
     
     const { redirect } = useLocalSearchParams<{ redirect?: string }>();
 
@@ -177,6 +180,10 @@ export default function Auth() {
         
         <View style={styles.divider} />
         
+        <Text style={styles.instructionText}>
+          SIGN IN WITH YOUR REGISTERED EMAIL AND PASSWORD
+        </Text>
+        
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
@@ -185,22 +192,34 @@ export default function Auth() {
             onChangeText={text => handleLoginInputChange('email', text)}
             keyboardType="email-address"
             autoCapitalize="none"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.colors.mediumGray}
             editable={!isLoading}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
         </View>
         
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="PASSWORD"
-            value={loginForm.password}
-            onChangeText={text => handleLoginInputChange('password', text)}
-            secureTextEntry
-            placeholderTextColor="#999"
-            editable={!isLoading}
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="PASSWORD"
+              value={loginForm.password}
+              onChangeText={text => handleLoginInputChange('password', text)}
+              secureTextEntry={!showLoginPassword}
+              placeholderTextColor={theme.colors.mediumGray}
+              editable={!isLoading}
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowLoginPassword(!showLoginPassword)}
+            >
+              <Ionicons
+                name={showLoginPassword ? "eye-off" : "eye"}
+                size={20}
+                color={theme.colors.mediumGray}
+              />
+            </TouchableOpacity>
+          </View>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
         </View>
         
@@ -216,7 +235,7 @@ export default function Auth() {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={theme.colors.white} size="small" />
           ) : (
             <Text style={styles.submitButtonText}>LOGIN</Text>
           )}
@@ -226,7 +245,7 @@ export default function Auth() {
           style={styles.switchModeButton}
           onPress={() => setIsLogin(false)}
         >
-          <Text style={styles.switchModeText}>NEW USER? CREATE ACCOUNT</Text>
+          <Text style={styles.switchModeText}>CREATE ACCOUNT?</Text>
         </TouchableOpacity>
       </View>
     );
@@ -245,25 +264,13 @@ export default function Auth() {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="FIRST NAME"
+            placeholder="FULL NAME"
             value={signupForm.firstname}
             onChangeText={text => handleSignupInputChange('firstname', text)}
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.colors.mediumGray}
             editable={!isLoading}
           />
           {errors.firstname && <Text style={styles.errorText}>{errors.firstname}</Text>}
-        </View>
-        
-        <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="LAST NAME"
-            value={signupForm.lastname}
-            onChangeText={text => handleSignupInputChange('lastname', text)}
-            placeholderTextColor="#999"
-            editable={!isLoading}
-          />
-          {errors.lastname && <Text style={styles.errorText}>{errors.lastname}</Text>}
         </View>
         
         <View style={styles.inputContainer}>
@@ -274,7 +281,7 @@ export default function Auth() {
             onChangeText={text => handleSignupInputChange('email', text)}
             keyboardType="email-address"
             autoCapitalize="none"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.colors.mediumGray}
             editable={!isLoading}
           />
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
@@ -283,26 +290,38 @@ export default function Auth() {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="MOBILE NUMBER"
+            placeholder="MOBILE"
             value={signupForm.telephone}
             onChangeText={text => handleSignupInputChange('telephone', text)}
             keyboardType="phone-pad"
-            placeholderTextColor="#999"
+            placeholderTextColor={theme.colors.mediumGray}
             editable={!isLoading}
           />
           {errors.telephone && <Text style={styles.errorText}>{errors.telephone}</Text>}
         </View>
         
         <View style={styles.inputContainer}>
-          <TextInput
-            style={styles.input}
-            placeholder="PASSWORD"
-            value={signupForm.password}
-            onChangeText={text => handleSignupInputChange('password', text)}
-            secureTextEntry
-            placeholderTextColor="#999"
-            editable={!isLoading}
-          />
+          <View style={styles.passwordContainer}>
+            <TextInput
+              style={styles.passwordInput}
+              placeholder="PASSWORD"
+              value={signupForm.password}
+              onChangeText={text => handleSignupInputChange('password', text)}
+              secureTextEntry={!showSignupPassword}
+              placeholderTextColor={theme.colors.mediumGray}
+              editable={!isLoading}
+            />
+            <TouchableOpacity
+              style={styles.eyeButton}
+              onPress={() => setShowSignupPassword(!showSignupPassword)}
+            >
+              <Ionicons
+                name={showSignupPassword ? "eye-off" : "eye"}
+                size={20}
+                color={theme.colors.mediumGray}
+              />
+            </TouchableOpacity>
+          </View>
           {errors.password && <Text style={styles.errorText}>{errors.password}</Text>}
         </View>
         
@@ -312,7 +331,7 @@ export default function Auth() {
           disabled={isLoading}
         >
           {isLoading ? (
-            <ActivityIndicator color="#fff" size="small" />
+            <ActivityIndicator color={theme.colors.white} size="small" />
           ) : (
             <Text style={styles.submitButtonText}>SIGN UP</Text>
           )}
@@ -322,7 +341,7 @@ export default function Auth() {
           style={styles.switchModeButton}
           onPress={() => setIsLogin(true)}
         >
-          <Text style={styles.switchModeText}>ALREADY HAVE AN ACCOUNT? LOGIN</Text>
+          <Text style={styles.switchModeText}>ALREADY HAVE ACCOUNT LOGIN?</Text>
         </TouchableOpacity>
       </View>
     );
@@ -360,76 +379,100 @@ const { width } = Dimensions.get('window');
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: theme.colors.white,
     },
     scrollContent: {
         flexGrow: 1,
-        padding: 20,
+        padding: theme.spacing.md,
     },
     formContainer: {
         width: '100%',
         maxWidth: 500,
         alignSelf: 'center',
-        paddingVertical: 20,
+        paddingVertical: theme.spacing.md,
     },
     formTitle: {
-        fontSize: 32,
-        fontWeight: 'bold',
-        marginBottom: 5,
+        fontSize: theme.typography.sizes.xxxl,
+        fontWeight: theme.typography.weights.bold as any,
+        color: theme.colors.black,
+        marginBottom: theme.spacing.xs,
     },
     formSubtitle: {
-        fontSize: 14,
-        color: '#444',
-        marginBottom: 15,
+        fontSize: theme.typography.sizes.md,
+        color: theme.colors.black,
+        marginBottom: theme.spacing.md,
+        fontWeight: theme.typography.weights.medium as any,
     },
     divider: {
         height: 2,
-        backgroundColor: '#000',
-        marginBottom: 20,
+        backgroundColor: theme.colors.black,
+        marginBottom: theme.spacing.lg,
     },
     instructionText: {
-        fontSize: 12,
+        fontSize: theme.typography.sizes.sm,
         lineHeight: 18,
-        marginBottom: 20,
+        color: theme.colors.black,
+        marginBottom: theme.spacing.lg,
     },
     inputContainer: {
-        marginBottom: 15,
+        marginBottom: theme.spacing.md,
     },
     input: {
         borderWidth: 1,
-        borderColor: '#000',
-        padding: 15,
-        fontSize: 14,
+        borderColor: theme.colors.black,
+        padding: theme.spacing.md,
+        fontSize: theme.typography.sizes.md,
+        color: theme.colors.black,
+        backgroundColor: theme.colors.white,
+    },
+    passwordContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: theme.colors.black,
+        backgroundColor: theme.colors.white,
+    },
+    passwordInput: {
+        flex: 1,
+        padding: theme.spacing.md,
+        fontSize: theme.typography.sizes.md,
+        color: theme.colors.black,
+    },
+    eyeButton: {
+        padding: theme.spacing.md,
     },
     errorText: {
-        color: 'red',
-        fontSize: 12,
-        marginTop: 5,
+        color: theme.colors.red,
+        fontSize: theme.typography.sizes.sm,
+        marginTop: theme.spacing.xs,
     },
     forgotPasswordButton: {
-        alignSelf: 'flex-end',
-        marginBottom: 25,
+        alignSelf: 'flex-start',
+        marginBottom: theme.spacing.xl,
+        marginTop: theme.spacing.sm,
     },
     forgotPasswordText: {
-        fontSize: 12,
-        color: '#000',
+        fontSize: theme.typography.sizes.sm,
+        color: theme.colors.black,
+        fontWeight: theme.typography.weights.medium as any,
     },
     submitButton: {
-        backgroundColor: '#000',
-        padding: 15,
+        backgroundColor: theme.colors.black,
+        padding: theme.spacing.md,
         alignItems: 'center',
-        marginBottom: 20,
+        marginBottom: theme.spacing.lg,
     },
     submitButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '600',
+        color: theme.colors.white,
+        fontSize: theme.typography.sizes.lg,
+        fontWeight: theme.typography.weights.semibold as any,
     },
     switchModeButton: {
         alignItems: 'center',
     },
     switchModeText: {
-        fontSize: 14,
-        color: '#000',
+        fontSize: theme.typography.sizes.md,
+        color: theme.colors.black,
+        fontWeight: theme.typography.weights.medium as any,
     },
 });
