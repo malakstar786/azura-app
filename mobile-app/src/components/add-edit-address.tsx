@@ -11,6 +11,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 interface FormData {
   firstname: string;
   lastname: string;
+  phone: string;
   company: string;
   address_1: string;
   address_2: string;
@@ -44,6 +45,7 @@ export default function AddEditAddress({ address, onClose, onAddressUpdated }: A
   const [formData, setFormData] = useState<FormData>({
     firstname: address?.firstname || '',
     lastname: address?.lastname || '',
+    phone: address?.phone || '',
     company: address?.company || '',
     address_1: address?.address_1 || '',
     address_2: address?.address_2 || '',
@@ -108,6 +110,7 @@ export default function AddEditAddress({ address, onClose, onAddressUpdated }: A
       const addressData = {
         firstName: formData.firstname,
         lastName: formData.lastname,
+        phone: formData.phone,
         city: formData.city,
         block: formData.custom_field['30'],
         street: formData.custom_field['31'],
@@ -149,160 +152,153 @@ export default function AddEditAddress({ address, onClose, onAddressUpdated }: A
   };
 
   return (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <SafeAreaView style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-              <TouchableOpacity onPress={onClose} style={styles.backButton}>
-                <Ionicons name="arrow-back" size={24} color="#000" />
-              </TouchableOpacity>
-              <Text style={styles.title}>{address ? 'EDIT ADDRESS' : 'ADD ADDRESS'}</Text>
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContent}>
+        <SafeAreaView style={styles.container}>
+          {/* Header */}
+          <View style={styles.header}>
+            <TouchableOpacity onPress={onClose} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.title}>{address ? 'EDIT ADDRESS' : 'ADD ADDRESS'}</Text>
+          </View>
+
+          {/* Form Content */}
+          <ScrollView style={styles.formContainer}>
+            <TextInput
+              style={styles.input}
+              placeholder="First Name"
+              value={formData.firstname}
+              onChangeText={(text) => setFormData({ ...formData, firstname: text })}
+              placeholderTextColor="#999"
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Last Name"
+              value={formData.lastname}
+              onChangeText={(text) => setFormData({ ...formData, lastname: text })}
+              placeholderTextColor="#999"
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Phone Number"
+              value={formData.phone}
+              onChangeText={(text) => setFormData({ ...formData, phone: text })}
+              keyboardType="phone-pad"
+              placeholderTextColor="#999"
+            />
+
+            <TouchableOpacity 
+              style={styles.input}
+              onPress={() => setShowCountryPicker(true)}
+            >
+              <Text style={formData.country_id ? styles.inputText : styles.placeholderText}>
+                {formData.country_id ? 'Kuwait' : 'Country'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#000" style={styles.dropdownIcon} />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={styles.input}
+              onPress={() => setShowCityPicker(true)}
+            >
+              <Text style={formData.city ? styles.inputText : styles.placeholderText}>
+                {formData.city || 'City'}
+              </Text>
+              <Ionicons name="chevron-down" size={20} color="#000" style={styles.dropdownIcon} />
+            </TouchableOpacity>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Area"
+              value={formData.address_1}
+              onChangeText={(text) => setFormData({ ...formData, address_1: text })}
+              placeholderTextColor="#999"
+            />
+
+            <View style={styles.rowInputs}>
+              <TextInput
+                style={[styles.input, styles.halfInput]}
+                placeholder="Block"
+                value={formData.custom_field['30']}
+                onChangeText={(text) => setFormData({
+                  ...formData,
+                  custom_field: { ...formData.custom_field, '30': text }
+                })}
+                placeholderTextColor="#999"
+              />
+
+              <TextInput
+                style={[styles.input, styles.halfInput]}
+                placeholder="Street"
+                value={formData.custom_field['31']}
+                onChangeText={(text) => setFormData({
+                  ...formData,
+                  custom_field: { ...formData.custom_field, '31': text }
+                })}
+                placeholderTextColor="#999"
+              />
             </View>
 
-            {/* Form Content */}
-            <ScrollView style={styles.formContainer}>
+            <View style={styles.rowInputs}>
               <TextInput
-                style={styles.input}
-                placeholder="First Name"
-                value={formData.firstname}
-                onChangeText={(text) => setFormData({ ...formData, firstname: text })}
+                style={[styles.input, styles.halfInput]}
+                placeholder="House Building No."
+                value={formData.custom_field['32']}
+                onChangeText={(text) => setFormData({
+                  ...formData,
+                  custom_field: { ...formData.custom_field, '32': text }
+                })}
                 placeholderTextColor="#999"
               />
 
               <TextInput
-                style={styles.input}
-                placeholder="Last Name"
-                value={formData.lastname}
-                onChangeText={(text) => setFormData({ ...formData, lastname: text })}
+                style={[styles.input, styles.halfInput]}
+                placeholder="Apartment No."
+                value={formData.custom_field['33']}
+                onChangeText={(text) => setFormData({
+                  ...formData,
+                  custom_field: { ...formData.custom_field, '33': text }
+                })}
                 placeholderTextColor="#999"
               />
-
-              <TextInput
-                style={styles.input}
-                placeholder="Phone Number"
-                value={formData.lastname}
-                onChangeText={(text) => setFormData({ ...formData, lastname: text })}
-                keyboardType="phone-pad"
-                placeholderTextColor="#999"
-              />
-
-              <TouchableOpacity 
-                style={styles.input}
-                onPress={() => setShowCountryPicker(true)}
-              >
-                <Text style={formData.country_id ? styles.inputText : styles.placeholderText}>
-                  {formData.country_id ? 'Kuwait' : 'Country'}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color="#000" style={styles.dropdownIcon} />
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={styles.input}
-                onPress={() => setShowCityPicker(true)}
-              >
-                <Text style={formData.city ? styles.inputText : styles.placeholderText}>
-                  {formData.city || 'City'}
-                </Text>
-                <Ionicons name="chevron-down" size={20} color="#000" style={styles.dropdownIcon} />
-              </TouchableOpacity>
-
-              <TextInput
-                style={styles.input}
-                placeholder="Area"
-                value={formData.address_1}
-                onChangeText={(text) => setFormData({ ...formData, address_1: text })}
-                placeholderTextColor="#999"
-              />
-
-              <View style={styles.rowInputs}>
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="Block"
-                  value={formData.custom_field['30']}
-                  onChangeText={(text) => setFormData({
-                    ...formData,
-                    custom_field: { ...formData.custom_field, '30': text }
-                  })}
-                  placeholderTextColor="#999"
-                />
-
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="Street"
-                  value={formData.custom_field['31']}
-                  onChangeText={(text) => setFormData({
-                    ...formData,
-                    custom_field: { ...formData.custom_field, '31': text }
-                  })}
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              <View style={styles.rowInputs}>
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="House Building No."
-                  value={formData.custom_field['32']}
-                  onChangeText={(text) => setFormData({
-                    ...formData,
-                    custom_field: { ...formData.custom_field, '32': text }
-                  })}
-                  placeholderTextColor="#999"
-                />
-
-                <TextInput
-                  style={[styles.input, styles.halfInput]}
-                  placeholder="Apartment No."
-                  value={formData.custom_field['33']}
-                  onChangeText={(text) => setFormData({
-                    ...formData,
-                    custom_field: { ...formData.custom_field, '33': text }
-                  })}
-                  placeholderTextColor="#999"
-                />
-              </View>
-
-              <TextInput
-                style={styles.input}
-                placeholder="Address line 2 (Optional)"
-                value={formData.address_2}
-                onChangeText={(text) => setFormData({ ...formData, address_2: text })}
-                placeholderTextColor="#999"
-              />
-            </ScrollView>
-
-            {/* Footer Buttons */}
-            <View style={styles.footer}>
-              <TouchableOpacity 
-                style={[styles.button, styles.cancelButton]} 
-                onPress={onClose}
-              >
-                <Text style={styles.cancelButtonText}>CANCEL</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[styles.button, styles.saveButton]} 
-                onPress={handleSubmit}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" />
-                ) : (
-                  <Text style={styles.saveButtonText}>SAVE</Text>
-                )}
-              </TouchableOpacity>
             </View>
-          </SafeAreaView>
-        </View>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Address line 2 (Optional)"
+              value={formData.address_2}
+              onChangeText={(text) => setFormData({ ...formData, address_2: text })}
+              placeholderTextColor="#999"
+            />
+          </ScrollView>
+
+          {/* Footer Buttons */}
+          <View style={styles.footer}>
+            <TouchableOpacity 
+              style={[styles.button, styles.cancelButton]} 
+              onPress={onClose}
+            >
+              <Text style={styles.cancelButtonText}>CANCEL</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.button, styles.saveButton]} 
+              onPress={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveButtonText}>SAVE</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
       </View>
-    </Modal>
+    </View>
   );
 }
 

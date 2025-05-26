@@ -9,6 +9,7 @@ export const API_BASE_URL = 'https://new.azurakwt.com';
 export const API_ENDPOINTS = {
   login: '/index.php?route=extension/mstore/account|login',
   register: '/index.php?route=extension/mstore/account|register',
+  forgotPassword: '/index.php?route=extension/mstore/account|forgotten',
   updateProfile: '/index.php?route=extension/mstore/account|edit',
   editAddress: '/index.php?route=extension/mstore/account|edit_address',
   addresses: '/index.php?route=extension/mstore/account|addresses',
@@ -29,7 +30,14 @@ export const API_ENDPOINTS = {
   updateCart: '/index.php?route=extension/mstore/cart|edit',
   removeFromCart: '/index.php?route=extension/mstore/cart|remove',
   emptyCart: '/index.php?route=extension/mstore/cart|emptyCart',
-  confirmOrder: '/index.php?route=extension/mstore/checkout|confirm'
+  checkout: '/index.php?route=extension/mstore/checkout',
+  shippingMethods: '/index.php?route=extension/mstore/checkout|shipping_method',
+  paymentMethods: '/index.php?route=extension/mstore/checkout|payment_method',
+  confirmOrder: '/index.php?route=extension/mstore/checkout|confirm',
+  currencies: '/index.php?route=extension/mstore/currency',
+  changeCurrency: '/index.php?route=extension/mstore/currency|Save',
+  countries: '/index.php?route=extension/mstore/account|getCountries',
+  governoratesAndAreas: '/index.php?route=localisation/country',
 };
 
 // Network error codes

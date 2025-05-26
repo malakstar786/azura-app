@@ -11,7 +11,6 @@ import {
     ScrollView,
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '../../store/cart-store';
 import { useLanguageStore } from '../../store/language-store';
