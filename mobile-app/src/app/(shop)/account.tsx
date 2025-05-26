@@ -8,6 +8,7 @@ import {
   Alert,
   ScrollView,
   ActivityIndicator,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
@@ -16,6 +17,8 @@ import { makeApiCall, API_ENDPOINTS } from '../../utils/api-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Link } from 'expo-router';
 import { useTranslation } from '../../utils/translations';
+import { theme } from '../../theme';
+import CurrencyDropdown from '../../components/CurrencyDropdown';
 
 export default function AccountScreen() {
   const { user, isAuthenticated, clearUser } = useAuthStore();
@@ -98,34 +101,51 @@ export default function AccountScreen() {
 
   if (!isAuthenticated) {
     return (
-      <View style={styles.container}>
+      <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>MY ACCOUNT</Text>
-          <Text style={styles.subtitle}>Easy shopping with Azura</Text>
+          <Text style={styles.title}>MY{'\n'}ACCOUNT</Text>
+          <Text style={styles.subtitle}>EASY SHOPPING WITH AZURA</Text>
           <View style={styles.divider} />
         </View>
 
         <View style={styles.optionsContainer}>
-          <TouchableOpacity 
-            style={styles.option}
-            onPress={() => router.push('/account/country')}
-          >
+          <View style={styles.option}>
             <View style={styles.optionRow}>
-              <Ionicons name="globe-outline" size={20} color="black" />
+              <Image 
+                source={require('../../assets/account_tab/location_icon.png')} 
+                style={styles.optionIcon}
+              />
               <Text style={styles.optionText}>COUNTRY / REGION</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="black" />
-          </TouchableOpacity>
+            <CurrencyDropdown />
+          </View>
 
           <TouchableOpacity 
             style={styles.option}
             onPress={() => router.push('/account/language')}
           >
             <View style={styles.optionRow}>
-              <Ionicons name="language-outline" size={20} color="black" />
+              <Image 
+                source={require('../../assets/account_tab/language_icon.png')} 
+                style={styles.optionIcon}
+              />
               <Text style={styles.optionText}>LANGUAGE</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="black" />
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={styles.option}
+            onPress={() => router.push('/policies')}
+          >
+            <View style={styles.optionRow}>
+              <Image 
+                source={require('../../assets/account_tab/policies_icon.png')} 
+                style={styles.optionIcon}
+              />
+              <Text style={styles.optionText}>POLICIES</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
           </TouchableOpacity>
         </View>
 
@@ -136,11 +156,51 @@ export default function AccountScreen() {
           <Text style={styles.loginButtonText}>LOGIN / REGISTER</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} onPress={handleLogout}>
-          <Text style={styles.menuItemText}>{t('account.logout')}</Text>
-          <Ionicons name="chevron-forward" size={24} color="#000" />
-        </TouchableOpacity>
-      </View>
+        <View style={styles.socialSection}>
+          <Text style={styles.followUsText}>FOLLOW US</Text>
+          <View style={styles.socialIcons}>
+            <TouchableOpacity 
+              style={styles.socialIcon}
+              onPress={() => Linking.openURL('https://www.facebook.com/azura.com.kw/')}
+            >
+              <Image 
+                source={require('../../assets/account_tab/facebook_icon.png')} 
+                style={styles.socialIconImage}
+              />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.socialIcon}
+              onPress={() => Linking.openURL('https://www.instagram.com/azuranails/')}
+            >
+              <Image 
+                source={require('../../assets/account_tab/instagram_icon.png')} 
+                style={styles.socialIconImage}
+              />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.socialIcon}
+              onPress={() => Linking.openURL('https://api.whatsapp.com/send?phone=96599779566')}
+            >
+              <Image 
+                source={require('../../assets/account_tab/whatsapp_icon.png')} 
+                style={styles.socialIconImage}
+              />
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.socialIcon}
+              onPress={() => Linking.openURL('mailto:contact-us@azura.com.kw')}
+            >
+              <Image 
+                source={require('../../assets/account_tab/email.png')} 
+                style={styles.socialIconImage}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </ScrollView>
     );
   }
 
@@ -228,96 +288,133 @@ export default function AccountScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   loadingText: {
-    marginTop: 12,
-    fontSize: 16,
-    color: '#000',
+    marginTop: theme.spacing.md,
+    fontSize: theme.typography.sizes.lg,
+    color: theme.colors.black,
   },
   header: {
-    padding: 20,
-    paddingTop: 40,
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: 60,
+    paddingBottom: theme.spacing.lg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: theme.typography.sizes.xxxl,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.sm,
+    lineHeight: 36,
   },
   subtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 10,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
+    fontWeight: theme.typography.weights.medium as any,
+    letterSpacing: 1,
+    marginBottom: theme.spacing.md,
   },
   divider: {
-    height: 1,
-    backgroundColor: '#E0E0E0',
-    marginTop: 10,
+    height: 2,
+    backgroundColor: theme.colors.black,
+    marginTop: theme.spacing.sm,
   },
   optionsContainer: {
-    paddingHorizontal: 20,
+    paddingHorizontal: theme.spacing.md,
   },
   option: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: theme.colors.lightGray,
   },
   optionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: theme.spacing.md,
+  },
+  optionIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
   },
   optionText: {
-    fontSize: 16,
-    color: '#000',
+    fontSize: theme.typography.sizes.lg,
+    color: theme.colors.black,
+    fontWeight: theme.typography.weights.bold as any,
   },
   loginButton: {
-    backgroundColor: '#000',
-    marginHorizontal: 20,
-    marginTop: 'auto',
-    marginBottom: 32,
-    paddingVertical: 16,
+    backgroundColor: theme.colors.black,
+    marginHorizontal: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
-    borderRadius: 8,
   },
   loginButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold as any,
+    letterSpacing: 1,
   },
   logoutButton: {
     backgroundColor: '#F05454',
-    marginHorizontal: 20,
-    marginTop: 32,
-    marginBottom: 32,
-    paddingVertical: 16,
+    marginHorizontal: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
-    borderRadius: 8,
   },
   logoutButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '500',
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold as any,
   },
   menuItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 16,
+    paddingVertical: theme.spacing.lg,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: theme.colors.lightGray,
   },
   menuItemText: {
-    fontSize: 16,
-    color: '#000',
+    fontSize: theme.typography.sizes.lg,
+    color: theme.colors.black,
+  },
+  socialSection: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.xl,
+    marginTop: theme.spacing.lg,
+  },
+  followUsText: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.mediumGray,
+    fontWeight: theme.typography.weights.medium as any,
+    letterSpacing: 2,
+    marginBottom: theme.spacing.lg,
+  },
+  socialIcons: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+  },
+  socialIcon: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  socialIconImage: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
   },
 }); 
