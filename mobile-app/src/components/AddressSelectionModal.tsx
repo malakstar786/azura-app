@@ -1,8 +1,8 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Address } from '../store/address-store';
-import { theme } from '../theme';
+import { Address } from '@store/address-store';
+import { theme } from '@theme';
 
 interface AddressSelectionModalProps {
   visible: boolean;
@@ -32,7 +32,7 @@ export default function AddressSelectionModal({
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Select Address</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#000" />
+              <Ionicons name="close" size={24} color={theme.colors.black} />
             </TouchableOpacity>
           </View>
 
@@ -61,62 +61,62 @@ export default function AddressSelectionModal({
 const styles = StyleSheet.create({
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: theme.colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    backgroundColor: theme.colors.background,
+    borderTopLeftRadius: theme.borderRadius.xl,
+    borderTopRightRadius: theme.borderRadius.xl,
     maxHeight: SCREEN_HEIGHT * 0.8,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 16,
+    padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: theme.colors.borderColor,
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.colors.text,
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.semibold as any,
+    color: theme.colors.textPrimary,
   },
   closeButton: {
-    padding: 4,
+    padding: theme.spacing.xs,
   },
   addressList: {
     maxHeight: SCREEN_HEIGHT * 0.5,
   },
   addressOption: {
-    padding: 16,
+    padding: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: theme.colors.borderColor,
   },
   addressText: {
-    color: theme.colors.text,
+    color: theme.colors.textPrimary,
   },
   defaultBadge: {
     position: 'absolute',
-    top: 16,
-    right: 16,
-    backgroundColor: theme.colors.primary,
-    color: '#fff',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    fontSize: 12,
+    top: theme.spacing.md,
+    right: theme.spacing.md,
+    backgroundColor: theme.colors.buttonPrimary,
+    color: theme.colors.white,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.sm,
+    fontSize: theme.typography.sizes.sm,
   },
   addNewAddressButton: {
-    padding: 16,
+    padding: theme.spacing.md,
     borderTopWidth: 1,
-    borderTopColor: theme.colors.border,
+    borderTopColor: theme.colors.borderColor,
     alignItems: 'center',
   },
   addNewAddressText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.primary,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold as any,
+    color: theme.colors.buttonPrimary,
   },
 }); 

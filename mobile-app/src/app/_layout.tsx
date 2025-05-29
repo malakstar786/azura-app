@@ -2,10 +2,10 @@ import { Stack, useRouter } from "expo-router";
 import { ToastProvider } from "react-native-toast-notifications";
 import { useEffect, useState } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
-import CustomSplashScreen from '../components/custom-splash-screen';
-import { getOrCreateOCSESSID } from '../utils/api-config';
-import { useLanguageStore } from '../store/language-store';
-import { theme } from '../theme';
+import CustomSplashScreen from '@components/custom-splash-screen';
+import { getOrCreateOCSESSID } from '@utils/api-config';
+import { useLanguageStore } from '@store/language-store';
+import { theme } from '@theme';
 
 // Prevent the splash screen from auto-hiding
 SplashScreen.preventAutoHideAsync().catch(() => {
@@ -53,7 +53,7 @@ export default function RootLayout() {
     if (!showSplash && isFirstTimeUser) {
       console.log("First time user detected, navigating to language selection");
       // Need to navigate to the index file within the directory
-      router.replace("language-selection");
+      router.replace("/language-selection");
     } else if (!showSplash) {
       console.log("Not first time user, staying on main screen");
     }
@@ -90,7 +90,7 @@ export default function RootLayout() {
           options={{ headerShown: true }} 
         />
         <Stack.Screen
-          name="orders"
+          name="orders/index"
           options={{
             headerShown: false,
             presentation: 'modal'
@@ -104,9 +104,9 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="language-selection"
+          name="language-selection/index"
           options={{
-            headerShown: false
+            headerShown: false,
           }}
         />
         <Stack.Screen 

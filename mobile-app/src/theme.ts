@@ -8,6 +8,22 @@ export const theme = {
     lightGray: '#EFEFEF',
     red: '#FF3131',
     
+    // Status Colors
+    pending: '#FF9500',
+    processing: '#007AFF',
+    shipped: '#34C759',
+    delivered: '#30D158',
+    cancelled: '#FF3B30',
+    failed: '#FF3B30',
+    statusDefault: '#8E8E93',
+    
+    // Additional UI Colors
+    lightBorder: '#E5E5E5',
+    veryLightGray: '#F5F5F5',
+    inputBorder: '#E0E0E0',
+    cardBorder: '#F0F0F0',
+    searchBackground: '#F8F8F8',
+    
     // Legacy aliases for backward compatibility
     primary: '#000000',
     text: '#000000',
@@ -85,5 +101,12 @@ export const theme = {
       shadowRadius: 8,
       elevation: 8,
     },
+  },
+  
+  // RTL Support
+  rtl: {
+    isRTL: false, // Will be updated dynamically
+    textAlign: 'left' as 'left' | 'right',
+    flexDirection: 'row' as 'row' | 'row-reverse',
   },
 }; 

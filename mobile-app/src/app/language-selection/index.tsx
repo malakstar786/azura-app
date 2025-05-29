@@ -1,9 +1,10 @@
 import React from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useLanguageStore } from '../../store/language-store';
-import { useTranslation } from '../../utils/translations';
+import { useLanguageStore } from '@store/language-store';
+import { useTranslation } from '@utils/translations';
 import { Ionicons } from '@expo/vector-icons';
+import { theme } from '@theme';
 
 const LanguageSelection = () => {
   const router = useRouter();
@@ -25,7 +26,9 @@ const LanguageSelection = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
-        <Text style={styles.title}>{t('app.name')}</Text>
+        <View style={styles.titleContainer}>
+          <Text style={styles.title}>{t('app.name')}</Text>
+        </View>
         <View style={styles.selectionContainer}>
           <Text style={styles.selectText}>{t('language.select')}</Text>
           <Text style={styles.helpText}>{t('language.subtitle')}</Text>
@@ -43,7 +46,7 @@ const LanguageSelection = () => {
               </Text>
               {currentLanguage === 'en' && (
                 <View style={styles.checkIcon}>
-                  <Ionicons name="checkmark" size={16} color="white" />
+                  <Ionicons name="checkmark" size={16} color={theme.colors.white} />
                 </View>
               )}
             </TouchableOpacity>
@@ -60,7 +63,7 @@ const LanguageSelection = () => {
               </Text>
               {currentLanguage === 'ar' && (
                 <View style={styles.checkIcon}>
-                  <Ionicons name="checkmark" size={16} color="black" />
+                  <Ionicons name="checkmark" size={16} color={theme.colors.black} />
                 </View>
               )}
             </TouchableOpacity>
@@ -76,70 +79,80 @@ export default LanguageSelection;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.background,
   },
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 40,
+    paddingVertical: theme.spacing.xxl,
+  },
+  titleContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    letterSpacing: 5,
-    marginTop: 40,
+    fontSize: 48,
+    fontWeight: theme.typography.weights.bold as any,
+    letterSpacing: 8,
+    color: theme.colors.textPrimary,
+    textAlign: 'center',
   },
   selectionContainer: {
     width: '100%',
-    paddingHorizontal: 20,
+    marginLeft: -20,
+    paddingHorizontal: theme.spacing.lg,
     marginTop: 'auto',
+    marginBottom: 75,
   },
   selectText: {
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#000',
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.textPrimary,
   },
   helpText: {
-    fontSize: 14,
-    color: '#000',
-    marginTop: 5,
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.textPrimary,
+    marginTop: theme.spacing.xs,
   },
   divider: {
     borderBottomWidth: 1,
-    borderBottomColor: '#ccc',
+    borderBottomColor: theme.colors.black,
     width: '100%',
-    marginVertical: 20,
+    marginVertical: theme.spacing.lg,
   },
   buttonsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 20,
+    marginTop: theme.spacing.lg,
   },
   languageButton: {
     width: '48%',
     height: 140,
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: theme.colors.black,
     justifyContent: 'center',
     alignItems: 'center',
     position: 'relative',
   },
   selectedButton: {
-    backgroundColor: '#000',
+    backgroundColor: theme.colors.buttonPrimary,
   },
   languageText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.textPrimary,
   },
   englishText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold as any,
   },
   arabicText: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.textPrimary,
   },
   checkIcon: {
     position: 'absolute',
@@ -148,7 +161,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
     justifyContent: 'center',
     alignItems: 'center',
   }

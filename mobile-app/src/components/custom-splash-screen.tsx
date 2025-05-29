@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
+import { theme } from '@theme';
 
 export default function CustomSplashScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -23,14 +24,14 @@ export default function CustomSplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: theme.colors.black,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoText: {
-    color: '#FFFFFF',
+    color: theme.colors.white,
     fontSize: 48,
-    fontWeight: 'bold',
+    fontWeight: theme.typography.weights.bold as any,
     letterSpacing: 8,
   },
 });

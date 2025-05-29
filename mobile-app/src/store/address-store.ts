@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Alert } from 'react-native';
-import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
+import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 import { useAuthStore } from './auth-store';
 
 // Define Address interface for UI usage

@@ -556,9 +556,10 @@ export const updateCartQuantity = async (cartId: string, quantity: number): Prom
     
     const url = `${API_BASE_URL}${API_ENDPOINTS.updateCart}`;
     console.log(`Updating cart quantity: ${url}`);
+    console.log(`Update cart payload:`, {cart_id: cartId, quantity: quantity.toString()});
     
     // Create form data
-    const formData = new FormData();
+    const formData = new URLSearchParams();
     formData.append('cart_id', cartId);
     formData.append('quantity', quantity.toString());
     
@@ -566,10 +567,11 @@ export const updateCartQuantity = async (cartId: string, quantity: number): Prom
       method: 'POST',
       headers: {
         'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'User-Agent': 'Azura Mobile App',
         'Cookie': `OCSESSID=${currentOcsessid}`
       },
-      body: formData
+      body: formData.toString()
     });
     
     // Get response text
@@ -592,7 +594,31 @@ export const updateCartQuantity = async (cartId: string, quantity: number): Prom
       }
       
       console.log('Update cart parsed JSON:', jsonData);
-      return jsonData;
+      
+      // Ensure proper response format
+      if (jsonData && typeof jsonData === 'object') {
+        if (jsonData.success === 1) {
+          // Success case
+          return jsonData;
+        } else if (Array.isArray(jsonData.error)) {
+          // Error case with array of errors
+          return {
+            success: 0,
+            error: jsonData.error,
+            data: null
+          };
+        } else if (typeof jsonData.error === 'string') {
+          // Error case with single error string
+          return {
+            success: 0,
+            error: [jsonData.error],
+            data: null
+          };
+        }
+      }
+      
+      // If we get here, the response structure is unexpected
+      throw new Error('Unexpected response structure from update cart endpoint');
     } catch (e) {
       console.error('Error parsing update cart response:', e);
       throw new Error('Failed to parse update cart response');
@@ -614,19 +640,21 @@ export const removeCartItem = async (cartId: string): Promise<ApiResponse<any>> 
     
     const url = `${API_BASE_URL}${API_ENDPOINTS.removeFromCart}`;
     console.log(`Removing cart item: ${url}`);
+    console.log(`Remove cart payload:`, {cart_id: cartId});
     
     // Create form data
-    const formData = new FormData();
+    const formData = new URLSearchParams();
     formData.append('cart_id', cartId);
     
     const response = await fetch(url, {
       method: 'POST',
       headers: {
         'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
         'User-Agent': 'Azura Mobile App',
         'Cookie': `OCSESSID=${currentOcsessid}`
       },
-      body: formData
+      body: formData.toString()
     });
     
     // Get response text

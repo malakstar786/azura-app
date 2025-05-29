@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { I18nManager } from 'react-native';
+import { theme } from '@theme';
 
 export type Language = 'en' | 'ar';
 
@@ -12,6 +14,7 @@ interface LanguageState {
   setLanguage: (language: Language) => void;
   setIsFirstTimeUser: (isFirstTimeUser: boolean) => void;
   initialize: () => Promise<void>;
+  isRTL: () => boolean;
 }
 
 // Create store with persistence
@@ -24,9 +27,26 @@ export const useLanguageStore = create<LanguageState>()(
       isLoading: true,
       lastUpdated: Date.now(), // Initialize with current timestamp
       
+      // Check if current language is RTL
+      isRTL: () => {
+        const { currentLanguage } = get();
+        return currentLanguage === 'ar';
+      },
+      
       // Update language and log for debugging
       setLanguage: (language: Language) => {
         console.log(`Setting language to: ${language}`);
+        const isRTL = language === 'ar';
+        
+        // Update theme RTL properties
+        theme.rtl.isRTL = isRTL;
+        theme.rtl.textAlign = isRTL ? 'right' : 'left';
+        theme.rtl.flexDirection = isRTL ? 'row-reverse' : 'row';
+        
+        // Update React Native RTL setting
+        I18nManager.allowRTL(isRTL);
+        I18nManager.forceRTL(isRTL);
+        
         set({ 
           currentLanguage: language,
           lastUpdated: Date.now() // Update timestamp to force subscribers to re-render
@@ -55,6 +75,16 @@ export const useLanguageStore = create<LanguageState>()(
               if (parsedState && parsedState.state) {
                 const { currentLanguage, isFirstTimeUser } = parsedState.state;
                 console.log(`Stored values - language: ${currentLanguage}, isFirstTimeUser: ${isFirstTimeUser}`);
+                
+                // Set RTL for stored language
+                if (currentLanguage) {
+                  const isRTL = currentLanguage === 'ar';
+                  theme.rtl.isRTL = isRTL;
+                  theme.rtl.textAlign = isRTL ? 'right' : 'left';
+                  theme.rtl.flexDirection = isRTL ? 'row-reverse' : 'row';
+                  I18nManager.allowRTL(isRTL);
+                  I18nManager.forceRTL(isRTL);
+                }
               }
             } catch (e) {
               console.error("Error parsing stored state:", e);

@@ -135,9 +135,20 @@ export const useCartStore = create<CartStore>()(
           }
         } catch (error: any) {
           console.error('Error fetching cart:', error);
+          
+          // Check for specific network errors
+          let errorMessage = 'Failed to fetch cart';
+          if (error.message === 'Network request failed') {
+            errorMessage = 'Network connection failed. Please check your internet connection and try again.';
+          } else if (error.message === 'Failed to fetch') {
+            errorMessage = 'Unable to connect to the server. Please try again.';
+          } else if (error.message) {
+            errorMessage = error.message;
+          }
+          
           set({ 
             isLoading: false, 
-            error: error.message || 'Failed to fetch cart',
+            error: errorMessage,
             items: [], // Ensure items are initialized even on error
             total: 0
           });
@@ -155,7 +166,7 @@ export const useCartStore = create<CartStore>()(
           if (response.success === 1) {
             // Refresh cart after successful add
             await get().getCart();
-            Toast.show('Product added to cart successfully', {
+            Toast.show('Product has been added to your cart.', {
               type: 'success',
               placement: 'bottom',
               duration: 2000

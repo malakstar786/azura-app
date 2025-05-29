@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, StyleSheet, Image, TouchableOpacity, Dimensions, ScrollView, ActivityIndicator, FlexAlignType } from "react-native";
 import { useRouter } from "expo-router";
-import { publicApi } from "../../utils/api-service";
-import { NetworkErrorCodes } from "../../utils/api-config";
+import { publicApi } from "@utils/api-service";
+import { NetworkErrorCodes } from "@utils/api-config";
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLanguageStore } from "../../store/language-store";
-import { useTranslation } from "../../utils/translations";
+import { useLanguageStore } from "@store/language-store";
+import { useTranslation } from "@utils/translations";
+import { theme } from "@theme";
 
 const { width, height } = Dimensions.get("window");
 
@@ -159,7 +160,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#000" />
+        <ActivityIndicator size="large" color={theme.colors.black} />
       </View>
     );
   }

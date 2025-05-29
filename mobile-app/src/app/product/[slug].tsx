@@ -11,10 +11,10 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
-import { useCartStore } from '../../store/cart-store';
-import { useLanguageStore } from '../../store/language-store';
-import { useTranslation } from '../../utils/translations';
-import { publicApi } from '../../utils/api-service';
+import { useCartStore } from '@store/cart-store';
+import { useLanguageStore } from '@store/language-store';
+import { useTranslation } from '@utils/translations';
+import { publicApi } from '@utils/api-service';
 
 const { width } = Dimensions.get('window');
 

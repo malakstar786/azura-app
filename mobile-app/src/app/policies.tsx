@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../theme';
-import { useTranslation } from '../utils/translations';
+import { theme } from '@theme';
+import { useTranslation } from '@utils/translations';
 
 export default function PoliciesScreen() {
   const { t } = useTranslation();

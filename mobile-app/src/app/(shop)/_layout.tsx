@@ -3,8 +3,8 @@ import { Redirect, Tabs } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleSheet, View, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useCartStore } from '../../store/cart-store';
-import { theme } from '../../theme';
+import { useCartStore } from '@store/cart-store';
+import { theme } from '@theme';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof Ionicons>['name'];

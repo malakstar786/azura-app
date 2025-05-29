@@ -2,17 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore, Address } from '../../store/auth-store';
-import { useCartStore } from '../../store/cart-store';
-import { makeApiCall, API_ENDPOINTS } from '../../utils/api-config';
-import AddEditAddress from '../../components/add-edit-address';
-import { formatPrice } from '../../utils/price-formatter';
+import { useAuthStore, Address } from '@store/auth-store';
+import { useCartStore } from '@store/cart-store';
+import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
+import AddEditAddress from '@components/add-edit-address';
+import { formatPrice } from '@utils/price-formatter';
 
 export default function CheckoutScreen() {
   const navigation = useNavigation();
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   const { addresses, fetchAddresses } = useAuthStore();
-  const { items, total, clearCart } = useCartStore();
+  const { total, clearCart } = useCartStore();
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [shippingAddressId, setShippingAddressId] = useState<string | null>(null);
   const [shipToDifferentAddress, setShipToDifferentAddress] = useState(false);
@@ -441,6 +441,7 @@ ${address.address_2 || ''}`;
           address={isEditingAddress && selectedAddress ? {
             firstname: selectedAddress.firstname,
             lastname: selectedAddress.lastname,
+            phone: '',
             company: selectedAddress.company || '',
             address_1: selectedAddress.address_1,
             address_2: selectedAddress.address_2 || '',
@@ -477,6 +478,7 @@ ${address.address_2 || ''}`;
           address={isEditingAddress && shippingAddress ? {
             firstname: shippingAddress.firstname,
             lastname: shippingAddress.lastname,
+            phone: '',
             company: shippingAddress.company || '',
             address_1: shippingAddress.address_1,
             address_2: shippingAddress.address_2 || '',

@@ -6,6 +6,7 @@ import { useAddressStore } from '../../../store/address-store';
 import AddEditAddress from '../../../components/add-edit-address';
 import { useAuthStore } from '../../../store/auth-store';
 import { theme } from '../../../theme';
+import { useTranslation } from '../../../utils/translations';
 
 // Define the interface for Address from store
 interface Address {
@@ -44,6 +45,7 @@ interface AddressFormData {
 }
 
 export default function AddressScreen() {
+  const { t } = useTranslation();
   const { addresses, fetchAddresses, deleteAddress, isLoading } = useAddressStore();
   const { isAuthenticated } = useAuthStore();
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -130,7 +132,7 @@ export default function AddressScreen() {
         style={styles.editButton}
       >
         <Ionicons name="create-outline" size={18} color="black" />
-        <Text style={styles.editButtonText}>Edit Address</Text>
+        <Text style={styles.editButtonText}>{t('addresses.edit')}</Text>
       </Pressable>
     </View>
   );
@@ -139,7 +141,7 @@ export default function AddressScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'MY ADDRESS',
+          title: t('addresses.title'),
           headerLeft: () => (
             <Pressable onPress={() => router.back()} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color="black" />
@@ -160,15 +162,15 @@ export default function AddressScreen() {
         >
           {addresses.length === 0 ? (
             <View style={styles.emptyStateContainer}>
-              <Text style={styles.emptyStateTitle}>NO ADDRESS ADDED</Text>
+              <Text style={styles.emptyStateTitle}>{t('addresses.noAddresses')}</Text>
               <Text style={styles.emptyStateSubtitle}>
-                Add your address to make shopping easier
+                {t('addresses.noAddressesDescription')}
               </Text>
               <Pressable 
                 style={styles.addAddressButton}
                 onPress={handleAddAddress}
               >
-                <Text style={styles.addAddressText}>ADD ADDRESS</Text>
+                <Text style={styles.addAddressText}>{t('addresses.addNew')}</Text>
               </Pressable>
             </View>
           ) : (
@@ -179,7 +181,7 @@ export default function AddressScreen() {
                 onPress={handleAddAddress}
               >
                 <Ionicons name="add" size={20} color={theme.colors.black} style={styles.addIcon} />
-                <Text style={styles.addAddressText}>ADD ANOTHER ADDRESS</Text>
+                <Text style={styles.addAddressText}>{t('addresses.addNew')}</Text>
               </Pressable>
             </>
           )}

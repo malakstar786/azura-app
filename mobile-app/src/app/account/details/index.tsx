@@ -11,11 +11,11 @@ import {
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '../../../store/auth-store';
-import { makeApiCall, API_ENDPOINTS } from '../../../utils/api-config';
-import EditUserDetails from '../../../components/edit-user-details';
-import { theme } from '../../../theme';
-import { useTranslation } from '../../../utils/translations';
+import { useAuthStore } from '@store/auth-store';
+import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
+import EditUserDetails from '@components/edit-user-details';
+import { theme } from '@theme';
+import { useTranslation } from '@utils/translations';
 
 export default function MyDetailsScreen() {
   const { user, isAuthenticated, updateUser } = useAuthStore();
@@ -237,7 +237,7 @@ const styles = StyleSheet.create({
   },
   editButton: {
     backgroundColor: theme.colors.black,
-    marginTop: theme.spacing.lg,
+    marginTop: theme.spacing.sm,
     marginBottom: theme.spacing.xl,
     paddingVertical: theme.spacing.md,
     alignItems: 'center',

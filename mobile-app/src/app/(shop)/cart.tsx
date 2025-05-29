@@ -1,3 +1,4 @@
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -14,11 +15,39 @@ import {
 } from 'react-native';
 import { Link, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useCartStore } from '../../store/cart-store';
-import { useAuthStore } from '../../store/auth-store';
+import { useCartStore } from '@store/cart-store';
+import { useAuthStore } from '@store/auth-store';
 import { StatusBar } from 'expo-status-bar';
-import { CartItem } from '../../utils/api-config';
-import { useState } from 'react';
+import { CartItem } from '@utils/api-config';
+import { useTranslation } from '@utils/translations';
+import { useLanguageStore } from '@store/language-store';
+import { theme } from '@theme';
+
+// Import the empty cart icon
+const emptyCartIcon = require('../../assets/empty_cart_icon.png');
+
+// Helper function to construct proper image URL
+const getImageUrl = (item: CartItem): string => {
+  const imageSource = item.thumb || item.image;
+  
+  if (!imageSource) {
+    return 'https://via.placeholder.com/100x100/EFEFEF/5D5D5D?text=No+Image';
+  }
+  
+  // If it's already a full URL, return as is
+  if (imageSource.startsWith('http')) {
+    return imageSource;
+  }
+  
+  // If it's a relative path, construct the full URL
+  // Handle different possible formats from the API
+  if (imageSource.startsWith('cache/') || imageSource.startsWith('catalog/')) {
+    return `https://new.azurakwt.com/image/${imageSource}`;
+  }
+  
+  // For simple filenames, try the cache path first
+  return `https://new.azurakwt.com/image/cache/catalog/productsimage/${imageSource}`;
+};
 
 const { width } = Dimensions.get('window');
 
@@ -29,50 +58,64 @@ type DeleteModalProps = {
   item: CartItem;
 };
 
-const DeleteConfirmationModal = ({ visible, onClose, onConfirm, item }: DeleteModalProps) => (
-  <Modal
-    visible={visible}
-    transparent={true}
-    animationType="slide"
-    onRequestClose={onClose}
-  >
-    <View style={styles.deleteModalOverlay}>
-      <View style={styles.deleteModalContent}>
-        <Text style={styles.deleteModalTitle}>Remove from Cart?</Text>
-        
-        <View style={styles.deleteModalItem}>
-          <Image 
-            source={{ uri: `https://new.azurakwt.com/image/${item.image}` }} 
-            style={styles.deleteModalImage} 
-          />
-          <View style={styles.deleteModalItemDetails}>
-            <Text style={styles.deleteModalSku}>SKU: {item.product_id}</Text>
-            <Text style={styles.deleteModalItemTitle}>{item.name.toUpperCase()}</Text>
-            <Text style={styles.deleteModalQuantity}>QTY: {item.quantity}</Text>
-            <Text style={styles.deleteModalPrice}>
-              {(parseFloat(item.price) * Number(item.quantity)).toFixed(3)} KD
-            </Text>
+const DeleteConfirmationModal = ({ visible, onClose, onConfirm, item }: DeleteModalProps) => {
+  const { t } = useTranslation();
+  const { isRTL } = useLanguageStore();
+  
+  return (
+    <Modal
+      visible={visible}
+      transparent={true}
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View style={styles.deleteModalOverlay}>
+        <View style={styles.deleteModalContent}>
+          <Text style={styles.deleteModalTitle}>
+            Remove from Cart?
+          </Text>
+          
+          <View style={styles.deleteModalItem}>
+            <Image 
+              source={{ uri: getImageUrl(item) }} 
+              style={styles.deleteModalImage} 
+              resizeMode="contain"
+            />
+            <View style={styles.deleteModalItemDetails}>
+              <Text style={styles.deleteModalSku}>
+                SKU:{item.sku || item.product_id}
+              </Text>
+              <Text style={styles.deleteModalItemTitle}>
+                {item.name.toUpperCase()}
+              </Text>
+              <Text style={styles.deleteModalQuantity}>
+                QTY: {item.quantity}
+              </Text>
+              <Text style={styles.deleteModalPrice}>
+                {item.total || (parseFloat(item.price.replace(/[^\d.]/g, '')) * Number(item.quantity)).toFixed(3)} KD
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.deleteModalButtons}>
+            <TouchableOpacity 
+              style={[styles.deleteModalButton, styles.cancelButton]} 
+              onPress={onClose}
+            >
+              <Text style={styles.cancelButtonText}>CANCEL</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={[styles.deleteModalButton, styles.confirmButton]}
+              onPress={onConfirm}
+            >
+              <Text style={styles.confirmButtonText}>YES, REMOVE</Text>
+            </TouchableOpacity>
           </View>
         </View>
-
-        <View style={styles.deleteModalButtons}>
-          <TouchableOpacity 
-            style={[styles.deleteModalButton, styles.cancelButton]} 
-            onPress={onClose}
-          >
-            <Text style={styles.cancelButtonText}>CANCEL</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.deleteModalButton, styles.confirmButton]}
-            onPress={onConfirm}
-          >
-            <Text style={styles.confirmButtonText}>YES, REMOVE</Text>
-          </TouchableOpacity>
-        </View>
       </View>
-    </View>
-  </Modal>
-);
+    </Modal>
+  );
+};
 
 const CartItemRow = ({
   item,
@@ -87,6 +130,8 @@ const CartItemRow = ({
   onIncrement: (id: string) => Promise<void>;
   onDecrement: (id: string) => void;
 }) => {
+  const { t } = useTranslation();
+  const { isRTL } = useLanguageStore();
   const [showQuantityModal, setShowQuantityModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -121,13 +166,18 @@ const CartItemRow = ({
   return (
     <View style={styles.cartItemRow}>
       <Image 
-        source={{ uri: `https://new.azurakwt.com/image/${item.thumb || item.image}` }} 
+        source={{ uri: getImageUrl(item) }} 
         style={styles.itemImage} 
+        resizeMode="contain"
       />
-      <View style={styles.itemDetails}>
-        <Text style={styles.itemSku}>SKU: {item.sku || item.product_id}</Text>
-        <Text style={styles.itemTitle}>{item.name.toUpperCase()}</Text>
-        <View style={styles.quantityContainer}>
+      <View style={[styles.itemDetails, { alignItems: isRTL() ? 'flex-end' : 'flex-start' }]}>
+        <Text style={[styles.itemSku, { textAlign: isRTL() ? 'right' : 'left' }]}>
+          SKU: {item.sku || item.product_id}
+        </Text>
+        <Text style={[styles.itemTitle, { textAlign: isRTL() ? 'right' : 'left' }]}>
+          {item.name.toUpperCase()}
+        </Text>
+        <View style={[styles.quantityContainer, { flexDirection: isRTL() ? 'row-reverse' : 'row' }]}>
           <TouchableOpacity 
             onPress={handleDecrement}
             style={[styles.quantityButton, (isUpdating || item.minimum) && styles.disabledButton]}
@@ -135,14 +185,22 @@ const CartItemRow = ({
           >
             <Text style={[styles.quantityButtonText, (isUpdating || item.minimum) && styles.disabledText]}>-</Text>
           </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.quantitySelector, isUpdating && styles.disabledButton]}
-            onPress={() => !isUpdating && setShowQuantityModal(true)}
-            disabled={isUpdating || !item.stock}
-          >
-            <Text style={[styles.itemQuantity, isUpdating && styles.disabledText]}>QTY: {item.quantity}</Text>
-            <Ionicons name="chevron-down" size={16} color={isUpdating ? "#999" : "#000"} />
-          </TouchableOpacity>
+          <View style={styles.quantityDisplay}>
+            <Text style={[styles.itemQuantity, isUpdating && styles.disabledText]}>
+              QTY: {item.quantity}
+            </Text>
+            <TouchableOpacity 
+              style={[styles.quantityDropdown, isUpdating && styles.disabledButton]}
+              onPress={() => !isUpdating && setShowQuantityModal(true)}
+              disabled={isUpdating || !item.stock}
+            >
+              <Ionicons 
+                name="chevron-down" 
+                size={14} 
+                color={isUpdating ? theme.colors.mediumGray : theme.colors.black} 
+              />
+            </TouchableOpacity>
+          </View>
           <TouchableOpacity 
             onPress={handleIncrement}
             style={[styles.quantityButton, (isUpdating || item.maximum) && styles.disabledButton]}
@@ -151,7 +209,7 @@ const CartItemRow = ({
             <Text style={[styles.quantityButtonText, (isUpdating || item.maximum) && styles.disabledText]}>+</Text>
           </TouchableOpacity>
         </View>
-        <Text style={styles.itemPrice}>
+        <Text style={[styles.itemPrice, { textAlign: isRTL() ? 'right' : 'left' }]}>
           {item.total || (parseFloat(item.price) * Number(item.quantity)).toFixed(3)} KD
         </Text>
       </View>
@@ -159,7 +217,7 @@ const CartItemRow = ({
         onPress={() => setShowDeleteModal(true)} 
         style={styles.removeButton}
       >
-        <Ionicons name="trash-outline" size={24} color="#FF3B30" />
+        <Ionicons name="trash-outline" size={24} color={theme.colors.error} />
       </TouchableOpacity>
 
       <DeleteConfirmationModal
@@ -211,62 +269,70 @@ const CartItemRow = ({
 };
 
 export default function CartScreen() {
-  const {
-    items,
-    removeItem,
-    incrementQuantity,
-    decrementQuantity,
-    getTotalPrice,
-    updateQuantity,
-    clearCart,
-  } = useCartStore();
+  const { t } = useTranslation();
+  const { isRTL } = useLanguageStore();
+  const { items, removeItem, updateQuantity, incrementQuantity, decrementQuantity, getTotalPrice, clearCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
-  const [showClearCartModal, setShowClearCartModal] = useState(false);
+
+  const handleRemoveFromCart = (productId: string) => {
+    removeItem(productId);
+  };
 
   const handleUpdateQuantity = async (productId: string, quantity: number) => {
     await updateQuantity(productId, quantity);
   };
 
-  const handleCheckout = async () => {
-    // First check if user is authenticated
-    if (!isAuthenticated) {
-      // If not authenticated, redirect to sign in page with redirect parameter
-      router.push({
-        pathname: '/auth',
-        params: { redirect: 'checkout' }
-      });
-      return;
-    }
-    
-    // If authenticated, proceed directly to checkout
-    router.push('/checkout');
+  const handleEmptyCart = () => {
+    Alert.alert(
+      'Empty Cart',
+      'Are you sure you want to remove all items from your cart?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Yes, Empty Cart', 
+          style: 'destructive',
+          onPress: () => clearCart()
+        },
+      ]
+    );
   };
 
-  const SHIPPING_COST = 5.000;
-  const cartTotal = getTotalPrice();
-  const total = cartTotal + SHIPPING_COST;
+  const handleCheckout = async () => {
+    if (!isAuthenticated) {
+      Alert.alert(
+        t('cart.loginRequired'),
+        t('cart.loginRequiredMessage'),
+        [
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('auth.login'), onPress: () => router.push('/auth/login') },
+        ]
+      );
+      return;
+    }
+    router.push('/checkout');
+  };
 
   if (items.length === 0) {
     return (
       <View style={styles.container}>
-        <View>
-          <Text style={styles.title}>MY{'\n'}CART</Text>
-          <View style={styles.dividerContainer}>
-            <View style={styles.divider} />
-          </View>
+        <StatusBar style="dark" />
+        <View style={styles.emptyHeaderContainer}>
+          <Text style={[styles.emptyTitle, { textAlign: isRTL() ? 'right' : 'left' }]}>
+            {t('nav.cart')}
+          </Text>
         </View>
-
+        <View style={styles.dividerContainer}>
+          <View style={styles.divider} />
+        </View>
         <View style={styles.emptyContainer}>
-          <View style={styles.cartIconContainer}>
-            <Text style={styles.cartIcon}>🛒</Text>
-            <View style={styles.cartBadge}>
-              <Text style={styles.cartBadgeText}>0</Text>
-            </View>
-          </View>
-          <Text style={styles.emptyText}>YOUR CART IS EMPTY</Text>
-          <Link href="/" asChild>
-            <TouchableOpacity style={styles.startShoppingButton}>
-              <Text style={styles.startShoppingText}>START SHOPPING</Text>
+          <Image source={emptyCartIcon} style={styles.emptyCartIcon} />
+          <Text style={styles.emptyCartTitle}>
+            Your Cart is Empty
+          </Text>
+          <Link href="/(shop)" asChild>
+            <TouchableOpacity style={styles.shopButton}>
+              <Text style={styles.shopButtonText}>START SHOPPING</Text>
+              <Ionicons name="arrow-forward" size={16} color={theme.colors.white} style={styles.shopButtonIcon} />
             </TouchableOpacity>
           </Link>
         </View>
@@ -276,88 +342,47 @@ export default function CartScreen() {
 
   return (
     <View style={styles.container}>
-      <StatusBar style={Platform.OS === 'ios' ? 'light' : 'auto'} />
-
-      <View>
-        <Text style={styles.title}>{'MY\nCART'}</Text>
-        <View style={styles.dividerContainer}>
-          <View style={styles.divider} />
-        </View>
+      <StatusBar style="dark" />
+      <View style={styles.headerContainer}>
+        <Text style={[styles.title, { textAlign: isRTL() ? 'right' : 'left' }]}>
+          {t('nav.cart')}
+        </Text>
+        <TouchableOpacity 
+          style={styles.emptyCartButton}
+          onPress={handleEmptyCart}
+        >
+          <Ionicons name="trash-outline" size={16} color={theme.colors.error} />
+          <Text style={styles.emptyCartButtonText}>Empty Cart</Text>
+        </TouchableOpacity>
       </View>
-
+      <View style={styles.dividerContainer}>
+        <View style={styles.divider} />
+      </View>
+      
       <FlatList
         data={items}
-        keyExtractor={item => item.cart_id}
+        keyExtractor={(item) => item.cart_id}
         renderItem={({ item }) => (
           <CartItemRow
             item={item}
-            onRemove={removeItem}
+            onRemove={handleRemoveFromCart}
             onUpdateQuantity={handleUpdateQuantity}
             onIncrement={incrementQuantity}
             onDecrement={decrementQuantity}
           />
         )}
-        contentContainerStyle={styles.cartItemsList}
+        style={styles.cartList}
+        contentContainerStyle={styles.cartListContent}
+        showsVerticalScrollIndicator={false}
       />
 
-      {/* Empty Cart Button */}
-      <TouchableOpacity
-        style={styles.emptyCartButton}
-        onPress={() => setShowClearCartModal(true)}
-      >
-        <Text style={styles.emptyCartButtonText}>EMPTY CART</Text>
-      </TouchableOpacity>
-
-      {/* Empty Cart Confirmation Modal */}
-      <Modal
-        visible={showClearCartModal}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowClearCartModal(false)}
-      >
-        <View style={styles.deleteModalOverlay}>
-          <View style={styles.deleteModalContent}>
-            <Text style={styles.deleteModalTitle}>Remove all items from cart?</Text>
-            <View style={styles.deleteModalButtons}>
-              <TouchableOpacity
-                style={[styles.deleteModalButton, styles.cancelButton]}
-                onPress={() => setShowClearCartModal(false)}
-              >
-                <Text style={styles.cancelButtonText}>CANCEL</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.deleteModalButton, styles.confirmButton]}
-                onPress={async () => {
-                  await clearCart();
-                  setShowClearCartModal(false);
-                }}
-              >
-                <Text style={styles.confirmButtonText}>YES, REMOVE ALL</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
+      <View style={styles.footer}>
+        <View style={styles.totalContainer}>
+          <Text style={styles.totalLabel}>CART TOTAL : {getTotalPrice().toFixed(3)} KD</Text>
         </View>
-      </Modal>
-
-      <View style={styles.summaryContainer}>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>CART TOTAL</Text>
-          <Text style={styles.summaryValue}>{cartTotal.toFixed(3)} KD</Text>
-        </View>
-        <View style={styles.summaryRow}>
-          <Text style={styles.summaryLabel}>SHIPPING</Text>
-          <Text style={styles.summaryValue}>{SHIPPING_COST.toFixed(3)} KD</Text>
-        </View>
-        <View style={[styles.summaryRow, styles.totalRow]}>
-          <Text style={[styles.summaryLabel, styles.totalLabel]}>TOTAL</Text>
-          <Text style={[styles.summaryValue, styles.totalValue]}>{total.toFixed(3)} KD</Text>
-        </View>
-
-        <TouchableOpacity
-          style={styles.checkoutButton}
-          onPress={handleCheckout}
-        >
+        <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
           <Text style={styles.checkoutButtonText}>CHECKOUT</Text>
+          <Ionicons name="arrow-forward" size={20} color={theme.colors.white} />
         </TouchableOpacity>
       </View>
     </View>
@@ -367,301 +392,357 @@ export default function CartScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
+    backgroundColor: theme.colors.white,
+  },
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: theme.colors.lightGray,
+    paddingHorizontal: theme.spacing.md,
+    marginTop: 53,
+    marginBottom: theme.spacing.md,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '600',
-    marginTop: 40,
+    fontSize: theme.typography.sizes.xxxl,
+    fontWeight: theme.typography.weights.bold as any,
+    marginTop: 20,
+    paddingLeft: 20,
+    color: theme.colors.black,
+    flex: 1,
+  },
+  emptyHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: theme.colors.white,
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: 60,
+    paddingBottom: theme.spacing.md,
+  },
+  emptyTitle: {
+    fontSize: theme.typography.sizes.xxxl,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+    flex: 1,
+    paddingLeft: 20,
   },
   dividerContainer: {
-    paddingVertical: 16,
+    paddingHorizontal: theme.spacing.md,
+    marginBottom: theme.spacing.md,
   },
   divider: {
-    height: 1,
-    backgroundColor: '#E0E0E0',
+    height: 2,
+    backgroundColor: theme.colors.black,
   },
   emptyContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 80,
+    paddingHorizontal: theme.spacing.lg,
+    marginTop: -theme.spacing.xxl,
   },
-  cartIconContainer: {
-    position: 'relative',
-    marginBottom: 16,
+  emptyCartIcon: {
+    width: 120,
+    height: 120,
+    marginBottom: theme.spacing.xl,
   },
-  cartIcon: {
-    fontSize: 64,
+  emptyCartTitle: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.xl,
+    textAlign: 'center',
   },
-  cartBadge: {
-    position: 'absolute',
-    top: 0,
-    right: -10,
-    backgroundColor: 'red',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    justifyContent: 'center',
+  emptySubtitle: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.mediumGray,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xl,
+  },
+  shopButton: {
+    backgroundColor: theme.colors.black,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    flexDirection: 'row',
     alignItems: 'center',
   },
-  cartBadgeText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '700',
+  shopButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold as any,
+    marginRight: theme.spacing.sm,
   },
-  emptyText: {
-    fontSize: 18,
-    fontWeight: '500',
-    marginBottom: 32,
+  shopButtonIcon: {
+    marginLeft: theme.spacing.xs,
   },
-  startShoppingButton: {
-    backgroundColor: '#000',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+  cartList: {
+    flex: 1,
+  },
+  cartListContent: {
+    paddingBottom: theme.spacing.lg,
+  },
+  emptyCartButton: {
+    flexDirection: 'row',
     alignItems: 'center',
-    width: '80%',
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderWidth: 1,
+    borderColor: theme.colors.error,
+    borderRadius: theme.borderRadius.sm,
+    backgroundColor: theme.colors.white,
   },
-  startShoppingText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  cartItemsList: {
-    flexGrow: 1,
+  emptyCartButtonText: {
+    fontSize: theme.typography.sizes.xs,
+    color: theme.colors.error,
+    marginLeft: theme.spacing.xs,
+    fontWeight: theme.typography.weights.medium as any,
   },
   cartItemRow: {
     flexDirection: 'row',
-    marginBottom: 24,
+    alignItems: 'flex-start',
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    paddingBottom: 16,
+    borderBottomColor: theme.colors.lightBorder,
+    backgroundColor: theme.colors.white,
   },
   itemImage: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
-    marginRight: 16,
+    width: 100,
+    height: 100,
+    borderRadius: theme.borderRadius.sm,
+    marginRight: theme.spacing.md,
+    backgroundColor: theme.colors.veryLightGray,
   },
   itemDetails: {
     flex: 1,
+    alignItems: 'flex-start',
   },
   itemSku: {
-    fontSize: 12,
-    color: '#888',
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.mediumGray,
     marginBottom: 4,
+    fontWeight: theme.typography.weights.medium as any,
   },
   itemTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.md,
+    lineHeight: 22,
   },
   quantityContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.md,
   },
   quantityButton: {
     width: 28,
     height: 28,
-    backgroundColor: '#F0F0F0',
+    borderRadius: 2,
+    backgroundColor: theme.colors.white,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: theme.colors.black,
   },
   quantityButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
   },
-  quantitySelector: {
+  quantityDisplay: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
+    marginHorizontal: theme.spacing.sm,
+    backgroundColor: theme.colors.white,
+  },
+  quantityDropdown: {
+    paddingHorizontal: 4,
+    paddingVertical: 2,
+    marginLeft: theme.spacing.xs,
   },
   itemQuantity: {
-    fontSize: 14,
-    marginRight: 4,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.medium as any,
+    color: theme.colors.mediumGray,
   },
   itemPrice: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
   },
   removeButton: {
-    padding: 8,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    width: 200,
-    maxHeight: 300,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  quantityOption: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  selectedQuantity: {
-    backgroundColor: '#F0F0F0',
-  },
-  quantityOptionText: {
-    fontSize: 16,
-    textAlign: 'center',
-  },
-  selectedQuantityText: {
-    fontWeight: '600',
-  },
-  deleteModalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
-  },
-  deleteModalContent: {
-    backgroundColor: 'white',
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 20,
-  },
-  deleteModalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  deleteModalItem: {
-    flexDirection: 'row',
-    marginBottom: 24,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-  },
-  deleteModalImage: {
-    width: 80,
-    height: 80,
-    resizeMode: 'contain',
-    marginRight: 16,
-  },
-  deleteModalItemDetails: {
-    flex: 1,
-  },
-  deleteModalSku: {
-    fontSize: 12,
-    color: '#888',
-    marginBottom: 4,
-  },
-  deleteModalItemTitle: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
-  },
-  deleteModalQuantity: {
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  deleteModalPrice: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  deleteModalButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  deleteModalButton: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-    marginHorizontal: 8,
-  },
-  cancelButton: {
-    backgroundColor: '#000',
-  },
-  cancelButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  confirmButton: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#000',
-  },
-  confirmButtonText: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  summaryContainer: {
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-    paddingTop: 16,
-    marginTop: 8,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  totalRow: {
-    marginTop: 8,
-    marginBottom: 16,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: '#E0E0E0',
-  },
-  summaryLabel: {
-    fontSize: 14,
-    color: '#555',
-  },
-  summaryValue: {
-    fontSize: 14,
-    fontWeight: '500',
-  },
-  totalLabel: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000',
-  },
-  totalValue: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  checkoutButton: {
-    backgroundColor: '#000',
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  checkoutButtonText: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
+    padding: theme.spacing.sm,
   },
   disabledButton: {
     opacity: 0.5,
   },
   disabledText: {
-    color: '#999',
+    color: theme.colors.mediumGray,
   },
-  emptyCartButton: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#000',
-    paddingVertical: 14,
+  footer: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.black,
+    backgroundColor: theme.colors.white,
+  },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
+    paddingBottom: theme.spacing.md,
   },
-  emptyCartButtonText: {
-    color: '#000',
-    fontSize: 14,
-    fontWeight: '600',
+  totalLabel: {
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold as any,
+    color: theme.colors.black,
+    textAlign: 'right',
+  },
+  totalPrice: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+  },
+  checkoutButton: {
+    backgroundColor: theme.colors.black,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: 0,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  checkoutButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold as any,
+    letterSpacing: 1,
+    marginRight: theme.spacing.sm,
+  },
+  // Modal styles
+  deleteModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+  },
+  deleteModalContent: {
+    backgroundColor: theme.colors.white,
+    borderTopLeftRadius: theme.borderRadius.lg,
+    borderTopRightRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    width: '100%',
+    maxHeight: '45%',
+  },
+  deleteModalTitle: {
+    fontSize: theme.typography.sizes.xl,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+    marginBottom: theme.spacing.xl,
+    textAlign: 'center',
+  },
+  deleteModalItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.md,
+  },
+  deleteModalImage: {
+    width: 80,
+    height: 80,
+    borderRadius: theme.borderRadius.sm,
+    marginRight: theme.spacing.lg,
+    backgroundColor: theme.colors.veryLightGray,
+  },
+  deleteModalItemDetails: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  deleteModalSku: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.mediumGray,
+    marginBottom: 4,
+    fontWeight: theme.typography.weights.medium as any,
+  },
+  deleteModalItemTitle: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+    marginBottom: 8,
+    lineHeight: 22,
+  },
+  deleteModalQuantity: {
+    fontSize: theme.typography.sizes.sm,
+    color: theme.colors.mediumGray,
+    marginBottom: 4,
+    fontWeight: theme.typography.weights.medium as any,
+  },
+  deleteModalPrice: {
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.black,
+  },
+  deleteModalButtons: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+  },
+  deleteModalButton: {
+    flex: 1,
+    paddingVertical: theme.spacing.lg,
+    borderRadius: 0,
+    alignItems: 'center',
+  },
+  cancelButton: {
+    backgroundColor: theme.colors.black,
+  },
+  confirmButton: {
+    backgroundColor: theme.colors.white,
+    borderWidth: 0.5,
+    borderColor: theme.colors.black,
+  },
+  cancelButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold as any,
+    letterSpacing: 0.5,
+  },
+  confirmButtonText: {
+    color: theme.colors.black,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.bold as any,
+    letterSpacing: 0.5,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: theme.colors.overlay,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    backgroundColor: theme.colors.white,
+    borderRadius: theme.borderRadius.lg,
+    maxHeight: 300,
+    minWidth: 200,
+  },
+  quantityOption: {
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.lightBorder,
+  },
+  selectedQuantity: {
+    backgroundColor: theme.colors.lightGray,
+  },
+  quantityOptionText: {
+    fontSize: theme.typography.sizes.md,
+    color: theme.colors.black,
+    textAlign: 'center',
+  },
+  selectedQuantityText: {
+    fontWeight: theme.typography.weights.bold as any,
   },
 }); 

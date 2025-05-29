@@ -14,10 +14,11 @@ import {
   FlatList 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '../store/auth-store';
-import { useAddressStore } from '../store/address-store';
-import { LocationService, Country, Governorate, Zone } from '../utils/location-service';
-import { theme } from '../theme';
+import { useAuthStore } from '@store/auth-store';
+import { useAddressStore } from '@store/address-store';
+import { LocationService, Country, Governorate, Zone } from '@utils/location-service';
+import { theme } from '@theme';
+import { useTranslation } from '@utils/translations';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -49,6 +50,7 @@ interface ImprovedAddEditAddressProps {
 }
 
 export default function ImprovedAddEditAddress({ address, onClose, onAddressUpdated }: ImprovedAddEditAddressProps) {
+  const { t } = useTranslation();
   const { user } = useAuthStore();
   const { addAddress, updateAddress, isLoading, fetchAddresses } = useAddressStore();
   

@@ -3,7 +3,8 @@ import { Link, router } from 'expo-router';
 import { useToast } from 'react-native-toast-notifications';
 import { Ionicons } from '@expo/vector-icons';
 import { Product } from '../types/api';
-import { useCartStore } from '../store/cart-store';
+import { useCartStore } from '@store/cart-store';
+import { theme } from '@theme';
 
 export const ProductListItem = ({
   product,
@@ -97,7 +98,7 @@ export const ProductListItem = ({
                 <Ionicons 
                   name="remove" 
                   size={20} 
-                  color={cartItem.quantity === 1 ? '#ccc' : '#000'} 
+                  color={cartItem.quantity === 1 ? theme.colors.lightGray : theme.colors.black} 
                 />
               </TouchableOpacity>
               <View style={styles.quantityTextContainer}>
@@ -107,17 +108,17 @@ export const ProductListItem = ({
                 onPress={handleIncrement} 
                 style={[styles.quantityButton, styles.plusButton]}
               >
-                <Ionicons name="add" size={20} color="white" />
+                <Ionicons name="add" size={20} color={theme.colors.white} />
               </TouchableOpacity>
             </View>
           ) : (
             <TouchableOpacity onPress={handleAddToCart} style={styles.addToCartButton}>
-              <Ionicons name="cart-outline" size={16} color="white" />
+              <Ionicons name="cart-outline" size={16} color={theme.colors.white} />
               <Text style={styles.buttonText}>ADD TO CART</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity onPress={handleBuyNow} style={styles.buyNowButton}>
-            <Ionicons name="flash-outline" size={16} color="white" />
+            <Ionicons name="flash-outline" size={16} color={theme.colors.white} />
             <Text style={styles.buttonText}>BUY NOW</Text>
           </TouchableOpacity>
         </View>
@@ -129,14 +130,14 @@ export const ProductListItem = ({
 const styles = StyleSheet.create({
   item: {
     flex: 1,
-    backgroundColor: '#fff',
-    margin: 8,
+    backgroundColor: theme.colors.background,
+    margin: theme.spacing.sm,
     maxWidth: '47%',
   },
   imageContainer: {
     aspectRatio: 1,
     width: '100%',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: theme.colors.veryLightGray,
     position: 'relative',
   },
   image: {
@@ -146,61 +147,61 @@ const styles = StyleSheet.create({
   },
   specialBadge: {
     position: 'absolute',
-    top: 8,
-    left: 8,
-    backgroundColor: '#E31837',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
+    top: theme.spacing.sm,
+    left: theme.spacing.sm,
+    backgroundColor: theme.colors.red,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.sm,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: theme.spacing.xs,
   },
   specialBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.xs,
+    fontWeight: theme.typography.weights.semibold as any,
   },
   details: {
-    padding: 8,
-    gap: 4,
+    padding: theme.spacing.sm,
+    gap: theme.spacing.xs,
   },
   title: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.medium as any,
+    color: theme.colors.textPrimary,
   },
   price: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold as any,
+    color: theme.colors.textPrimary,
   },
   buttonContainer: {
-    gap: 8,
-    marginTop: 8,
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.sm,
   },
   addToCartButton: {
-    backgroundColor: '#000',
+    backgroundColor: theme.colors.buttonPrimary,
     paddingVertical: 10,
-    borderRadius: 4,
+    borderRadius: theme.borderRadius.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
   buyNowButton: {
-    backgroundColor: '#E31837',
+    backgroundColor: theme.colors.red,
     paddingVertical: 10,
-    borderRadius: 4,
+    borderRadius: theme.borderRadius.sm,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
   },
   buttonText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.sm,
+    fontWeight: theme.typography.weights.semibold as any,
   },
   quantityControls: {
     flexDirection: 'row',
@@ -211,15 +212,15 @@ const styles = StyleSheet.create({
     height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 4,
+    borderRadius: theme.borderRadius.sm,
   },
   plusButton: {
-    backgroundColor: '#000',
+    backgroundColor: theme.colors.buttonPrimary,
   },
   minusButton: {
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.buttonSecondary,
     borderWidth: 1,
-    borderColor: '#000',
+    borderColor: theme.colors.borderColor,
   },
   quantityTextContainer: {
     flex: 1,
@@ -227,11 +228,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderTopWidth: 1,
     borderBottomWidth: 1,
-    borderColor: '#000',
+    borderColor: theme.colors.borderColor,
   },
   quantityText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.medium as any,
+    color: theme.colors.textPrimary,
   },
 });

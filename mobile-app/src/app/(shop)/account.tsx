@@ -12,12 +12,12 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useAuthStore } from '../../store/auth-store';
-import { makeApiCall, API_ENDPOINTS } from '../../utils/api-config';
+import { useAuthStore } from '@store/auth-store';
+import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useTranslation } from '../../utils/translations';
-import { theme } from '../../theme';
-import CurrencyDropdown from '../../components/CurrencyDropdown';
+import { useTranslation } from '@utils/translations';
+import { theme } from '@theme';
+import CurrencyDropdown from '@components/CurrencyDropdown';
 
 export default function AccountScreen() {
   const { user, isAuthenticated, clearUser } = useAuthStore();

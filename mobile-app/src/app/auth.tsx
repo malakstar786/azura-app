@@ -13,9 +13,9 @@ import {
     Dimensions,
 } from 'react-native';
 import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
-import { useAuthStore } from '../store/auth-store';
+import { useAuthStore } from '@store/auth-store';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../theme';
+import { theme } from '@theme';
 
 export default function Auth() {
     const { login, signup, isAuthenticated } = useAuthStore();

@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import {
-    FlatList,
     StyleSheet,
     Text,
     View,
@@ -12,11 +11,11 @@ import {
 } from 'react-native';
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useCartStore } from '../../store/cart-store';
-import { useLanguageStore } from '../../store/language-store';
-import { useTranslation } from '../../utils/translations';
+import { useCartStore } from '@store/cart-store';
+import { useLanguageStore } from '@store/language-store';
+import { useTranslation } from '@utils/translations';
 import { useToast } from 'react-native-toast-notifications';
-import { publicApi } from '../../utils/api-service';
+import { publicApi } from '@utils/api-service';
 import { Product as ApiProduct } from '../../types/api';
 
 const { width } = Dimensions.get('window');
@@ -179,10 +178,6 @@ export default function CategoryScreen() {
       return;
     }
     useCartStore.getState().addToCart(product.product_id, 1);
-    toast.show('Product has been added to your cart.', {
-      type: 'success',
-      placement: 'bottom',
-    });
   };
 
   const handleBuyNow = (product: Product) => {

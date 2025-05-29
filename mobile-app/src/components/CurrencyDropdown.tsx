@@ -10,8 +10,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
-import { theme } from '../theme';
+import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
+import { theme } from '@theme';
 
 interface Currency {
   title: string;

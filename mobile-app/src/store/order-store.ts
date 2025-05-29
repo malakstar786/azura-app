@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Alert } from 'react-native';
-import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
+import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 
 export interface Order {
   order_id: string;
