@@ -311,6 +311,7 @@ export const useCartStore = create<CartStore>()(
           console.log(`Updating quantity for item ${cartId} to ${newQuantity}`);
           
           const response = await apiUpdateCartQuantity(cartId, newQuantity);
+          console.log('Update quantity API response:', response);
           
           if (response.success === 1) {
             // Refresh cart after successful update
@@ -321,9 +322,21 @@ export const useCartStore = create<CartStore>()(
               duration: 2000
             });
           } else {
-            throw new Error(
-              Array.isArray(response.error) ? response.error[0] : 'Failed to update cart'
-            );
+            // Handle API errors more gracefully
+            const errorMessage = Array.isArray(response.error) 
+              ? response.error[0] 
+              : (typeof response.error === 'string' ? response.error : 'Failed to update cart');
+            
+            console.log('Update quantity API error:', errorMessage);
+            
+            Toast.show(errorMessage, {
+              type: 'error',
+              placement: 'bottom',
+              duration: 3000
+            });
+            
+            // Don't throw error, just show the message
+            set({ isLoading: false });
           }
         } catch (error: any) {
           console.error('Error updating cart quantity:', error);
@@ -343,10 +356,20 @@ export const useCartStore = create<CartStore>()(
         const item = get().items.find(i => i.cart_id === cartId);
         if (!item) return;
         
+        console.log('INCREMENT - Item details:', {
+          cart_id: cartId,
+          name: item.name,
+          current_quantity: item.quantity,
+          stock: item.stock,
+          minimum: item.minimum,
+          maximum: item.maximum
+        });
+        
         const currentQuantity = typeof item.quantity === 'string' 
           ? parseInt(item.quantity, 10) 
           : (typeof item.quantity === 'number' ? item.quantity : 0);
-          
+        
+        console.log(`Incrementing quantity for ${cartId} from ${currentQuantity} to ${currentQuantity + 1}`);
         await get().updateQuantity(cartId, currentQuantity + 1);
       },
       
@@ -354,12 +377,30 @@ export const useCartStore = create<CartStore>()(
         const item = get().items.find(i => i.cart_id === cartId);
         if (!item) return;
         
+        console.log('DECREMENT - Item details:', {
+          cart_id: cartId,
+          name: item.name,
+          current_quantity: item.quantity,
+          stock: item.stock,
+          minimum: item.minimum,
+          maximum: item.maximum
+        });
+        
         const currentQuantity = typeof item.quantity === 'string' 
           ? parseInt(item.quantity, 10) 
           : (typeof item.quantity === 'number' ? item.quantity : 0);
-          
-        if (currentQuantity <= 1) return;
         
+        // Only prevent going below 1 (basic client-side validation)
+        if (currentQuantity <= 1) {
+          Toast.show('Minimum quantity is 1', {
+            type: 'error',
+            placement: 'bottom',
+            duration: 2000
+          });
+          return;
+        }
+        
+        console.log(`Decrementing quantity for ${cartId} from ${currentQuantity} to ${currentQuantity - 1}`);
         await get().updateQuantity(cartId, currentQuantity - 1);
       },
       

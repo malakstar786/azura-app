@@ -138,20 +138,32 @@ const CartItemRow = ({
   const quantities = Array.from({ length: 10 }, (_, i) => i + 1);
 
   const handleIncrement = async () => {
-    if (item.maximum) return;
+    console.log('Increment button pressed for item:', item.cart_id, 'stock:', item.stock, 'maximum:', item.maximum);
+    
+    // Only check if we're updating to prevent double-clicks
+    if (isUpdating) return;
+    
     setIsUpdating(true);
     try {
       await onIncrement(item.cart_id);
+    } catch (error) {
+      console.error('Error incrementing quantity:', error);
     } finally {
       setIsUpdating(false);
     }
   };
 
   const handleDecrement = async () => {
-    if (item.minimum) return;
+    console.log('Decrement button pressed for item:', item.cart_id, 'quantity:', item.quantity, 'minimum:', item.minimum);
+    
+    // Only check if we're updating to prevent double-clicks
+    if (isUpdating) return;
+    
     setIsUpdating(true);
     try {
       await onDecrement(item.cart_id);
+    } catch (error) {
+      console.error('Error decrementing quantity:', error);
     } finally {
       setIsUpdating(false);
     }
@@ -185,10 +197,10 @@ const CartItemRow = ({
         <View style={[styles.quantityContainer, { flexDirection: isRTL() ? 'row-reverse' : 'row' }]}>
           <TouchableOpacity 
             onPress={handleDecrement}
-            style={[styles.quantityButton, (isUpdating || item.minimum) && styles.disabledButton]}
-            disabled={isUpdating || item.minimum}
+            style={[styles.quantityButton, isUpdating && styles.disabledButton]}
+            disabled={isUpdating}
           >
-            <Text style={[styles.quantityButtonText, (isUpdating || item.minimum) && styles.disabledText]}>-</Text>
+            <Text style={[styles.quantityButtonText, isUpdating && styles.disabledText]}>-</Text>
           </TouchableOpacity>
           <View style={styles.quantityDisplay}>
             <Text style={[styles.itemQuantity, isUpdating && styles.disabledText]}>
@@ -208,10 +220,10 @@ const CartItemRow = ({
           </View>
           <TouchableOpacity 
             onPress={handleIncrement}
-            style={[styles.quantityButton, (isUpdating || item.maximum) && styles.disabledButton]}
-            disabled={isUpdating || item.maximum}
+            style={[styles.quantityButton, isUpdating && styles.disabledButton]}
+            disabled={isUpdating}
           >
-            <Text style={[styles.quantityButtonText, (isUpdating || item.maximum) && styles.disabledText]}>+</Text>
+            <Text style={[styles.quantityButtonText, isUpdating && styles.disabledText]}>+</Text>
           </TouchableOpacity>
         </View>
         <Text style={[styles.itemPrice, { textAlign: isRTL() ? 'right' : 'left' }]}>
