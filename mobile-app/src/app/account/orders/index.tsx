@@ -13,11 +13,11 @@ import {
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { useTranslation } from '../../../utils/translations';
-import { theme } from '../../../theme';
-import { useAuthStore } from '../../../store/auth-store';
-import { getCurrentOCSESSID } from '../../../utils/api-config';
-import { useLanguageStore } from '../../../store/language-store';
+import { useTranslation } from '@utils/translations';
+import { theme } from '@/theme';
+import { useAuthStore } from '@store/auth-store';
+import { getCurrentOCSESSID } from '@utils/api-config';
+import { useLanguageStore } from '@store/language-store';
 
 interface Order {
   order_id: string;

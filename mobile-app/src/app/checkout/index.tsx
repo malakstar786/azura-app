@@ -1,15 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore, Address } from '@store/auth-store';
 import { useCartStore } from '@store/cart-store';
 import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 import AddEditAddress from '@components/add-edit-address';
 import { formatPrice } from '@utils/price-formatter';
+import { theme } from '@theme';
 
 export default function CheckoutScreen() {
-  const navigation = useNavigation();
   const { isAuthenticated } = useAuthStore();
   const { addresses, fetchAddresses } = useAuthStore();
   const { total, clearCart } = useCartStore();
@@ -38,7 +38,7 @@ export default function CheckoutScreen() {
     if (isAuthenticated) {
       loadAddresses();
     } else {
-      navigation.navigate('Login' as never);
+      router.push('/auth');
     }
   }, [isAuthenticated]);
 
@@ -145,7 +145,7 @@ export default function CheckoutScreen() {
         clearCart();
 
         // Redirect to success page
-        navigation.navigate('OrderSuccess' as never);
+        router.push('/order-success');
       } else {
         // Handle error which can be string or array
         const errorMessage = typeof confirmResponse.error === 'string' 
@@ -510,23 +510,23 @@ ${address.address_2 || ''}`;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.white,
   },
   header: {
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 8,
+    paddingTop: 28,
+    paddingBottom: 28,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5E5',
+    borderBottomColor: theme.colors.lightGray,
   },
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#000',
+    color: theme.colors.black,
   },
   subtitle: {
     fontSize: 12,
-    color: '#666',
+    color: theme.colors.mediumGray,
     marginTop: 4,
   },
   section: {
@@ -582,11 +582,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    marginTop: 8,
+    marginTop: 18,
+    borderTopWidth: 2,
+    borderColor: theme.colors.black,
+    paddingVertical: 12,
+    paddingHorizontal: 115,
   },
   editAddressText: {
-    fontSize: 14,
-    color: '#000',
+    fontSize: 15,
+    color: theme.colors.black,
     marginLeft: 4,
   },
   addAddressButton: {
@@ -610,6 +614,8 @@ const styles = StyleSheet.create({
   shipToDifferentRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginVertical: 10,
+    paddingLeft: 3,
   },
   customCheckbox: {
     width: 18,

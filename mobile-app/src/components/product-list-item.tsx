@@ -2,7 +2,7 @@ import { Image, Pressable, StyleSheet, Text, TouchableOpacity, View } from 'reac
 import { Link, router } from 'expo-router';
 import { useToast } from 'react-native-toast-notifications';
 import { Ionicons } from '@expo/vector-icons';
-import { Product } from '../types/api';
+import type { Product } from '../types/api';
 import { useCartStore } from '@store/cart-store';
 import { theme } from '@theme';
 

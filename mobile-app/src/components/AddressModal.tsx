@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal, View, StyleSheet, Dimensions } from 'react-native';
-import { Address } from '../store/address-store';
+import type { Address } from '@store/address-store';
 import AddEditAddress from './add-edit-address';
 
 interface AddressModalProps {
@@ -17,6 +17,7 @@ export default function AddressModal({ visible, onClose, isNewAddress, address }
   const formData = address ? {
     firstname: address.firstName,
     lastname: address.lastName,
+    phone: '+965 66112321', // Default phone for now
     company: '',
     address_1: `Block ${address.block}, Street ${address.street}, House ${address.houseNumber}${address.apartmentNumber ? `, Apt ${address.apartmentNumber}` : ''}`,
     address_2: address.additionalDetails,

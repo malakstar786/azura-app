@@ -1,6 +1,6 @@
 import { makeApiCall, API_ENDPOINTS } from './api-config';
-import { Product } from '../types/api';
-import { useLanguageStore } from '../store/language-store';
+import type { Product } from '../types/api';
+import { useLanguageStore } from '@store/language-store';
 
 // Get current language from store
 const getCurrentLanguage = () => {

@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAddressStore } from '../../../store/address-store';
-import AddEditAddress from '../../../components/add-edit-address';
-import { useAuthStore } from '../../../store/auth-store';
-import { theme } from '../../../theme';
-import { useTranslation } from '../../../utils/translations';
+import { useAddressStore } from '@store/address-store';
+import AddEditAddress from '@components/add-edit-address';
+import { useAuthStore } from '@store/auth-store';
+import { theme } from '@/theme';
+import { useTranslation } from '@utils/translations';
 
 // Define the interface for Address from store
 interface Address {

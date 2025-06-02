@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
-import { useLanguageStore, Language } from '../store/language-store';
-import { useTranslation } from '../utils/translations';
+import { useLanguageStore, Language } from '@store/language-store';
+import { useTranslation } from '@utils/translations';
 import { Ionicons } from '@expo/vector-icons';
 
 interface LanguageSelectionProps {
@@ -9,12 +9,12 @@ interface LanguageSelectionProps {
 }
 
 export default function LanguageSelection({ onLanguageSelected }: LanguageSelectionProps) {
-  const { setLanguage, setFirstTimeComplete, currentLanguage } = useLanguageStore();
+  const { setLanguage, setIsFirstTimeUser, currentLanguage } = useLanguageStore();
   const { t } = useTranslation();
 
   const handleLanguageSelect = async (language: Language) => {
     await setLanguage(language);
-    await setFirstTimeComplete();
+    setIsFirstTimeUser(false);
     onLanguageSelected();
   };
 

@@ -62,6 +62,7 @@ export const theme = {
       xl: 18,
       xxl: 24,
       xxxl: 32,
+      xxxxl: 40,
     },
     weights: {
       normal: '400',

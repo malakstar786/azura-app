@@ -1,4 +1,4 @@
-import { useLanguageStore } from '../store/language-store';
+import { useLanguageStore } from '@store/language-store';
 
 interface TranslationMap {
   [key: string]: {

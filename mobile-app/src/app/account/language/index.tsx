@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useLanguageStore } from '../../../store/language-store';
-import { useTranslation } from '../../../utils/translations';
+import { useLanguageStore } from '@store/language-store';
+import { useTranslation } from '@utils/translations';
 
 export default function LanguageScreen() {
-  const router = useRouter();
   const { currentLanguage, setLanguage } = useLanguageStore();
   const { t } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState<'en' | 'ar'>(currentLanguage);

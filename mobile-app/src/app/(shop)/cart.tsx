@@ -24,7 +24,7 @@ import { useLanguageStore } from '@store/language-store';
 import { theme } from '@theme';
 
 // Import the empty cart icon
-const emptyCartIcon = require('../../assets/empty_cart_icon.png');
+const emptyCartIcon = require('@assets/empty_cart_icon.png');
 
 // Helper function to construct proper image URL
 const getImageUrl = (item: CartItem): string => {
@@ -128,7 +128,7 @@ const CartItemRow = ({
   onRemove: (id: string) => void;
   onUpdateQuantity: (id: string, quantity: number) => Promise<void>;
   onIncrement: (id: string) => Promise<void>;
-  onDecrement: (id: string) => void;
+  onDecrement: (id: string) => Promise<void>;
 }) => {
   const { t } = useTranslation();
   const { isRTL } = useLanguageStore();
@@ -147,9 +147,14 @@ const CartItemRow = ({
     }
   };
 
-  const handleDecrement = () => {
+  const handleDecrement = async () => {
     if (item.minimum) return;
-    onDecrement(item.cart_id);
+    setIsUpdating(true);
+    try {
+      await onDecrement(item.cart_id);
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const handleQuantitySelect = async (qty: number) => {
@@ -300,11 +305,11 @@ export default function CartScreen() {
   const handleCheckout = async () => {
     if (!isAuthenticated) {
       Alert.alert(
-        t('cart.loginRequired'),
-        t('cart.loginRequiredMessage'),
+        'Login Required',
+        'You need to sign in to proceed to checkout.',
         [
-          { text: t('common.cancel'), style: 'cancel' },
-          { text: t('auth.login'), onPress: () => router.push('/auth/login') },
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Sign In', onPress: () => router.push('/auth') },
         ]
       );
       return;
@@ -398,16 +403,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: theme.colors.lightGray,
+    backgroundColor: theme.colors.white,
     paddingHorizontal: theme.spacing.md,
-    marginTop: 53,
+    marginTop: 40,
     marginBottom: theme.spacing.md,
   },
   title: {
     fontSize: theme.typography.sizes.xxxl,
     fontWeight: theme.typography.weights.bold as any,
     marginTop: 20,
-    paddingLeft: 20,
+    paddingLeft: 0,
     color: theme.colors.black,
     flex: 1,
   },
@@ -486,6 +491,7 @@ const styles = StyleSheet.create({
   emptyCartButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginTop: 25,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
     borderWidth: 1,

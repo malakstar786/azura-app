@@ -3,12 +3,18 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Toast } from 'react-native-toast-notifications';
 import { 
+  makeApiCall, 
+  API_ENDPOINTS, 
+  ApiResponse,
+  getCurrentOCSESSID 
+} from '@utils/api-config';
+import { 
   fetchCartData, 
-  addToCart as apiAddToCart, 
+  addToCart as apiAddToCart,
   updateCartQuantity as apiUpdateCartQuantity,
   removeCartItem as apiRemoveCartItem,
   emptyCart as apiEmptyCart
-} from '../utils/api-config';
+} from '@utils/api-config';
 
 export interface CartItem {
   cart_id: string;

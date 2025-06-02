@@ -6,15 +6,21 @@ import {
   TextInput,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  SafeAreaView,
 } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import * as zod from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Stack, router } from 'expo-router';
 import { useToast } from 'react-native-toast-notifications';
-import { useAuthStore } from '../store/auth-store';
+import { useAuthStore } from '@store/auth-store';
+import { useCartStore } from '@store/cart-store';
 import { Ionicons } from '@expo/vector-icons';
-import { theme } from '../theme';
+import { theme } from '@/theme';
 
 const signupSchema = zod.object({
   fullName: zod.string().min(1, { message: 'Full name is required' }),

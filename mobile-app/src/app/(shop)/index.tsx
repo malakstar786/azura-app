@@ -7,6 +7,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useLanguageStore } from "@store/language-store";
 import { useTranslation } from "@utils/translations";
 import { theme } from "@theme";
+import { Ionicons } from '@expo/vector-icons';
+import DrawerMenu from "@components/DrawerMenu";
 
 const { width, height } = Dimensions.get("window");
 
@@ -90,6 +92,7 @@ export default function HomeScreen() {
   });
   const [serviceData, setServiceData] = useState<ServiceBlock | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
   const router = useRouter();
   const { currentLanguage, lastUpdated } = useLanguageStore();
   const { t } = useTranslation();
@@ -247,6 +250,13 @@ export default function HomeScreen() {
   return (
     <ScrollView style={styles.container} bounces={false}>
       <View style={styles.header}>
+        <TouchableOpacity 
+          onPress={() => setIsDrawerVisible(true)}
+          style={styles.menuButton}
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <Ionicons name="menu" size={24} color={theme.colors.white} />
+        </TouchableOpacity>
         <Text style={styles.logoText}>A Z U R A</Text>
       </View>
 
@@ -350,6 +360,12 @@ export default function HomeScreen() {
           </View>
         </View>
       )}
+
+      {/* Drawer Menu */}
+      <DrawerMenu 
+        visible={isDrawerVisible}
+        onClose={() => setIsDrawerVisible(false)}
+      />
     </ScrollView>
   );
 }
@@ -397,13 +413,18 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 53,
     paddingBottom: 15,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     backgroundColor: "#000",
+    position: "relative",
+    paddingHorizontal: 20,
   },
   logoText: {
     color: "#fff",
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: "600",
+    paddingLeft: 10,
     letterSpacing: 4,
   },
   fullScreenSection: {
@@ -570,5 +591,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     opacity: 0.9,
     lineHeight: 20,
+  },
+  menuButton: {
+    position: 'absolute',
+    left: 20,
+    top: 53,
   },
 });

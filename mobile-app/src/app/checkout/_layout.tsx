@@ -4,7 +4,7 @@ export default function CheckoutLayout() {
   return (
     <Stack
       screenOptions={{
-        headerShown: true,
+        headerShown: false,
         contentStyle: { backgroundColor: '#fff' },
         animation: 'slide_from_right',
         presentation: 'card',

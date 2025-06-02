@@ -7,12 +7,15 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import { Stack, router } from 'expo-router';
-import { useAuthStore } from '../store/auth-store';
+import { useAuthStore } from '@store/auth-store';
 import { Ionicons } from '@expo/vector-icons';
-import { makeApiCall, API_ENDPOINTS } from '../utils/api-config';
-import { theme } from '../theme';
+import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
+import { theme } from '@/theme';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');

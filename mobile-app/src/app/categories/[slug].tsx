@@ -16,7 +16,8 @@ import { useLanguageStore } from '@store/language-store';
 import { useTranslation } from '@utils/translations';
 import { useToast } from 'react-native-toast-notifications';
 import { publicApi } from '@utils/api-service';
-import { Product as ApiProduct } from '../../types/api';
+import type { Product as ApiProduct } from '../../types/api';
+import { ProductListItem } from '@components/product-list-item';
 
 const { width } = Dimensions.get('window');
 const COLUMN_GAP = 15;

@@ -1,12 +1,13 @@
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Dimensions, Image, Pressable, ActivityIndicator } from 'react-native';
-import { useState, useEffect } from 'react';
+import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { makeApiCall, API_ENDPOINTS, ApiResponse } from '../../utils/api-config';
-import { publicApi } from '../../utils/api-service';
-import { useTranslation } from '../../utils/translations';
-import { useLanguageStore } from '../../store/language-store';
-import { theme } from '../../theme';
+import { makeApiCall, API_ENDPOINTS, ApiResponse } from '@utils/api-config';
+import { publicApi } from '@utils/api-service';
+import { useTranslation } from '@utils/translations';
+import { useLanguageStore } from '@store/language-store';
+import { theme } from '@/theme';
 
 const { width } = Dimensions.get('window');
 
