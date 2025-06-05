@@ -117,7 +117,6 @@ export default function AddressScreen() {
     <View key={address.id} style={styles.addressCard}>
       <View style={styles.addressContent}>
         <Text style={styles.name}>{address.firstName} {address.lastName}</Text>
-        <Text style={styles.phone}>+965 66112321</Text>
         <Text style={styles.addressText}>Kuwait,</Text>
         <Text style={styles.addressText}>{address.city || 'Salmiya'}, Area</Text>
         <Text style={styles.addressText}>
@@ -190,6 +189,7 @@ export default function AddressScreen() {
 
       {isModalVisible && (
         <AddEditAddress
+          context="account"
           address={editingAddress}
           onClose={handleCloseModal}
           onAddressUpdated={handleAddressUpdated}
@@ -271,11 +271,6 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     fontWeight: '500',
     color: theme.colors.black,
-    marginBottom: theme.spacing.xs,
-  },
-  phone: {
-    fontSize: theme.typography.sizes.sm,
-    color: theme.colors.mediumGray,
     marginBottom: theme.spacing.xs,
   },
   addressText: {

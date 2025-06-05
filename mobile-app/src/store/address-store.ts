@@ -10,6 +10,7 @@ export interface Address {
   id: string;
   firstName: string;
   lastName: string;
+  phone: string; // Will be empty if not provided by API
   city: string;
   block: string;
   street: string;
@@ -31,6 +32,7 @@ export const convertToApiAddress = (address: Address | Omit<Address, 'id'>, addr
   // Add required fields
   formData.append('firstname', address.firstName);
   formData.append('lastname', address.lastName);
+  formData.append('telephone', address.phone);
   formData.append('country_id', '114'); // Kuwait
   formData.append('zone_id', ''); // Not used but required
   formData.append('city', address.city);
@@ -53,9 +55,6 @@ export const convertToApiAddress = (address: Address | Omit<Address, 'id'>, addr
 
 // Helper function to convert API address format to UI format
 export const convertToUIAddress = (authAddress: any): Address => {
-  // Get user's telephone from auth store to use for mobile number
-  const { user } = useAuthStore.getState();
-  
   // Handle custom fields to extract block, street, etc.
   const customField = authAddress.custom_field || {};
   const block = typeof customField === 'object' ? customField['30'] || '' : '';
@@ -67,6 +66,7 @@ export const convertToUIAddress = (authAddress: any): Address => {
     id: authAddress.address_id,
     firstName: authAddress.firstname || '',
     lastName: authAddress.lastname || '',
+    phone: authAddress.telephone || '', // Show telephone if present, empty if not
     city: authAddress.city || '',
     block: block,
     street: street,
@@ -132,6 +132,7 @@ export const useAddressStore = create<AddressStore>()(
                 id: addr.address_id,
                 firstName: addr.firstname,
                 lastName: addr.lastname,
+                phone: addr.telephone || '', // Show telephone if present, empty if not
                 city: addr.city,
                 block: typeof customField === 'object' ? customField['30'] || '' : '',
                 street: typeof customField === 'object' ? customField['31'] || '' : '',
@@ -143,7 +144,8 @@ export const useAddressStore = create<AddressStore>()(
             });
 
             console.log('Converted UI addresses:', uiAddresses);
-            set({ addresses: uiAddresses, isLoading: false });
+            // Reverse the array so most recent addresses appear first
+            set({ addresses: uiAddresses.reverse(), isLoading: false });
           } else {
             console.warn('No addresses received or invalid format:', response);
             set({ addresses: [], isLoading: false });
@@ -168,6 +170,7 @@ export const useAddressStore = create<AddressStore>()(
           // Add required fields
           formData.append('firstname', address.firstName);
           formData.append('lastname', address.lastName);
+          formData.append('telephone', address.phone);
           formData.append('company', ''); // Required empty field
           formData.append('country_id', '114'); // Kuwait
           formData.append('zone_id', '1785'); // Al Asimah (Kuwait City)
@@ -254,6 +257,7 @@ export const useAddressStore = create<AddressStore>()(
           // Add required fields
           formData.append('firstname', address.firstName);
           formData.append('lastname', address.lastName);
+          formData.append('telephone', address.phone);
           formData.append('company', ''); // Required empty field
           formData.append('country_id', '114'); // Kuwait
           formData.append('zone_id', '1785'); // Al Asimah (Kuwait City)

@@ -368,7 +368,7 @@ export const useCartStore = create<CartStore>()(
         const currentQuantity = typeof item.quantity === 'string' 
           ? parseInt(item.quantity, 10) 
           : (typeof item.quantity === 'number' ? item.quantity : 0);
-        
+          
         console.log(`Incrementing quantity for ${cartId} from ${currentQuantity} to ${currentQuantity + 1}`);
         await get().updateQuantity(cartId, currentQuantity + 1);
       },
@@ -389,7 +389,7 @@ export const useCartStore = create<CartStore>()(
         const currentQuantity = typeof item.quantity === 'string' 
           ? parseInt(item.quantity, 10) 
           : (typeof item.quantity === 'number' ? item.quantity : 0);
-        
+          
         // Only prevent going below 1 (basic client-side validation)
         if (currentQuantity <= 1) {
           Toast.show('Minimum quantity is 1', {

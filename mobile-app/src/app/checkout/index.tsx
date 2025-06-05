@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, Image, FlatList } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore, Address } from '@store/auth-store';
@@ -8,13 +8,14 @@ import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 import AddEditAddress from '@components/add-edit-address';
 import { formatPrice } from '@utils/price-formatter';
 import { theme } from '@theme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function CheckoutScreen() {
   const { isAuthenticated } = useAuthStore();
   const { addresses, fetchAddresses } = useAuthStore();
-  const { total, clearCart } = useCartStore();
-  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
-  const [shippingAddressId, setShippingAddressId] = useState<string | null>(null);
+  const { items, total, clearCart, getCart } = useCartStore();
+  const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+  const [shippingAddress, setShippingAddress] = useState<Address | null>(null);
   const [shipToDifferentAddress, setShipToDifferentAddress] = useState(false);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [showShippingAddressModal, setShowShippingAddressModal] = useState(false);
@@ -23,38 +24,152 @@ export default function CheckoutScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'card' | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState<string | null>(null);
   const [orderSuccess, setOrderSuccess] = useState(false);
+  const [localAddress, setLocalAddress] = useState<any>(null); // For unauthenticated users
+  const [shippingMethods, setShippingMethods] = useState<any[]>([]);
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [methodsLoading, setMethodsLoading] = useState(false);
 
   const shippingCost = 5.000;
   const orderTotal = total + shippingCost;
 
-  // Get the selected address object
-  const selectedAddress = selectedAddressId ? addresses.find(addr => addr.address_id === selectedAddressId) : null;
-  const shippingAddress = shippingAddressId ? addresses.find(addr => addr.address_id === shippingAddressId) : null;
-
-  // Load addresses on mount if authenticated
+  // Load addresses and cart on mount
   useEffect(() => {
-    if (isAuthenticated) {
-      loadAddresses();
-    } else {
-      router.push('/auth');
-    }
+    const initializeCheckout = async () => {
+      // Always fetch cart data
+      await getCart();
+      
+      if (isAuthenticated) {
+        loadAddresses();
+      } else {
+        // Load local address for unauthenticated users
+        loadLocalAddress();
+      }
+    };
+    
+    initializeCheckout();
   }, [isAuthenticated]);
 
-  // Always select the last address (most recently added)
+  // Fetch shipping and payment methods when address is available
   useEffect(() => {
-    if (addresses.length > 0) {
-      // Get the most recent address (last in the array)
-      const mostRecentAddress = addresses[addresses.length - 1];
-      setSelectedAddressId(mostRecentAddress.address_id);
+    if ((isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress)) {
+      fetchShippingAndPaymentMethods();
+    } else {
+      // Clear methods when no address
+      setShippingMethods([]);
+      setPaymentMethods([]);
+      setSelectedShippingMethod(null);
+      setSelectedPaymentMethod(null);
     }
-  }, [addresses]);
+  }, [selectedAddress, localAddress, isAuthenticated]);
 
   const loadAddresses = async () => {
     setAddressLoading(true);
-    await fetchAddresses();
+    
+    try {
+      // Fetch addresses directly for checkout to get the original order
+      const response = await makeApiCall(API_ENDPOINTS.addresses, {
+        method: 'GET'
+      });
+      
+      if (response.success === 1 && Array.isArray(response.data) && response.data.length > 0) {
+        // Get the last address from the original API response (most recent)
+        const lastAddress = response.data[response.data.length - 1];
+        setSelectedAddress(lastAddress);
+        
+        console.log('Selected last address from API response:', lastAddress);
+      }
+      
+      // Also fetch for the address store (for the address modal)
+      await fetchAddresses();
+    } catch (error) {
+      console.error('Error loading addresses for checkout:', error);
+    }
+    
     setAddressLoading(false);
+  };
+
+  const loadLocalAddress = async () => {
+    try {
+      const savedAddress = await AsyncStorage.getItem('@checkout_local_address');
+      if (savedAddress) {
+        setLocalAddress(JSON.parse(savedAddress));
+      }
+    } catch (error) {
+      console.error('Error loading local address:', error);
+    }
+  };
+
+  const saveLocalAddress = async (address: any) => {
+    try {
+      await AsyncStorage.setItem('@checkout_local_address', JSON.stringify(address));
+      setLocalAddress(address);
+    } catch (error) {
+      console.error('Error saving local address:', error);
+    }
+  };
+
+  const fetchShippingAndPaymentMethods = async () => {
+    setMethodsLoading(true);
+    
+    try {
+      // Fetch shipping methods
+      const shippingResponse = await makeApiCall('/index.php?route=extension/mstore/shipping_method', {
+        method: 'GET'
+      });
+      
+      console.log('Shipping methods response:', shippingResponse);
+      
+      if (shippingResponse.success === 1 && shippingResponse.data) {
+        // Check if shipping_methods array exists and is not empty
+        if (shippingResponse.data.shipping_methods && shippingResponse.data.shipping_methods.length > 0) {
+          setShippingMethods(shippingResponse.data.shipping_methods);
+          
+          // Auto-select first shipping method
+          if (!selectedShippingMethod) {
+            setSelectedShippingMethod(shippingResponse.data.shipping_methods[0]);
+          }
+        } else {
+          // No shipping methods available
+          setShippingMethods([]);
+          setSelectedShippingMethod(null);
+        }
+      }
+      
+      // Fetch payment methods
+      const paymentResponse = await makeApiCall('/index.php?route=extension/mstore/payment_method', {
+        method: 'GET'
+      });
+      
+      console.log('Payment methods response:', paymentResponse);
+      
+      if (paymentResponse.success === 1 && paymentResponse.data) {
+        // Check if payment_methods array exists and is not empty
+        if (paymentResponse.data.payment_methods && paymentResponse.data.payment_methods.length > 0) {
+          setPaymentMethods(paymentResponse.data.payment_methods);
+          
+          // Auto-select first payment method
+          if (!selectedPaymentMethod) {
+            setSelectedPaymentMethod(paymentResponse.data.payment_methods[0]);
+          }
+        } else {
+          // No payment methods available
+          setPaymentMethods([]);
+          setSelectedPaymentMethod(null);
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error fetching shipping/payment methods:', error);
+      setShippingMethods([]);
+      setPaymentMethods([]);
+      setSelectedShippingMethod(null);
+      setSelectedPaymentMethod(null);
+    } finally {
+      setMethodsLoading(false);
+    }
   };
 
   const handleEditAddress = () => {
@@ -92,6 +207,11 @@ export default function CheckoutScreen() {
       return;
     }
 
+    if (!selectedShippingMethod) {
+      Alert.alert('Shipping Method Required', 'Please select a shipping method to continue.');
+      return;
+    }
+
     if (!selectedPaymentMethod) {
       Alert.alert('Payment Method Required', 'Please select a payment method to continue.');
       return;
@@ -123,7 +243,7 @@ export default function CheckoutScreen() {
       await makeApiCall(API_ENDPOINTS.shippingMethods, {
         method: 'POST',
         data: {
-          shipping_method: 'flat.flat'
+          shipping_method: selectedShippingMethod
         }
       });
 
@@ -131,7 +251,7 @@ export default function CheckoutScreen() {
       await makeApiCall(API_ENDPOINTS.paymentMethods, {
         method: 'POST',
         data: {
-          payment_method: selectedPaymentMethod === 'cash' ? 'cod' : 'card'
+          payment_method: selectedPaymentMethod
         }
       });
 
@@ -198,6 +318,134 @@ ${address.address_2 || ''}`;
     };
   };
 
+  const addPaymentAddress = async (addressData: any) => {
+    try {
+      setIsLoading(true);
+      
+      if (isAuthenticated) {
+        // For authenticated users, use the payment address endpoint
+        const requestData = {
+          firstname: addressData.firstname,
+          lastname: addressData.lastname,
+          email: addressData.email || 'user@example.com',
+          telephone: addressData.phone || '99887766',
+          country_id: "114", // Kuwait
+          city: addressData.city || "1",
+          zone_id: addressData.zone_id || "4868",
+          address_2: addressData.address_2 || "",
+          custom_field: {
+            "32": addressData.custom_field?.['32'] || "", // Building
+            "30": addressData.custom_field?.['30'] || "", // Block
+            "31": addressData.custom_field?.['31'] || "", // Street
+            "33": addressData.custom_field?.['33'] || ""  // Apartment
+          }
+        };
+
+        console.log('Adding payment address:', requestData);
+
+        const response = await makeApiCall('/index.php?route=extension/mstore/payment_address|save', {
+          method: 'POST',
+          data: requestData,
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('Payment address response:', response);
+
+        if (response.success === 1) {
+          // Refresh addresses for authenticated users
+          await loadAddresses();
+          // Methods will be fetched automatically via useEffect when selectedAddress changes
+          setIsLoading(false);
+          return true;
+        } else {
+          throw new Error(response.error?.[0] || 'Failed to add address');
+        }
+      } else {
+        // For unauthenticated users, save in the same format as API response
+        const localAddressData = {
+          address_id: Date.now().toString(), // Generate a temporary ID
+          firstname: addressData.firstname,
+          lastname: addressData.lastname,
+          company: '',
+          address_1: `${addressData.custom_field?.['30']} ${addressData.custom_field?.['31']} ${addressData.custom_field?.['32']}`,
+          address_2: addressData.address_2 || '',
+          city: addressData.city,
+          postcode: '',
+          country_id: addressData.country_id,
+          zone_id: addressData.zone_id,
+          custom_field: {
+            '30': addressData.custom_field?.['30'] || '', // Block
+            '31': addressData.custom_field?.['31'] || '', // Street
+            '32': addressData.custom_field?.['32'] || '', // Building
+            '33': addressData.custom_field?.['33'] || ''  // Apartment
+          },
+          default: false
+        };
+
+        await saveLocalAddress(localAddressData);
+        // Methods will be fetched automatically via useEffect when localAddress changes
+        setIsLoading(false);
+        return true;
+      }
+    } catch (error: any) {
+      console.error('Error adding payment address:', error);
+      setIsLoading(false);
+      Alert.alert('Error', error.message || 'Failed to add address');
+      return false;
+    }
+  };
+
+  const addShippingAddress = async (addressData: any) => {
+    try {
+      setIsLoading(true);
+      
+      const requestData = {
+        firstname: addressData.firstname,
+        lastname: addressData.lastname,
+        email: addressData.email || 'user@example.com',
+        telephone: addressData.phone || '99887766',
+        country_id: "114", // Kuwait
+        city: addressData.city || "1",
+        zone_id: addressData.zone_id || "4868",
+        address_2: addressData.address_2 || "",
+        custom_field: {
+          "32": addressData.custom_field?.['32'] || "", // Building
+          "30": addressData.custom_field?.['30'] || "", // Block
+          "31": addressData.custom_field?.['31'] || "", // Street
+          "33": addressData.custom_field?.['33'] || ""  // Apartment
+        }
+      };
+
+      console.log('Adding shipping address:', requestData);
+
+      const response = await makeApiCall('/index.php?route=extension/mstore/shipping_address|save', {
+        method: 'POST',
+        data: requestData,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Shipping address response:', response);
+
+      if (response.success === 1) {
+        // Use the response data directly for shipping address
+        setShippingAddress(response.data);
+        setIsLoading(false);
+        return true;
+      } else {
+        throw new Error(response.error?.[0] || 'Failed to add shipping address');
+      }
+    } catch (error: any) {
+      console.error('Error adding shipping address:', error);
+      setIsLoading(false);
+      Alert.alert('Error', error.message || 'Failed to add shipping address');
+      return false;
+    }
+  };
+
   if (addressLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -222,26 +470,30 @@ ${address.address_2 || ''}`;
             <Text style={styles.sectionTitle}>BILLING & SHIPPING ADDRESS</Text>
           </View>
           
-          {selectedAddress ? (
+          {/* Display address based on authentication status */}
+          {(isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress) ? (
             <View style={styles.addressCard}>
               <Text style={styles.addressName}>
-                {selectedAddress.firstname} {selectedAddress.lastname}
-              </Text>
-              <Text style={styles.addressPhone}>
-                +965 66112233
+                {isAuthenticated && selectedAddress ? 
+                  `${selectedAddress.firstname} ${selectedAddress.lastname}` :
+                  localAddress ? `${localAddress.firstname} ${localAddress.lastname}` : ''
+                }
               </Text>
               <Text style={styles.addressLocation}>
                 Kuwait,
               </Text>
               <Text style={styles.addressLocation}>
-                {selectedAddress.city}, Area
+                {isAuthenticated && selectedAddress ? selectedAddress.city : localAddress?.city}, Area
               </Text>
               <Text style={styles.addressDetails}>
-                Block {selectedAddress.custom_field['30']}, Street {selectedAddress.custom_field['31']}, House Building {selectedAddress.custom_field['32']}
+                {isAuthenticated && selectedAddress ? 
+                  `Block ${selectedAddress.custom_field['30']}, Street ${selectedAddress.custom_field['31']}, House Building ${selectedAddress.custom_field['32']}` :
+                  localAddress ? `Block ${localAddress.custom_field?.['30']}, Street ${localAddress.custom_field?.['31']}, House Building ${localAddress.custom_field?.['32']}` : ''
+                }
               </Text>
-              {selectedAddress.address_2 && (
+              {((isAuthenticated && selectedAddress?.address_2) || (!isAuthenticated && localAddress?.address_2)) && (
                 <Text style={styles.addressDetails}>
-                  {selectedAddress.address_2}
+                  {isAuthenticated && selectedAddress ? selectedAddress.address_2 : localAddress?.address_2}
                 </Text>
               )}
               <TouchableOpacity 
@@ -276,19 +528,17 @@ ${address.address_2 || ''}`;
 
           {shipToDifferentAddress && (
             <View style={[styles.section, styles.shippingAddressSection]}>
+              <Text style={styles.shippingAddressTitle}>SHIPPING ADDRESS</Text>
               {shippingAddress ? (
                 <View style={styles.addressCard}>
                   <Text style={styles.addressName}>
                     {shippingAddress.firstname} {shippingAddress.lastname}
                   </Text>
-                  <Text style={styles.addressPhone}>
-                    +965 66112233
-                  </Text>
                   <Text style={styles.addressLocation}>
                     Kuwait,
                   </Text>
                   <Text style={styles.addressLocation}>
-                    {shippingAddress.city}, Area
+                    {shippingAddress.city_name || shippingAddress.city}, {shippingAddress.zone || 'Area'}
                   </Text>
                   <Text style={styles.addressDetails}>
                     Block {shippingAddress.custom_field['30']}, Street {shippingAddress.custom_field['31']}, House Building {shippingAddress.custom_field['32']}
@@ -328,9 +578,39 @@ ${address.address_2 || ''}`;
             <Text style={styles.sectionTitle}>Order Summary</Text>
           </View>
           
+          {/* Product subheading and product list */}
+          <Text style={styles.productSubheading}>Product</Text>
+          
+          <FlatList
+            data={items}
+            horizontal={true}
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.cart_id}
+            renderItem={({ item }) => (
+              <View style={styles.productCard}>
+                <Image
+                  source={{ uri: item.thumb }}
+                  style={styles.productImage}
+                  resizeMode="contain"
+                />
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName}>{item.name.toUpperCase()}</Text>
+                  <Text style={styles.productQuantity}>x {item.quantity}</Text>
+                  <Text style={styles.productPrice}>{item.total}</Text>
+                </View>
+              </View>
+            )}
+            contentContainerStyle={styles.productsContainer}
+            ListEmptyComponent={
+              <View style={styles.emptyProductsContainer}>
+                <Text style={styles.emptyProductsText}>No products in cart</Text>
+              </View>
+            }
+          />
+          
           <View style={styles.totalSection}>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Item Sub Total</Text>
+              <Text style={styles.totalLabel}>Item Sub total</Text>
               <Text style={styles.totalValue}>{formatPrice(total)}</Text>
             </View>
             <View style={styles.totalRow}>
@@ -344,48 +624,84 @@ ${address.address_2 || ''}`;
           </View>
         </View>
 
+        {/* Shipping Method Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="car-outline" size={20} color="#000" style={styles.sectionIcon} />
+            <Text style={styles.sectionTitle}>Select Shipping Method</Text>
+          </View>
+          
+          {methodsLoading ? (
+            <ActivityIndicator size="small" color="#000" style={styles.methodsLoader} />
+          ) : shippingMethods.length > 0 ? (
+            <View style={styles.methodsList}>
+              {shippingMethods.map((method: any, index: number) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.methodOption,
+                    selectedShippingMethod === method && styles.selectedMethodOption
+                  ]}
+                  onPress={() => setSelectedShippingMethod(method)}
+                >
+                  <View style={styles.methodRadio}>
+                    <View style={[
+                      styles.radioOuter,
+                      selectedShippingMethod === method && styles.radioSelected
+                    ]}>
+                      {selectedShippingMethod === method && <View style={styles.radioInner} />}
+                    </View>
+                  </View>
+                  <View style={styles.methodInfo}>
+                    <Text style={styles.methodTitle}>{method.title || method.name}</Text>
+                    {method.cost && (
+                      <Text style={styles.methodCost}>{method.cost}</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+        </View>
+
         {/* Payment Method Section */}
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <Ionicons name="card-outline" size={20} color="#000" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Select Payment Method</Text>
+            <Text style={styles.sectionTitle}>Payment Method</Text>
           </View>
-
-          <TouchableOpacity
-            style={[styles.paymentOption, selectedPaymentMethod === 'cash' && styles.selectedPayment]}
-            onPress={() => setSelectedPaymentMethod('cash')}
-          >
-            <View style={styles.radioContainer}>
-              <Ionicons 
-                name="cash-outline" 
-                size={24} 
-                color={selectedPaymentMethod === 'cash' ? '#000' : '#666'} 
-                style={styles.paymentIcon}
-              />
-              <Text style={[styles.paymentText, selectedPaymentMethod === 'cash' && styles.selectedPaymentText]}>Cash</Text>
-              <View style={styles.radioOuter}>
-                {selectedPaymentMethod === 'cash' && <View style={styles.radioInner} />}
-              </View>
+          
+          {methodsLoading ? (
+            <ActivityIndicator size="small" color="#000" style={styles.methodsLoader} />
+          ) : paymentMethods.length > 0 ? (
+            <View style={styles.methodsList}>
+              {paymentMethods.map((method: any, index: number) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.methodOption,
+                    selectedPaymentMethod === method && styles.selectedMethodOption
+                  ]}
+                  onPress={() => setSelectedPaymentMethod(method)}
+                >
+                  <View style={styles.methodRadio}>
+                    <View style={[
+                      styles.radioOuter,
+                      selectedPaymentMethod === method && styles.radioSelected
+                    ]}>
+                      {selectedPaymentMethod === method && <View style={styles.radioInner} />}
+                    </View>
+                  </View>
+                  <View style={styles.methodInfo}>
+                    <Text style={styles.methodTitle}>{method.title || method.name}</Text>
+                    {method.terms && (
+                      <Text style={styles.methodTerms}>{method.terms}</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
             </View>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={[styles.paymentOption, selectedPaymentMethod === 'card' && styles.selectedPayment]}
-            onPress={() => setSelectedPaymentMethod('card')}
-          >
-            <View style={styles.radioContainer}>
-              <Ionicons 
-                name="card-outline" 
-                size={24} 
-                color={selectedPaymentMethod === 'card' ? '#000' : '#666'} 
-                style={styles.paymentIcon}
-              />
-              <Text style={[styles.paymentText, selectedPaymentMethod === 'card' && styles.selectedPaymentText]}>Visa Credit Card</Text>
-              <View style={styles.radioOuter}>
-                {selectedPaymentMethod === 'card' && <View style={styles.radioInner} />}
-              </View>
-            </View>
-          </TouchableOpacity>
+          ) : null}
         </View>
 
         {error && (
@@ -395,10 +711,10 @@ ${address.address_2 || ''}`;
         <TouchableOpacity
           style={[
             styles.placeOrderButton,
-            (isLoading || !selectedAddress || !selectedPaymentMethod) && styles.disabledButton
+            (isLoading || !selectedAddress || !selectedPaymentMethod || !selectedShippingMethod) && styles.disabledButton
           ]}
           onPress={handlePlaceOrder}
-          disabled={isLoading || !selectedAddress || !selectedPaymentMethod}
+          disabled={isLoading || !selectedAddress || !selectedPaymentMethod || !selectedShippingMethod}
         >
           {isLoading ? (
             <ActivityIndicator color="#fff" />
@@ -433,6 +749,8 @@ ${address.address_2 || ''}`;
       {/* Add/Edit Address Modal */}
       {showAddressModal && (
         <AddEditAddress
+          context="checkout"
+          customSaveFunction={addPaymentAddress}
           onClose={() => {
             setShowAddressModal(false);
             setIsAddingNewAddress(false);
@@ -459,7 +777,19 @@ ${address.address_2 || ''}`;
             address_id: selectedAddress.address_id
           } : undefined}
           onAddressUpdated={() => {
-            loadAddresses();
+            // For new addresses, the custom function will handle the appropriate endpoint
+            // For edited addresses, it will use the standard endpoint
+            if (isAddingNewAddress && isAuthenticated) {
+              // For authenticated users adding new address, refresh addresses to get the latest
+              loadAddresses();
+            } else if (isAddingNewAddress && !isAuthenticated) {
+              // For unauthenticated users, the address is already saved locally by the custom function
+              // No additional action needed
+            } else {
+              // For editing existing addresses, refresh addresses
+              loadAddresses();
+            }
+            
             setShowAddressModal(false);
             setIsAddingNewAddress(false);
             setIsEditingAddress(false);
@@ -470,6 +800,8 @@ ${address.address_2 || ''}`;
       {/* Add/Edit Shipping Address Modal */}
       {showShippingAddressModal && (
         <AddEditAddress
+          context="checkout"
+          customSaveFunction={addShippingAddress}
           onClose={() => {
             setShowShippingAddressModal(false);
             setIsAddingNewAddress(false);
@@ -478,7 +810,7 @@ ${address.address_2 || ''}`;
           address={isEditingAddress && shippingAddress ? {
             firstname: shippingAddress.firstname,
             lastname: shippingAddress.lastname,
-            phone: '',
+            phone: shippingAddress.telephone || '',
             company: shippingAddress.company || '',
             address_1: shippingAddress.address_1,
             address_2: shippingAddress.address_2 || '',
@@ -496,7 +828,6 @@ ${address.address_2 || ''}`;
             address_id: shippingAddress.address_id
           } : undefined}
           onAddressUpdated={() => {
-            loadAddresses();
             setShowShippingAddressModal(false);
             setIsAddingNewAddress(false);
             setIsEditingAddress(false);
@@ -560,11 +891,6 @@ const styles = StyleSheet.create({
   addressName: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#000',
-    marginBottom: 4,
-  },
-  addressPhone: {
-    fontSize: 14,
     color: '#000',
     marginBottom: 4,
   },
@@ -702,15 +1028,18 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#000',
+    borderWidth: 2,
+    borderColor: '#ddd',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  radioSelected: {
+    borderColor: '#000',
+  },
   radioInner: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: '#000',
   },
   placeOrderButton: {
@@ -794,5 +1123,105 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
     borderTopWidth: 1,
     borderTopColor: '#E5E5E5',
+  },
+  shippingAddressTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 16,
+  },
+  productCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+  },
+  productImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 4,
+  },
+  productInfo: {
+    flex: 1,
+    paddingLeft: 12,
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000',
+  },
+  productQuantity: {
+    fontSize: 12,
+    color: '#666',
+  },
+  productPrice: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000',
+  },
+  productsContainer: {
+    padding: 8,
+  },
+  productSubheading: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000',
+    marginBottom: 8,
+  },
+  emptyProductsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyProductsText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  methodsLoader: {
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  methodTextContainer: {
+    flex: 1,
+  },
+  methodSubtext: {
+    fontSize: 12,
+    color: '#666',
+  },
+  methodsList: {
+    padding: 8,
+  },
+  methodOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 8,
+    marginBottom: 8,
+    backgroundColor: '#fff',
+  },
+  selectedMethodOption: {
+    borderColor: '#000',
+    backgroundColor: '#f8f8f8',
+  },
+  methodRadio: {
+    marginRight: 12,
+  },
+  methodInfo: {
+    flex: 1,
+  },
+  methodTitle: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000',
+    marginBottom: 2,
+  },
+  methodCost: {
+    fontSize: 12,
+    color: '#666',
+  },
+  methodTerms: {
+    fontSize: 12,
+    color: '#666',
   },
 }); 

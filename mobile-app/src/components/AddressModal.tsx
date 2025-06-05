@@ -39,6 +39,7 @@ export default function AddressModal({ visible, onClose, isNewAddress, address }
     <Modal visible={visible} animationType="slide" transparent={true}>
       <View style={styles.modalContainer}>
         <AddEditAddress
+          context="account"
           onClose={onClose}
           address={formData}
         />

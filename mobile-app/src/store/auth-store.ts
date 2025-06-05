@@ -27,10 +27,16 @@ export interface Address {
   address_2: string;
   postcode: string;
   city: string;
+  city_name?: string; // For shipping address responses
   zone_id: string;
   zone: string;
+  zone_code?: string; // For shipping address responses
   country_id: string;
   country: string;
+  iso_code_2?: string; // For shipping address responses
+  iso_code_3?: string; // For shipping address responses
+  address_format?: string; // For shipping address responses
+  telephone?: string; // For shipping address responses
   custom_field: Record<string, any>;
   default: boolean;
 }

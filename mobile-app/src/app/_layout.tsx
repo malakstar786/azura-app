@@ -93,7 +93,8 @@ export default function RootLayout() {
           name="orders/index"
           options={{
             headerShown: false,
-            presentation: 'modal'
+            animation: 'slide_from_right',
+            presentation: 'card'
           }}
         />
         <Stack.Screen

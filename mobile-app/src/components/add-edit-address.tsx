@@ -47,9 +47,11 @@ interface ImprovedAddEditAddressProps {
   address?: FormData;
   onClose: () => void;
   onAddressUpdated?: () => void;
+  context?: 'account' | 'checkout';
+  customSaveFunction?: (addressData: any) => Promise<boolean>;
 }
 
-export default function ImprovedAddEditAddress({ address, onClose, onAddressUpdated }: ImprovedAddEditAddressProps) {
+export default function ImprovedAddEditAddress({ address, onClose, onAddressUpdated, context, customSaveFunction }: ImprovedAddEditAddressProps) {
   const { t } = useTranslation();
   const { user } = useAuthStore();
   const { addAddress, updateAddress, isLoading, fetchAddresses } = useAddressStore();
@@ -220,8 +222,11 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
   };
 
   const validateForm = () => {
-    if (!formData.firstname.trim()) {
-      Alert.alert('Error', 'Please enter your name');
+    const fullName = formData.firstname + (formData.lastname ? ' ' + formData.lastname : '');
+    const nameParts = fullName.trim().split(' ').filter(part => part.length > 0);
+    
+    if (nameParts.length < 2) {
+      Alert.alert('Error', 'Please add first name and last name with a space in between');
       return false;
     }
     if (!formData.phone.trim()) {
@@ -260,33 +265,63 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
     if (!validateForm()) return;
 
     try {
-      const addressData = {
-        firstName: formData.firstname,
-        lastName: formData.lastname || '', // Ensure lastName is always a string
-        phone: formData.phone,
-        city: formData.city,
-        block: formData.custom_field['30'],
-        street: formData.custom_field['31'],
-        houseNumber: formData.custom_field['32'],
-        apartmentNumber: formData.custom_field['33'] || '',
-        additionalDetails: formData.address_2 || '',
-        isDefault: formData.default
-      };
+      // Prepare address data for different contexts
+      if (context === 'checkout' && customSaveFunction && !formData.address_id) {
+        // For new addresses in checkout context, use custom payment address endpoint
+        const addressData = {
+          firstname: formData.firstname,
+          lastname: formData.lastname || '',
+          phone: formData.phone,
+          email: 'user@example.com', // Default email
+          country_id: formData.country_id,
+          city: formData.city,
+          zone_id: formData.zone_id,
+          address_2: formData.address_2 || '',
+          custom_field: {
+            '30': formData.custom_field['30'], // block
+            '31': formData.custom_field['31'], // street
+            '32': formData.custom_field['32'], // building
+            '33': formData.custom_field['33'] || '' // apartment
+          }
+        };
 
-      if (formData.address_id) {
-        await updateAddress(formData.address_id, addressData);
+        const success = await customSaveFunction(addressData);
+        if (success) {
+          if (onAddressUpdated) {
+            onAddressUpdated();
+          }
+          onClose();
+        }
       } else {
-        await addAddress(addressData);
-      }
+        // For account context or editing existing addresses, use existing address store logic
+        const addressData = {
+          firstName: formData.firstname,
+          lastName: formData.lastname || '',
+          phone: formData.phone,
+          city: formData.city,
+          block: formData.custom_field['30'],
+          street: formData.custom_field['31'],
+          houseNumber: formData.custom_field['32'],
+          apartmentNumber: formData.custom_field['33'] || '',
+          additionalDetails: formData.address_2 || '',
+          isDefault: formData.default
+        };
 
-      // Auto-refresh addresses
-      await fetchAddresses();
-      
-      if (onAddressUpdated) {
-        onAddressUpdated();
+        if (formData.address_id) {
+          await updateAddress(formData.address_id, addressData);
+        } else {
+          await addAddress(addressData);
+        }
+
+        // Auto-refresh addresses
+        await fetchAddresses();
+        
+        if (onAddressUpdated) {
+          onAddressUpdated();
+        }
+        
+        onClose();
       }
-      
-      onClose();
     } catch (error: any) {
       console.error('Failed to save address:', error);
       Alert.alert('Error', error.message || 'Failed to save address');
@@ -363,18 +398,27 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
           {/* Full Name Field */}
           <TextInput
             style={styles.input}
-            placeholder="Ahmed"
+            placeholder="Ahmed Al Farsi"
             value={formData.firstname + (formData.lastname ? ' ' + formData.lastname : '')}
             onChangeText={(text) => {
-              // Split the full name into first and last name
-              const nameParts = text.trim().split(' ');
-              const firstName = nameParts[0] || '';
-              const lastName = nameParts.slice(1).join(' ') || '';
-              setFormData({ 
-                ...formData, 
-                firstname: firstName,
-                lastname: lastName
-              });
+              // Split the full name into first and last name, but allow spaces while typing
+              const trimmedText = text.trim();
+              if (trimmedText === '') {
+                setFormData({ 
+                  ...formData, 
+                  firstname: '',
+                  lastname: ''
+                });
+              } else {
+                const nameParts = trimmedText.split(' ');
+                const firstName = nameParts[0] || '';
+                const lastName = nameParts.slice(1).join(' ') || '';
+                setFormData({ 
+                  ...formData, 
+                  firstname: firstName,
+                  lastname: lastName
+                });
+              }
             }}
             placeholderTextColor="#999"
           />
