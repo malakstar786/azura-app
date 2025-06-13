@@ -6,7 +6,6 @@ import { useAuthStore, Address } from '@store/auth-store';
 import { useCartStore } from '@store/cart-store';
 import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 import AddEditAddress from '@components/add-edit-address';
-import { formatPrice } from '@utils/price-formatter';
 import { theme } from '@theme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -52,10 +51,10 @@ export default function CheckoutScreen() {
     initializeCheckout();
   }, [isAuthenticated]);
 
-  // Fetch shipping and payment methods when address is available
+  // Set address in checkout session and fetch shipping/payment methods when address is available
   useEffect(() => {
     if ((isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress)) {
-      fetchShippingAndPaymentMethods();
+      setAddressInCheckoutAndFetchMethods();
     } else {
       // Clear methods when no address
       setShippingMethods([]);
@@ -111,9 +110,99 @@ export default function CheckoutScreen() {
     }
   };
 
-  const fetchShippingAndPaymentMethods = async () => {
+  const setAddressInCheckoutAndFetchMethods = async () => {
     setMethodsLoading(true);
     
+    try {
+      const currentAddress = isAuthenticated ? selectedAddress : localAddress;
+      
+      if (!currentAddress) {
+        return;
+      }
+
+      // For both authenticated and unauthenticated users, send complete address data
+      if (isAuthenticated && selectedAddress) {
+        // Get user's email and phone from auth store
+        const { user } = useAuthStore.getState();
+        
+        // Set payment address in checkout session using complete address data
+        const addressData = {
+          firstname: selectedAddress.firstname,
+          lastname: selectedAddress.lastname,
+          email: user?.email || '', // Use user's email from auth store
+          telephone: selectedAddress.telephone || user?.telephone || '',
+          country_id: "114", // Kuwait
+          city: selectedAddress.city,
+          zone_id: selectedAddress.zone_id,
+          address_2: selectedAddress.address_2 || "",
+          custom_field: {
+            "32": selectedAddress.custom_field['32'] || "", // House Building
+            "30": selectedAddress.custom_field['30'] || "", // Block
+            "31": selectedAddress.custom_field['31'] || "", // Street
+            "33": selectedAddress.custom_field['33'] || "", // Apartment No.
+            "35": selectedAddress.custom_field['35'] || ""  // avenue
+          }
+        };
+
+        // Set payment address
+        await makeApiCall('/index.php?route=extension/mstore/payment_address|save', {
+          method: 'POST',
+          data: addressData
+        });
+
+        // Set shipping address (same as payment)
+        await makeApiCall('/index.php?route=extension/mstore/shipping_address|save', {
+          method: 'POST',
+          data: addressData
+        });
+      } else if (!isAuthenticated && localAddress) {
+        // For unauthenticated users, set address data directly
+        const addressData = {
+          firstname: localAddress.firstname,
+          lastname: localAddress.lastname,
+          email: localAddress.email || '', // Use email from local address data
+          telephone: localAddress.telephone || '',
+          country_id: "114", // Kuwait
+          city: localAddress.city,
+          zone_id: localAddress.zone_id,
+          address_2: localAddress.address_2 || "",
+          custom_field: {
+            "32": localAddress.custom_field?.['32'] || "", // House Building
+            "30": localAddress.custom_field?.['30'] || "", // Block
+            "31": localAddress.custom_field?.['31'] || "", // Street
+            "33": localAddress.custom_field?.['33'] || "", // Apartment No.
+            "35": localAddress.custom_field?.['35'] || ""  // avenue
+          }
+        };
+
+        // Set payment address
+        await makeApiCall('/index.php?route=extension/mstore/payment_address|save', {
+          method: 'POST',
+          data: addressData
+        });
+
+        // Set shipping address (same as payment)
+        await makeApiCall('/index.php?route=extension/mstore/shipping_address|save', {
+          method: 'POST',
+          data: addressData
+        });
+      }
+
+      // Now fetch shipping and payment methods
+      await fetchShippingAndPaymentMethods();
+
+    } catch (error) {
+      console.error('Error setting address in checkout session:', error);
+      setShippingMethods([]);
+      setPaymentMethods([]);
+      setSelectedShippingMethod(null);
+      setSelectedPaymentMethod(null);
+    } finally {
+      setMethodsLoading(false);
+    }
+  };
+
+  const fetchShippingAndPaymentMethods = async () => {
     try {
       // Fetch shipping methods
       const shippingResponse = await makeApiCall('/index.php?route=extension/mstore/shipping_method', {
@@ -132,7 +221,8 @@ export default function CheckoutScreen() {
             setSelectedShippingMethod(shippingResponse.data.shipping_methods[0]);
           }
         } else {
-          // No shipping methods available
+          // No shipping methods available - this is expected if address is not set properly
+          console.log('No shipping methods available, address may not be set in checkout session');
           setShippingMethods([]);
           setSelectedShippingMethod(null);
         }
@@ -155,7 +245,8 @@ export default function CheckoutScreen() {
             setSelectedPaymentMethod(paymentResponse.data.payment_methods[0]);
           }
         } else {
-          // No payment methods available
+          // No payment methods available - this is expected if address is not set properly
+          console.log('No payment methods available, address may not be set in checkout session');
           setPaymentMethods([]);
           setSelectedPaymentMethod(null);
         }
@@ -167,8 +258,6 @@ export default function CheckoutScreen() {
       setPaymentMethods([]);
       setSelectedShippingMethod(null);
       setSelectedPaymentMethod(null);
-    } finally {
-      setMethodsLoading(false);
     }
   };
 
@@ -222,7 +311,7 @@ export default function CheckoutScreen() {
 
     try {
       // Set billing address
-      await makeApiCall(API_ENDPOINTS.checkout, {
+      await makeApiCall(API_ENDPOINTS.paymentAddressSave, {
         method: 'POST',
         data: {
           payment_address: 'existing',
@@ -231,7 +320,7 @@ export default function CheckoutScreen() {
       });
 
       // Set shipping address (either same as billing or different)
-      await makeApiCall(API_ENDPOINTS.checkout, {
+      await makeApiCall(API_ENDPOINTS.shippingAddressSave, {
         method: 'POST',
         data: {
           shipping_address: 'existing',
@@ -323,21 +412,25 @@ ${address.address_2 || ''}`;
       setIsLoading(true);
       
       if (isAuthenticated) {
+        // Get user's email from auth store
+        const { user } = useAuthStore.getState();
+        
         // For authenticated users, use the payment address endpoint
         const requestData = {
           firstname: addressData.firstname,
           lastname: addressData.lastname,
-          email: addressData.email || 'user@example.com',
-          telephone: addressData.phone || '99887766',
+          email: addressData.email || user?.email || '',
+          telephone: addressData.telephone || addressData.phone || user?.telephone || '',
           country_id: "114", // Kuwait
-          city: addressData.city || "1",
-          zone_id: addressData.zone_id || "4868",
+          city: addressData.city,
+          zone_id: addressData.zone_id,
           address_2: addressData.address_2 || "",
           custom_field: {
-            "32": addressData.custom_field?.['32'] || "", // Building
+            "32": addressData.custom_field?.['32'] || "", // House Building
             "30": addressData.custom_field?.['30'] || "", // Block
             "31": addressData.custom_field?.['31'] || "", // Street
-            "33": addressData.custom_field?.['33'] || ""  // Apartment
+            "33": addressData.custom_field?.['33'] || "", // Apartment No.
+            "35": addressData.custom_field?.['35'] || ""  // avenue
           }
         };
 
@@ -356,7 +449,8 @@ ${address.address_2 || ''}`;
         if (response.success === 1) {
           // Refresh addresses for authenticated users
           await loadAddresses();
-          // Methods will be fetched automatically via useEffect when selectedAddress changes
+          // Explicitly trigger method fetching after address is set
+          await setAddressInCheckoutAndFetchMethods();
           setIsLoading(false);
           return true;
         } else {
@@ -379,13 +473,15 @@ ${address.address_2 || ''}`;
             '30': addressData.custom_field?.['30'] || '', // Block
             '31': addressData.custom_field?.['31'] || '', // Street
             '32': addressData.custom_field?.['32'] || '', // Building
-            '33': addressData.custom_field?.['33'] || ''  // Apartment
+            '33': addressData.custom_field?.['33'] || '', // Apartment
+            '35': addressData.custom_field?.['35'] || ''  // Avenue
           },
           default: false
         };
 
         await saveLocalAddress(localAddressData);
-        // Methods will be fetched automatically via useEffect when localAddress changes
+        // Explicitly trigger method fetching after address is set
+        await setAddressInCheckoutAndFetchMethods();
         setIsLoading(false);
         return true;
       }
@@ -401,20 +497,24 @@ ${address.address_2 || ''}`;
     try {
       setIsLoading(true);
       
+      // Get user's email from auth store
+      const { user } = useAuthStore.getState();
+      
       const requestData = {
         firstname: addressData.firstname,
         lastname: addressData.lastname,
-        email: addressData.email || 'user@example.com',
-        telephone: addressData.phone || '99887766',
+        email: addressData.email || user?.email || '',
+        telephone: addressData.telephone || addressData.phone || user?.telephone || '',
         country_id: "114", // Kuwait
         city: addressData.city || "1",
         zone_id: addressData.zone_id || "4868",
         address_2: addressData.address_2 || "",
         custom_field: {
-          "32": addressData.custom_field?.['32'] || "", // Building
+          "32": addressData.custom_field?.['32'] || "", // House Building
           "30": addressData.custom_field?.['30'] || "", // Block
           "31": addressData.custom_field?.['31'] || "", // Street
-          "33": addressData.custom_field?.['33'] || ""  // Apartment
+          "33": addressData.custom_field?.['33'] || "", // Apartment No.
+          "35": addressData.custom_field?.['35'] || ""  // avenue
         }
       };
 
@@ -487,8 +587,8 @@ ${address.address_2 || ''}`;
               </Text>
               <Text style={styles.addressDetails}>
                 {isAuthenticated && selectedAddress ? 
-                  `Block ${selectedAddress.custom_field['30']}, Street ${selectedAddress.custom_field['31']}, House Building ${selectedAddress.custom_field['32']}` :
-                  localAddress ? `Block ${localAddress.custom_field?.['30']}, Street ${localAddress.custom_field?.['31']}, House Building ${localAddress.custom_field?.['32']}` : ''
+                  `Block ${selectedAddress.custom_field['30']}, Street ${selectedAddress.custom_field['31']}, House Building ${selectedAddress.custom_field['32']}${selectedAddress.custom_field['35'] ? ', Avenue ' + selectedAddress.custom_field['35'] : ''}` :
+                  localAddress ? `Block ${localAddress.custom_field?.['30']}, Street ${localAddress.custom_field?.['31']}, House Building ${localAddress.custom_field?.['32']}${localAddress.custom_field?.['35'] ? ', Avenue ' + localAddress.custom_field?.['35'] : ''}` : ''
                 }
               </Text>
               {((isAuthenticated && selectedAddress?.address_2) || (!isAuthenticated && localAddress?.address_2)) && (
@@ -541,7 +641,7 @@ ${address.address_2 || ''}`;
                     {shippingAddress.city_name || shippingAddress.city}, {shippingAddress.zone || 'Area'}
                   </Text>
                   <Text style={styles.addressDetails}>
-                    Block {shippingAddress.custom_field['30']}, Street {shippingAddress.custom_field['31']}, House Building {shippingAddress.custom_field['32']}
+                    Block {shippingAddress.custom_field['30']}, Street {shippingAddress.custom_field['31']}, House Building {shippingAddress.custom_field['32']}{shippingAddress.custom_field['35'] ? ', Avenue ' + shippingAddress.custom_field['35'] : ''}
                   </Text>
                   {shippingAddress.address_2 && (
                     <Text style={styles.addressDetails}>
@@ -632,7 +732,10 @@ ${address.address_2 || ''}`;
           </View>
           
           {methodsLoading ? (
-            <ActivityIndicator size="small" color="#000" style={styles.methodsLoader} />
+            <View style={styles.methodsLoadingContainer}>
+              <ActivityIndicator size="small" color="#000" />
+              <Text style={styles.methodsLoadingText}>Loading shipping methods...</Text>
+            </View>
           ) : shippingMethods.length > 0 ? (
             <View style={styles.methodsList}>
               {shippingMethods.map((method: any, index: number) => (
@@ -661,7 +764,16 @@ ${address.address_2 || ''}`;
                 </TouchableOpacity>
               ))}
             </View>
-          ) : null}
+          ) : (
+            <View style={styles.noMethodsContainer}>
+              <Text style={styles.noMethodsText}>
+                {(isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress) 
+                  ? "No shipping methods available for your address"
+                  : "Please add an address to see shipping methods"
+                }
+              </Text>
+            </View>
+          )}
         </View>
 
         {/* Payment Method Section */}
@@ -672,7 +784,10 @@ ${address.address_2 || ''}`;
           </View>
           
           {methodsLoading ? (
-            <ActivityIndicator size="small" color="#000" style={styles.methodsLoader} />
+            <View style={styles.methodsLoadingContainer}>
+              <ActivityIndicator size="small" color="#000" />
+              <Text style={styles.methodsLoadingText}>Loading payment methods...</Text>
+            </View>
           ) : paymentMethods.length > 0 ? (
             <View style={styles.methodsList}>
               {paymentMethods.map((method: any, index: number) => (
@@ -701,7 +816,16 @@ ${address.address_2 || ''}`;
                 </TouchableOpacity>
               ))}
             </View>
-          ) : null}
+          ) : (
+            <View style={styles.noMethodsContainer}>
+              <Text style={styles.noMethodsText}>
+                {(isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress) 
+                  ? "No payment methods available for your address"
+                  : "Please add an address to see payment methods"
+                }
+              </Text>
+            </View>
+          )}
         </View>
 
         {error && (
@@ -771,24 +895,22 @@ ${address.address_2 || ''}`;
               '30': selectedAddress.custom_field['30'] || '',
               '31': selectedAddress.custom_field['31'] || '',
               '32': selectedAddress.custom_field['32'] || '',
-              '33': selectedAddress.custom_field['33'] || ''
+              '33': selectedAddress.custom_field['33'] || '',
+              '35': selectedAddress.custom_field['35'] || ''
             },
             default: selectedAddress.default,
             address_id: selectedAddress.address_id
           } : undefined}
-          onAddressUpdated={() => {
-            // For new addresses, the custom function will handle the appropriate endpoint
-            // For edited addresses, it will use the standard endpoint
-            if (isAddingNewAddress && isAuthenticated) {
-              // For authenticated users adding new address, refresh addresses to get the latest
-              loadAddresses();
-            } else if (isAddingNewAddress && !isAuthenticated) {
-              // For unauthenticated users, the address is already saved locally by the custom function
-              // No additional action needed
-            } else {
-              // For editing existing addresses, refresh addresses
-              loadAddresses();
+          onAddressUpdated={async () => {
+            // Refresh addresses and methods when address is updated
+            if (isAuthenticated) {
+              await loadAddresses();
             }
+            
+            // Always refresh shipping and payment methods after address change
+            setTimeout(() => {
+              setAddressInCheckoutAndFetchMethods();
+            }, 500); // Small delay to ensure address is properly set
             
             setShowAddressModal(false);
             setIsAddingNewAddress(false);
@@ -822,12 +944,18 @@ ${address.address_2 || ''}`;
               '30': shippingAddress.custom_field['30'] || '',
               '31': shippingAddress.custom_field['31'] || '',
               '32': shippingAddress.custom_field['32'] || '',
-              '33': shippingAddress.custom_field['33'] || ''
+              '33': shippingAddress.custom_field['33'] || '',
+              '35': shippingAddress.custom_field['35'] || ''
             },
             default: shippingAddress.default,
             address_id: shippingAddress.address_id
           } : undefined}
-          onAddressUpdated={() => {
+          onAddressUpdated={async () => {
+            // Refresh shipping and payment methods after shipping address is updated
+            setTimeout(() => {
+              setAddressInCheckoutAndFetchMethods();
+            }, 500); // Small delay to ensure address is properly set
+            
             setShowShippingAddressModal(false);
             setIsAddingNewAddress(false);
             setIsEditingAddress(false);
@@ -1223,5 +1351,25 @@ const styles = StyleSheet.create({
   methodTerms: {
     fontSize: 12,
     color: '#666',
+  },
+  methodsLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    justifyContent: 'center',
+  },
+  methodsLoadingText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+  },
+  noMethodsContainer: {
+    padding: 16,
+    alignItems: 'center',
+  },
+  noMethodsText: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
   },
 }); 

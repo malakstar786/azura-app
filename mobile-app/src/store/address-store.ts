@@ -16,6 +16,7 @@ export interface Address {
   street: string;
   houseNumber: string;
   apartmentNumber: string;
+  avenue: string;
   additionalDetails: string;
   isDefault: boolean;
 }
@@ -46,6 +47,7 @@ export const convertToApiAddress = (address: Address | Omit<Address, 'id'>, addr
   formData.append('custom_field[31]', address.street);
   formData.append('custom_field[32]', address.houseNumber);
   formData.append('custom_field[33]', address.apartmentNumber);
+  formData.append('custom_field[35]', address.avenue || '');
   
   // Add default flag
   formData.append('default', address.isDefault ? '1' : '0');
@@ -72,6 +74,7 @@ export const convertToUIAddress = (authAddress: any): Address => {
     street: street,
     houseNumber: houseNumber,
     apartmentNumber: apartmentNumber,
+    avenue: typeof customField === 'object' ? customField['35'] || '' : '',
     additionalDetails: authAddress.address_2 || '',
     isDefault: Boolean(authAddress.default)
   };
@@ -138,6 +141,7 @@ export const useAddressStore = create<AddressStore>()(
                 street: typeof customField === 'object' ? customField['31'] || '' : '',
                 houseNumber: typeof customField === 'object' ? customField['32'] || '' : '',
                 apartmentNumber: typeof customField === 'object' ? customField['33'] || '' : '',
+                avenue: typeof customField === 'object' ? customField['35'] || '' : '',
                 additionalDetails: addr.address_2 || '',
                 isDefault: addr.default === true
               };
@@ -189,6 +193,7 @@ export const useAddressStore = create<AddressStore>()(
           formData.append('custom_field[31]', address.street);
           formData.append('custom_field[32]', address.houseNumber);
           formData.append('custom_field[33]', address.apartmentNumber || '');
+          formData.append('custom_field[35]', address.avenue || '');
           
           // Add default flag
           formData.append('default', address.isDefault ? '1' : '0');

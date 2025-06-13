@@ -30,15 +30,13 @@ export const API_ENDPOINTS = {
   updateCart: '/index.php?route=extension/mstore/cart|edit',
   removeFromCart: '/index.php?route=extension/mstore/cart|remove',
   emptyCart: '/index.php?route=extension/mstore/cart|emptyCart',
-  checkout: '/index.php?route=extension/mstore/checkout',
-  shippingMethods: '/index.php?route=extension/mstore/checkout|shipping_method',
-  paymentMethods: '/index.php?route=extension/mstore/checkout|payment_method',
+  shippingMethods: '/index.php?route=extension/mstore/shipping_method',
+  paymentMethods: '/index.php?route=extension/mstore/payment_method',
   confirmOrder: '/index.php?route=extension/mstore/checkout|confirm',
   currencies: '/index.php?route=extension/mstore/currency',
   changeCurrency: '/index.php?route=extension/mstore/currency|Save',
   countries: '/index.php?route=extension/mstore/account|getCountries',
   governoratesAndAreas: '/index.php?route=localisation/country',
-  // New address endpoints (currently have server-side issues)
   shippingAddressSave: '/index.php?route=extension/mstore/shipping_address|save',
   paymentAddressSave: '/index.php?route=extension/mstore/payment_address|save',
 };

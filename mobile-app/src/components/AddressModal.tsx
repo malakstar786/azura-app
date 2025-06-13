@@ -17,7 +17,7 @@ export default function AddressModal({ visible, onClose, isNewAddress, address }
   const formData = address ? {
     firstname: address.firstName,
     lastname: address.lastName,
-    phone: '+965 66112321', // Default phone for now
+    phone: address.phone || '', // Use actual phone from address data
     company: '',
     address_1: `Block ${address.block}, Street ${address.street}, House ${address.houseNumber}${address.apartmentNumber ? `, Apt ${address.apartmentNumber}` : ''}`,
     address_2: address.additionalDetails,
@@ -29,7 +29,8 @@ export default function AddressModal({ visible, onClose, isNewAddress, address }
       '30': address.block,
       '31': address.street,
       '32': address.houseNumber,
-      '33': address.apartmentNumber
+      '33': address.apartmentNumber,
+      '35': address.avenue
     },
     default: address.isDefault,
     address_id: address.id

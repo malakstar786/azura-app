@@ -37,7 +37,14 @@ export interface Address {
   iso_code_3?: string; // For shipping address responses
   address_format?: string; // For shipping address responses
   telephone?: string; // For shipping address responses
-  custom_field: Record<string, any>;
+  custom_field: {
+    '30': string; // block
+    '31': string; // street  
+    '32': string; // building
+    '33': string; // apartment
+    '35': string; // avenue
+    [key: string]: any; // allow other fields
+  };
   default: boolean;
 }
 

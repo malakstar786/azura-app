@@ -38,6 +38,7 @@ interface FormData {
     '31': string; // street
     '32': string; // building
     '33': string; // apartment
+    '35': string; // avenue
   };
   default: boolean;
   address_id?: string;
@@ -72,7 +73,8 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
       '30': address?.custom_field?.['30'] || '',
       '31': address?.custom_field?.['31'] || '',
       '32': address?.custom_field?.['32'] || '',
-      '33': address?.custom_field?.['33'] || ''
+      '33': address?.custom_field?.['33'] || '',
+      '35': address?.custom_field?.['35'] || ''
     },
     default: address?.default || false,
     address_id: address?.address_id
@@ -127,7 +129,8 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
           '30': '',
           '31': '',
           '32': '',
-          '33': ''
+          '33': '',
+          '35': ''
         },
         default: address.default || false,
         address_id: address.address_id
@@ -267,21 +270,25 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
     try {
       // Prepare address data for different contexts
       if (context === 'checkout' && customSaveFunction && !formData.address_id) {
+        // Get user's email from auth store
+        const { user } = useAuthStore.getState();
+        
         // For new addresses in checkout context, use custom payment address endpoint
         const addressData = {
           firstname: formData.firstname,
           lastname: formData.lastname || '',
-          phone: formData.phone,
-          email: 'user@example.com', // Default email
+          telephone: formData.phone || user?.telephone || '',
+          email: user?.email || '', // Use user's email from auth store
           country_id: formData.country_id,
           city: formData.city,
           zone_id: formData.zone_id,
           address_2: formData.address_2 || '',
           custom_field: {
-            '30': formData.custom_field['30'], // block
-            '31': formData.custom_field['31'], // street
-            '32': formData.custom_field['32'], // building
-            '33': formData.custom_field['33'] || '' // apartment
+            '30': formData.custom_field['30'], // Block
+            '31': formData.custom_field['31'], // Street
+            '32': formData.custom_field['32'], // House Building
+            '33': formData.custom_field['33'], // Apartment No.
+            '35': formData.custom_field['35'] || '' // avenue
           }
         };
 
@@ -303,6 +310,7 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
           street: formData.custom_field['31'],
           houseNumber: formData.custom_field['32'],
           apartmentNumber: formData.custom_field['33'] || '',
+          avenue: formData.custom_field['35'] || '',
           additionalDetails: formData.address_2 || '',
           isDefault: formData.default
         };
@@ -517,6 +525,18 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
               placeholderTextColor="#999"
             />
           </View>
+
+          {/* Avenue Field */}
+          <TextInput
+            style={styles.input}
+            placeholder="Avenue"
+            value={formData.custom_field['35']}
+            onChangeText={(text) => setFormData({
+              ...formData,
+              custom_field: { ...formData.custom_field, '35': text }
+            })}
+            placeholderTextColor="#999"
+          />
 
           {/* Address Line 2 */}
           <TextInput

@@ -2,25 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAddressStore } from '@store/address-store';
+import { useAddressStore, Address } from '@store/address-store';
 import AddEditAddress from '@components/add-edit-address';
 import { useAuthStore } from '@store/auth-store';
 import { theme } from '@/theme';
 import { useTranslation } from '@utils/translations';
-
-// Define the interface for Address from store
-interface Address {
-  id: string;
-  firstName: string;
-  lastName: string;
-  city: string;
-  block: string;
-  street: string;
-  houseNumber: string;
-  apartmentNumber: string;
-  additionalDetails: string;
-  isDefault: boolean;
-}
 
 // Define the interface for AddressFormData to match AddEditAddress component
 interface AddressFormData {
@@ -40,6 +26,7 @@ interface AddressFormData {
     '31': string; // street
     '32': string; // building
     '33': string; // apartment
+    '35': string; // avenue
   };
   default: boolean;
 }
@@ -81,7 +68,7 @@ export default function AddressScreen() {
       address_id: address.id,
       firstname: address.firstName,
       lastname: address.lastName,
-      phone: '+965 66112321', // Default phone for now
+      phone: address.phone || '', // Use actual phone from address data
       city: address.city,
       address_1: `Block ${address.block}, Street ${address.street}, House/Building ${address.houseNumber}${address.apartmentNumber ? ', Apt ' + address.apartmentNumber : ''}`,
       address_2: address.additionalDetails,
@@ -93,7 +80,8 @@ export default function AddressScreen() {
         '30': address.block, // Block
         '31': address.street, // Street
         '32': address.houseNumber, // Building
-        '33': address.apartmentNumber // Apartment
+        '33': address.apartmentNumber, // Apartment
+        '35': address.avenue || '' // Use actual avenue from address data
       },
       default: address.isDefault
     };
@@ -120,7 +108,7 @@ export default function AddressScreen() {
         <Text style={styles.addressText}>Kuwait,</Text>
         <Text style={styles.addressText}>{address.city || 'Salmiya'}, Area</Text>
         <Text style={styles.addressText}>
-          Block -{address.block}, Street-{address.street}, House Building -{address.houseNumber}
+          Block -{address.block}, Street-{address.street}, House Building -{address.houseNumber}{address.avenue ? ', Avenue-' + address.avenue : ''}
         </Text>
         {address.additionalDetails ? (
           <Text style={styles.addressText}>Address Line 2 ({address.additionalDetails})</Text>
