@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   Alert,
   RefreshControl,
+  Image,
 } from 'react-native';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -33,7 +34,7 @@ interface Order {
 export default function OrdersScreen() {
   const { t } = useTranslation();
   const { isRTL } = useLanguageStore();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated, user } = useAuthStore();
   const [orders, setOrders] = useState<Order[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -241,26 +242,54 @@ export default function OrdersScreen() {
           
           {filteredOrders.map((order) => (
             <View key={order.order_id} style={styles.orderCard}>
-              <View style={styles.orderHeader}>
-                <Text style={styles.orderId}>
-                  {t('orders.orderId')}: #{order.order_id}
-                </Text>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(order.status) }]}>
-                  <Text style={styles.statusText}>{translateStatus(order.status)}</Text>
+              <View style={styles.productSection}>
+                <View style={styles.productInfo}>
+                  <Text style={styles.sku}>SKU:00322100</Text>
+                  <Text style={styles.productName}>AZURA NAIL HARDENER</Text>
+                  <Text style={styles.quantity}>QTY: 1</Text>
                 </View>
               </View>
-              
-              <Text style={styles.orderDetail}>
-                {t('orders.customer')} {order.firstname} {order.lastname}
-              </Text>
-              
-              <Text style={styles.orderDetail}>
-                {t('orders.date')} {new Date(order.date_added).toLocaleDateString()}
-              </Text>
-              
-              <Text style={styles.orderTotal}>
-                {t('orders.total')} {order.total} {order.currency_code}
-              </Text>
+
+              <View style={styles.divider} />
+
+              <View style={styles.orderDetails}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>ORDER ID:</Text>
+                  <Text style={styles.detailValue}>#{order.order_id}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>DATE:</Text>
+                  <Text style={styles.detailValue}>
+                    {new Date(order.date_added).toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    }).toUpperCase()}
+                  </Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>EMAIL:</Text>
+                  <Text style={styles.detailValue}>
+                    {user?.email?.toUpperCase() || 'N/A'}
+                  </Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>STATUS:</Text>
+                  <Text style={[styles.detailValue, { color: getStatusColor(order.status) }]}>
+                    {order.status.toUpperCase()}
+                  </Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>TOTAL:</Text>
+                  <Text style={styles.detailValue}>
+                    {order.total} {order.currency_code}
+                  </Text>
+                </View>
+              </View>
             </View>
           ))}
         </ScrollView>
@@ -459,5 +488,55 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.bold as any,
     color: theme.colors.black,
     marginTop: theme.spacing.sm,
+  },
+  productSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  productInfo: {
+    flex: 1,
+  },
+  sku: {
+    fontSize: 12,
+    color: theme.colors.mediumGray,
+    marginBottom: 4,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
+  },
+  quantity: {
+    fontSize: 14,
+    fontWeight: theme.typography.weights.medium as any,
+    color: theme.colors.textPrimary,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.borderColor,
+    marginBottom: 20,
+  },
+  orderDetails: {
+    gap: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: theme.typography.weights.medium as any,
+    color: theme.colors.textPrimary,
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.textPrimary,
+    flex: 2,
+    textAlign: 'right',
   },
 }); 

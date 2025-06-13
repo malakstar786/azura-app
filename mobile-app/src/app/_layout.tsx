@@ -114,6 +114,14 @@ export default function RootLayout() {
           name="policies" 
           options={{ headerShown: true }} 
         />
+        <Stack.Screen
+          name="order-success"
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="order-failure"
+          options={{ headerShown: false }}
+        />
       </Stack>
     </ToastProvider>
   );

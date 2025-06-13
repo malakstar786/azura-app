@@ -7,12 +7,14 @@ import { useCartStore } from '@store/cart-store';
 import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 import AddEditAddress from '@components/add-edit-address';
 import { theme } from '@theme';
+import { useTranslation } from '@utils/translations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function CheckoutScreen() {
   const { isAuthenticated } = useAuthStore();
   const { addresses, fetchAddresses } = useAuthStore();
   const { items, total, clearCart, getCart } = useCartStore();
+  const { t } = useTranslation();
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
   const [shippingAddress, setShippingAddress] = useState<Address | null>(null);
   const [shipToDifferentAddress, setShipToDifferentAddress] = useState(false);
@@ -31,8 +33,16 @@ export default function CheckoutScreen() {
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [methodsLoading, setMethodsLoading] = useState(false);
 
+
   const shippingCost = 5.000;
   const orderTotal = total + shippingCost;
+
+  // Helper function to check if all required fields are completed
+  const isCheckoutComplete = () => {
+    const hasAddress = isAuthenticated ? !!selectedAddress : !!localAddress;
+    const hasShippingAddress = shipToDifferentAddress ? !!shippingAddress : true;
+    return hasAddress && hasShippingAddress && !!selectedShippingMethod && !!selectedPaymentMethod;
+  };
 
   // Load addresses and cart on mount
   useEffect(() => {
@@ -364,56 +374,21 @@ export default function CheckoutScreen() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      Alert.alert('Error', 'Please add a billing address to continue.');
-      return;
-    }
-
-    if (shipToDifferentAddress && !shippingAddress) {
-      Alert.alert('Error', 'Please add a shipping address to continue.');
-      return;
-    }
-
-    if (!selectedShippingMethod) {
-      Alert.alert('Shipping Method Required', 'Please select a shipping method to continue.');
-      return;
-    }
-
-    if (!selectedPaymentMethod) {
-      Alert.alert('Payment Method Required', 'Please select a payment method to continue.');
-      return;
-    }
-
-    setIsLoading(true);
+    // Clear previous general errors
     setError(null);
+    setIsLoading(true);
 
     try {
-      // Set billing address
-      await makeApiCall(API_ENDPOINTS.paymentAddressSave, {
-        method: 'POST',
-        data: {
-          payment_address: 'existing',
-          address_id: selectedAddress.address_id
-        }
-      });
-
-      // Set shipping address (either same as billing or different)
-      await makeApiCall(API_ENDPOINTS.shippingAddressSave, {
-        method: 'POST',
-        data: {
-          shipping_address: 'existing',
-          address_id: shipToDifferentAddress && shippingAddress ? shippingAddress.address_id : selectedAddress.address_id
-        }
-      });
-
-      // Shipping method is already set when user selects it
-      // Just verify it's selected
+      // All required data should already be set:
+      // - Addresses are set when user selects them or adds new ones
+      // - Shipping method is set when user selects it
+      // - Payment method is set when user selects it
+      
+      // Verify all required selections are made
       if (!selectedShippingMethod) {
         throw new Error('Shipping method not selected');
       }
 
-      // Payment method is already set when user selects it
-      // Just verify it's selected
       if (!selectedPaymentMethod) {
         throw new Error('Payment method not selected');
       }
@@ -425,19 +400,29 @@ export default function CheckoutScreen() {
 
       if (confirmResponse.success === 1) {
         setOrderSuccess(true);
-        clearCart();
+        
+        // Clear cart
+        await clearCart();
 
-        // Redirect to success page
-        router.push('/order-success');
+        // Extract important order data for success page
+        const orderData = {
+          order_id: confirmResponse.data.order_id,
+          firstname: confirmResponse.data.firstname,
+          lastname: confirmResponse.data.lastname,
+          email: confirmResponse.data.email,
+          date_added: confirmResponse.data.date_added,
+          total: confirmResponse.data.total,
+          payment_method: confirmResponse.data.payment_method,
+        };
+
+        // Redirect to success page with order data
+        router.replace({
+          pathname: '/order-success',
+          params: { orderData: JSON.stringify(orderData) }
+        });
       } else {
-        // Handle error which can be string or array
-        const errorMessage = typeof confirmResponse.error === 'string' 
-          ? confirmResponse.error 
-          : Array.isArray(confirmResponse.error) && confirmResponse.error.length > 0
-            ? confirmResponse.error[0]
-            : 'Failed to place order';
-            
-        setError(errorMessage);
+        // Handle error - redirect to failure page
+        router.replace('/order-failure');
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred while placing the order');
@@ -633,15 +618,15 @@ ${address.address_2 || ''}`;
     <>
       <ScrollView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title}>CHECKOUT</Text>
-          <Text style={styles.subtitle}>EASY SHOPPING WITH AZURA</Text>
+          <Text style={styles.title}>{t('checkout.title')}</Text>
+          <Text style={styles.subtitle}>{t('checkout.easyShoppingWithAzura')}</Text>
         </View>
 
         {/* Billing Address Section */}
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <Ionicons name="location-outline" size={20} color="#000" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>BILLING & SHIPPING ADDRESS</Text>
+            <Text style={styles.sectionTitle}>{t('checkout.billingShippingAddress')}</Text>
           </View>
           
           {/* Display address based on authentication status */}
@@ -675,7 +660,7 @@ ${address.address_2 || ''}`;
                 onPress={handleEditAddress}
               >
                 <Ionicons name="create-outline" size={16} color="#000" />
-                <Text style={styles.editAddressText}>Edit Address</Text>
+                <Text style={styles.editAddressText}>{t('checkout.editAddress')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -685,7 +670,7 @@ ${address.address_2 || ''}`;
             >
               <View style={styles.addAddressContent}>
                 <Ionicons name="add-circle-outline" size={24} color="#000" />
-                <Text style={styles.addAddressText}>ADD ADDRESS</Text>
+                <Text style={styles.addAddressText}>{t('checkout.addAddress')}</Text>
               </View>
             </TouchableOpacity>
           )}
@@ -697,12 +682,12 @@ ${address.address_2 || ''}`;
             <View style={styles.customCheckbox}>
               {shipToDifferentAddress && <View style={styles.checkboxFill} />}
             </View>
-            <Text style={styles.shipToDifferentText}>Ship to Different Address?</Text>
+            <Text style={styles.shipToDifferentText}>{t('checkout.shipToDifferentAddress')}</Text>
           </TouchableOpacity>
 
           {shipToDifferentAddress && (
             <View style={[styles.section, styles.shippingAddressSection]}>
-              <Text style={styles.shippingAddressTitle}>SHIPPING ADDRESS</Text>
+              <Text style={styles.shippingAddressTitle}>{t('checkout.shippingAddressTitle')}</Text>
               {shippingAddress ? (
                 <View style={styles.addressCard}>
                   <Text style={styles.addressName}>
@@ -727,7 +712,7 @@ ${address.address_2 || ''}`;
                     onPress={handleEditShippingAddress}
                   >
                     <Ionicons name="create-outline" size={16} color="#000" />
-                    <Text style={styles.editAddressText}>Edit Address</Text>
+                    <Text style={styles.editAddressText}>{t('checkout.editAddress')}</Text>
                   </TouchableOpacity>
                 </View>
               ) : (
@@ -737,11 +722,23 @@ ${address.address_2 || ''}`;
                 >
                   <View style={styles.addAddressContent}>
                     <Ionicons name="add-circle-outline" size={24} color="#000" />
-                    <Text style={styles.addAddressText}>ADD SHIPPING ADDRESS</Text>
+                    <Text style={styles.addAddressText}>{t('checkout.addShippingAddressButton')}</Text>
                   </View>
                 </TouchableOpacity>
               )}
             </View>
+          )}
+          
+          {!isAuthenticated && !localAddress && (
+            <Text style={styles.validationError}>{t('checkout.addBillingAddress')}</Text>
+          )}
+          
+          {isAuthenticated && !selectedAddress && (
+            <Text style={styles.validationError}>{t('checkout.addBillingAddress')}</Text>
+          )}
+          
+          {shipToDifferentAddress && !shippingAddress && (
+            <Text style={styles.validationError}>{t('checkout.addShippingAddress')}</Text>
           )}
         </View>
 
@@ -749,11 +746,11 @@ ${address.address_2 || ''}`;
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <Ionicons name="cube-outline" size={20} color="#000" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Order Summary</Text>
+            <Text style={styles.sectionTitle}>{t('checkout.orderSummaryTitle')}</Text>
           </View>
           
           {/* Product subheading and product list */}
-          <Text style={styles.productSubheading}>Product</Text>
+          <Text style={styles.productSubheading}>{t('checkout.product')}</Text>
           
           <FlatList
             data={items}
@@ -777,22 +774,22 @@ ${address.address_2 || ''}`;
             contentContainerStyle={styles.productsContainer}
             ListEmptyComponent={
               <View style={styles.emptyProductsContainer}>
-                <Text style={styles.emptyProductsText}>No products in cart</Text>
+                <Text style={styles.emptyProductsText}>{t('checkout.noProducts')}</Text>
               </View>
             }
           />
           
           <View style={styles.totalSection}>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Item Sub total</Text>
+              <Text style={styles.totalLabel}>{t('checkout.itemSubtotal')}</Text>
               <Text style={styles.totalValue}>{formatPrice(total)}</Text>
             </View>
             <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>Shipping Fee</Text>
+              <Text style={styles.totalLabel}>{t('checkout.shippingFee')}</Text>
               <Text style={styles.totalValue}>{formatPrice(shippingCost)}</Text>
             </View>
             <View style={[styles.totalRow, styles.grandTotal]}>
-              <Text style={styles.grandTotalLabel}>Grand Total</Text>
+              <Text style={styles.grandTotalLabel}>{t('checkout.grandTotal')}</Text>
               <Text style={styles.grandTotalValue}>{formatPrice(orderTotal)}</Text>
             </View>
           </View>
@@ -802,13 +799,13 @@ ${address.address_2 || ''}`;
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <Ionicons name="car-outline" size={20} color="#000" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Select Shipping Method</Text>
+            <Text style={styles.sectionTitle}>{t('checkout.selectShipping')}</Text>
           </View>
           
           {methodsLoading ? (
             <View style={styles.methodsLoadingContainer}>
               <ActivityIndicator size="small" color="#000" />
-              <Text style={styles.methodsLoadingText}>Loading shipping methods...</Text>
+              <Text style={styles.methodsLoadingText}>{t('checkout.loadingShippingMethods')}</Text>
             </View>
           ) : shippingMethods.length > 0 ? (
             <View style={styles.methodsList}>
@@ -839,14 +836,18 @@ ${address.address_2 || ''}`;
               ))}
             </View>
           ) : (
-            <View style={styles.noMethodsContainer}>
+                        <View style={styles.noMethodsContainer}>
               <Text style={styles.noMethodsText}>
-                {(isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress) 
-                  ? "No shipping methods available for your address"
-                  : "Please add an address to see shipping methods"
+                {(isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress)
+                  ? t('checkout.noShippingMethods')
+                  : t('checkout.addAddressForShipping')
                 }
               </Text>
             </View>
+          )}
+          
+          {!selectedShippingMethod && ((isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress)) && (
+            <Text style={styles.validationError}>{t('checkout.selectShippingMethod')}</Text>
           )}
         </View>
 
@@ -854,13 +855,13 @@ ${address.address_2 || ''}`;
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
             <Ionicons name="card-outline" size={20} color="#000" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>Payment Method</Text>
+            <Text style={styles.sectionTitle}>{t('checkout.selectPaymentTitle')}</Text>
           </View>
           
           {methodsLoading ? (
             <View style={styles.methodsLoadingContainer}>
               <ActivityIndicator size="small" color="#000" />
-              <Text style={styles.methodsLoadingText}>Loading payment methods...</Text>
+              <Text style={styles.methodsLoadingText}>{t('checkout.loadingPaymentMethods')}</Text>
             </View>
           ) : paymentMethods.length > 0 ? (
             <View style={styles.methodsList}>
@@ -894,11 +895,15 @@ ${address.address_2 || ''}`;
             <View style={styles.noMethodsContainer}>
               <Text style={styles.noMethodsText}>
                 {(isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress) 
-                  ? "No payment methods available for your address"
-                  : "Please add an address to see payment methods"
+                  ? t('checkout.noPaymentMethods')
+                  : t('checkout.addAddressForPayment')
                 }
               </Text>
             </View>
+          )}
+          
+          {!selectedPaymentMethod && ((isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress)) && (
+            <Text style={styles.validationError}>{t('checkout.selectPaymentMethod')}</Text>
           )}
         </View>
 
@@ -909,15 +914,27 @@ ${address.address_2 || ''}`;
         <TouchableOpacity
           style={[
             styles.placeOrderButton,
-            (isLoading || !selectedAddress || !selectedPaymentMethod || !selectedShippingMethod) && styles.disabledButton
+            (isLoading || 
+             (!isAuthenticated && !localAddress) || 
+             (isAuthenticated && !selectedAddress) ||
+             (shipToDifferentAddress && !shippingAddress) ||
+             !selectedPaymentMethod || 
+             !selectedShippingMethod) && styles.disabledButton
           ]}
           onPress={handlePlaceOrder}
-          disabled={isLoading || !selectedAddress || !selectedPaymentMethod || !selectedShippingMethod}
+          disabled={isLoading || 
+                   (!isAuthenticated && !localAddress) || 
+                   (isAuthenticated && !selectedAddress) ||
+                   (shipToDifferentAddress && !shippingAddress) ||
+                   !selectedPaymentMethod || 
+                   !selectedShippingMethod}
         >
           {isLoading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.placeOrderText}>Place order</Text>
+            <Text style={styles.placeOrderText}>
+              {isCheckoutComplete() ? t('checkout.placeOrder') : t('checkout.completeDetails')}
+            </Text>
           )}
         </TouchableOpacity>
 
@@ -925,7 +942,7 @@ ${address.address_2 || ''}`;
           <Text style={styles.footerText}>By Proceeding, I've read and accept the terms & conditions.</Text>
           
           <View style={styles.paymentMethodsSection}>
-            <Text style={styles.paymentMethodsTitle}>PAYMENT METHODS</Text>
+            <Text style={styles.paymentMethodsTitle}>{t('checkout.paymentMethodsTitle')}</Text>
             <View style={styles.paymentMethodsRow}>
               <Ionicons name="card" size={24} color="#666" style={styles.paymentMethodIcon} />
               <Ionicons name="card" size={24} color="#666" style={styles.paymentMethodIcon} />
@@ -1445,5 +1462,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
+  },
+  validationError: {
+    color: '#FF0000',
+    fontSize: 12,
+    marginTop: 8,
+    marginLeft: 16,
+    fontWeight: '500',
   },
 }); 

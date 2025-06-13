@@ -34,7 +34,7 @@ export const API_ENDPOINTS = {
   setShippingMethod: '/index.php?route=extension/mstore/shipping_method|save',
   paymentMethods: '/index.php?route=extension/mstore/payment_method',
   setPaymentMethod: '/index.php?route=extension/mstore/payment_method|save',
-  confirmOrder: '/index.php?route=extension/mstore/checkout|confirm',
+  confirmOrder: '/index.php?route=extension/mstore/order|confirm',
   currencies: '/index.php?route=extension/mstore/currency',
   changeCurrency: '/index.php?route=extension/mstore/currency|Save',
   countries: '/index.php?route=extension/mstore/account|getCountries',
@@ -451,11 +451,25 @@ export const fetchCartData = async (): Promise<ApiResponse<any>> => {
       console.log('Cart parsed JSON:', jsonData);
       return jsonData;
     } catch (e) {
-      console.error('Error parsing cart response:', e);
-      throw new Error('Failed to parse cart data');
+      console.warn('Error parsing cart response, returning empty cart:', e);
+      return { 
+        success: 1, 
+        error: [],
+        data: null
+      };
     }
   } catch (error: any) {
-    console.error('Cart fetch error:', error);
+    // Network or connection errors - handle gracefully
+    if (error.message === 'Network request failed' || error.message === 'Failed to fetch') {
+      console.log('Cart network error, returning empty cart:', error.message);
+      return { 
+        success: 1, 
+        error: [],
+        data: null
+      };
+    }
+    
+    console.warn('Cart fetch error:', error.message);
     return { 
       success: 0, 
       error: [error.message || 'Failed to fetch cart'],

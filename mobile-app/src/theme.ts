@@ -7,6 +7,7 @@ export const theme = {
     mediumGray: '#5D5D5D',
     lightGray: '#EFEFEF',
     red: '#FF3131',
+    success: '#4CAF50',
     
     // Status Colors
     pending: '#FF9500',

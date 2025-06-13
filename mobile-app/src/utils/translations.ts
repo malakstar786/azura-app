@@ -852,6 +852,178 @@ const translations: TranslationMap = {
     en: 'Add some products to get started',
     ar: 'أضف بعض المنتجات للبدء',
   },
+
+  // Order Success/Failure
+  'order.thankYou': {
+    en: 'THANK YOU! ✓',
+    ar: 'شكراً لك! ✓',
+  },
+  'order.successMessage': {
+    en: 'YOUR ORDER HAS BEEN PLACED SUCCESSFULLY',
+    ar: 'تم تأكيد طلبك بنجاح',
+  },
+  'order.continueShopping': {
+    en: 'CONTINUE SHOPPING',
+    ar: 'متابعة التسوق',
+  },
+  'order.errorTitle': {
+    en: 'OOPS! SOMETHING WENT WRONG',
+    ar: 'عذراً! حدث خطأ ما',
+  },
+  'order.errorMessage': {
+    en: 'YOUR ORDER WAS NOT PLACED',
+    ar: 'لم يتم تأكيد طلبك',
+  },
+  'order.errorSubMessage': {
+    en: 'PLEASE TRY AGAIN',
+    ar: 'يرجى المحاولة مرة أخرى',
+  },
+  'order.tryAgain': {
+    en: 'TRY AGAIN?',
+    ar: 'حاول مرة أخرى؟',
+  },
+  'order.orderId': {
+    en: 'ORDER ID:',
+    ar: 'رقم الطلب:',
+  },
+  'order.date': {
+    en: 'DATE:',
+    ar: 'التاريخ:',
+  },
+  'order.email': {
+    en: 'EMAIL:',
+    ar: 'البريد الإلكتروني:',
+  },
+  'order.transId': {
+    en: 'TRANS ID:',
+    ar: 'رقم المعاملة:',
+  },
+  'order.paymentMethod': {
+    en: 'PAYMENT METHOD:',
+    ar: 'طريقة الدفع:',
+  },
+  'order.sku': {
+    en: 'SKU:',
+    ar: 'رقم المنتج:',
+  },
+  'order.qty': {
+    en: 'QTY:',
+    ar: 'الكمية:',
+  },
+
+  // Checkout 
+  'checkout.completeDetails': {
+    en: 'Complete checkout details',
+    ar: 'أكمل تفاصيل الطلب',
+  },
+  'checkout.billingAddress': {
+    en: 'BILLING ADDRESS',
+    ar: 'عنوان الفوترة',
+  },
+  'checkout.selectShippingMethod': {
+    en: 'Please select a shipping method to continue.',
+    ar: 'يرجى اختيار طريقة الشحن للمتابعة.',
+  },
+  'checkout.selectPaymentMethod': {
+    en: 'Please select a payment method to continue.',
+    ar: 'يرجى اختيار طريقة الدفع للمتابعة.',
+  },
+  'checkout.addBillingAddress': {
+    en: 'Please add a billing address to continue.',
+    ar: 'يرجى إضافة عنوان الفوترة للمتابعة.',
+  },
+  'checkout.addShippingAddress': {
+    en: 'Please add a shipping address to continue.',
+    ar: 'يرجى إضافة عنوان الشحن للمتابعة.',
+  },
+  'checkout.easyShoppingWithAzura': {
+    en: 'EASY SHOPPING WITH AZURA',
+    ar: 'تسوق سهل مع أزورا',
+  },
+  'checkout.billingShippingAddress': {
+    en: 'BILLING & SHIPPING ADDRESS',
+    ar: 'عنوان الفوترة والشحن',
+  },
+  'checkout.editAddress': {
+    en: 'Edit Address',
+    ar: 'تعديل العنوان',
+  },
+  'checkout.addAddress': {
+    en: 'ADD ADDRESS',
+    ar: 'إضافة عنوان',
+  },
+  'checkout.shipToDifferentAddress': {
+    en: 'Ship to Different Address?',
+    ar: 'الشحن إلى عنوان مختلف؟',
+  },
+  'checkout.shippingAddressTitle': {
+    en: 'SHIPPING ADDRESS',
+    ar: 'عنوان الشحن',
+  },
+  'checkout.addShippingAddressButton': {
+    en: 'ADD SHIPPING ADDRESS',
+    ar: 'إضافة عنوان الشحن',
+  },
+  'checkout.orderSummaryTitle': {
+    en: 'Order Summary',
+    ar: 'ملخص الطلب',
+  },
+  'checkout.product': {
+    en: 'Product',
+    ar: 'المنتج',
+  },
+  'checkout.noProducts': {
+    en: 'No products in cart',
+    ar: 'لا توجد منتجات في السلة',
+  },
+  'checkout.itemSubtotal': {
+    en: 'Item Sub total',
+    ar: 'مجموع المنتجات',
+  },
+  'checkout.shippingFee': {
+    en: 'Shipping Fee',
+    ar: 'رسوم الشحن',
+  },
+  'checkout.grandTotal': {
+    en: 'Grand Total',
+    ar: 'المجموع الكلي',
+  },
+  'checkout.selectShipping': {
+    en: 'Select Shipping Method',
+    ar: 'اختر طريقة الشحن',
+  },
+  'checkout.loadingShippingMethods': {
+    en: 'Loading shipping methods...',
+    ar: 'جاري تحميل طرق الشحن...',
+  },
+  'checkout.selectPaymentTitle': {
+    en: 'Select Payment Method',
+    ar: 'اختر طريقة الدفع',
+  },
+  'checkout.loadingPaymentMethods': {
+    en: 'Loading payment methods...',
+    ar: 'جاري تحميل طرق الدفع...',
+  },
+  'checkout.noShippingMethods': {
+    en: 'No shipping methods available for your address',
+    ar: 'لا توجد طرق شحن متاحة لعنوانك',
+  },
+  'checkout.addAddressForShipping': {
+    en: 'Please add an address to see shipping methods',
+    ar: 'يرجى إضافة عنوان لرؤية طرق الشحن',
+  },
+  'checkout.noPaymentMethods': {
+    en: 'No payment methods available for your address',
+    ar: 'لا توجد طرق دفع متاحة لعنوانك',
+  },
+  'checkout.addAddressForPayment': {
+    en: 'Please add an address to see payment methods',
+    ar: 'يرجى إضافة عنوان لرؤية طرق الدفع',
+  },
+  'checkout.paymentMethodsTitle': {
+    en: 'PAYMENT METHODS',
+    ar: 'طرق الدفع',
+  },
 };
 
 // Get translation function

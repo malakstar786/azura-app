@@ -140,25 +140,14 @@ export const useCartStore = create<CartStore>()(
             );
           }
         } catch (error: any) {
-          console.error('Error fetching cart:', error);
-          
-          // Check for specific network errors
-          let errorMessage = 'Failed to fetch cart';
-          if (error.message === 'Network request failed') {
-            errorMessage = 'Network connection failed. Please check your internet connection and try again.';
-          } else if (error.message === 'Failed to fetch') {
-            errorMessage = 'Unable to connect to the server. Please try again.';
-          } else if (error.message) {
-            errorMessage = error.message;
-          }
+          console.warn('Unexpected error in cart store:', error);
           
           set({ 
             isLoading: false, 
-            error: errorMessage,
-            items: [], // Ensure items are initialized even on error
+            error: error.message || 'Failed to fetch cart',
+            items: [],
             total: 0
           });
-          // Don't rethrow the error - handle it gracefully
         }
       },
 

@@ -1,0 +1,244 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { theme } from '@theme';
+import { useTranslation } from '@utils/translations';
+
+interface OrderData {
+  order_id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  date_added: string;
+  total: string;
+  payment_method: string;
+  line_items?: any[];
+}
+
+export default function OrderSuccessScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams();
+  const [orderData, setOrderData] = useState<OrderData | null>(null);
+  const { t } = useTranslation();
+
+  useEffect(() => {
+    // Get order data from navigation params or local storage
+    const orderDataString = params.orderData as string;
+    if (orderDataString) {
+      try {
+        const data = JSON.parse(orderDataString);
+        setOrderData(data);
+      } catch (e) {
+        console.error('Error parsing order data:', e);
+      }
+    }
+  }, [params.orderData]); // Only depend on the specific param we need
+
+  const handleContinueShopping = () => {
+    // Navigate to home and reset navigation stack
+    router.replace('/(shop)');
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
+
+  const formatOrderId = (orderId: string) => {
+    return `#${orderId}`;
+  };
+
+  // Mock product data for display - in real app this would come from line_items
+  const productData = {
+    sku: "00322100",
+    name: "AZURA NAIL HARDENER",
+    quantity: 1,
+  };
+
+  return (
+    <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
+      <View style={styles.header}>
+        <View style={styles.checkIcon}>
+          <Ionicons name="checkmark" size={32} color={theme.colors.white} />
+        </View>
+        
+        <Text style={styles.thankYouTitle}>{t('order.thankYou')}</Text>
+        <Text style={styles.successMessage}>
+          {t('order.successMessage')}
+        </Text>
+      </View>
+
+      <View style={styles.orderCard}>
+        <View style={styles.productSection}>
+          <View style={styles.productInfo}>
+            <Text style={styles.sku}>{t('order.sku')}{productData.sku}</Text>
+            <Text style={styles.productName}>{productData.name}</Text>
+            <Text style={styles.quantity}>{t('order.qty')} {productData.quantity}</Text>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.orderDetails}>
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('order.orderId')}</Text>
+            <Text style={styles.detailValue}>
+              {orderData?.order_id ? formatOrderId(orderData.order_id) : '#2231123'}
+            </Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('order.date')}</Text>
+            <Text style={styles.detailValue}>
+              {orderData?.date_added ? formatDate(orderData.date_added) : '4 APRIL 2024'}
+            </Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('order.email')}</Text>
+            <Text style={styles.detailValue}>
+              {orderData?.email ? orderData.email.toUpperCase() : 'AHMED@GMAIL.COM'}
+            </Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('order.transId')}</Text>
+            <Text style={styles.detailValue}>
+              TT#23332222111122121111234413
+            </Text>
+          </View>
+
+          <View style={styles.detailRow}>
+            <Text style={styles.detailLabel}>{t('order.paymentMethod')}</Text>
+            <Text style={styles.detailValue}>
+              {orderData?.payment_method ? orderData.payment_method.toUpperCase() : 'K-NET'}
+            </Text>
+          </View>
+        </View>
+      </View>
+
+      <TouchableOpacity style={styles.continueButton} onPress={handleContinueShopping}>
+        <Text style={styles.continueButtonText}>{t('order.continueShopping')}</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: theme.colors.background,
+  },
+  contentContainer: {
+    padding: 20,
+    paddingTop: 60,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  checkIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: theme.colors.success || '#4CAF50',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+  },
+  thankYouTitle: {
+    fontSize: 28,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.textPrimary,
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
+  successMessage: {
+    fontSize: 14,
+    color: theme.colors.success || '#4CAF50',
+    fontWeight: theme.typography.weights.medium as any,
+    textAlign: 'center',
+  },
+  orderCard: {
+    backgroundColor: theme.colors.white,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: theme.colors.borderColor,
+    padding: 20,
+    marginBottom: 40,
+  },
+  productSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  productInfo: {
+    flex: 1,
+  },
+  sku: {
+    fontSize: 12,
+    color: theme.colors.mediumGray,
+    marginBottom: 4,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.textPrimary,
+    marginBottom: 4,
+  },
+  quantity: {
+    fontSize: 14,
+    fontWeight: theme.typography.weights.medium as any,
+    color: theme.colors.textPrimary,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: theme.colors.borderColor,
+    marginBottom: 20,
+  },
+  orderDetails: {
+    gap: 12,
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  detailLabel: {
+    fontSize: 14,
+    fontWeight: theme.typography.weights.medium as any,
+    color: theme.colors.textPrimary,
+    flex: 1,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: theme.typography.weights.bold as any,
+    color: theme.colors.textPrimary,
+    flex: 2,
+    textAlign: 'right',
+  },
+  continueButton: {
+    backgroundColor: theme.colors.black,
+    paddingVertical: 16,
+    borderRadius: 0,
+    alignItems: 'center',
+  },
+  continueButtonText: {
+    color: theme.colors.white,
+    fontSize: 16,
+    fontWeight: theme.typography.weights.semibold as any,
+    letterSpacing: 1,
+  },
+}); 
