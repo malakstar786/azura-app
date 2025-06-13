@@ -150,14 +150,9 @@ export const useAuthStore = create<AuthState>()(
             }
 
             // Fetch cart after successful login
-            try {
-              console.log('Fetching cart after successful login');
-              await useCartStore.getState().getCart();
-              console.log('Cart fetched successfully after login');
-            } catch (cartError) {
-              console.error('Failed to fetch cart after login:', cartError);
-              // Continue even if cart fetch fails - don't block login
-            }
+            console.log('Fetching cart after successful login');
+            await useCartStore.getState().getCart();
+            // Note: getCart() handles errors internally and doesn't throw
           } else {
             throw new Error(
               Array.isArray(response.error) ? response.error[0] : 'Invalid login credentials'

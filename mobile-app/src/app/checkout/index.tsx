@@ -23,8 +23,8 @@ export default function CheckoutScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [addressLoading, setAddressLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string | null>(null);
-  const [selectedShippingMethod, setSelectedShippingMethod] = useState<string | null>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<any>(null);
+  const [selectedShippingMethod, setSelectedShippingMethod] = useState<any>(null);
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [localAddress, setLocalAddress] = useState<any>(null); // For unauthenticated users
   const [shippingMethods, setShippingMethods] = useState<any[]>([]);
@@ -212,13 +212,38 @@ export default function CheckoutScreen() {
       console.log('Shipping methods response:', shippingResponse);
       
       if (shippingResponse.success === 1 && shippingResponse.data) {
-        // Check if shipping_methods array exists and is not empty
-        if (shippingResponse.data.shipping_methods && shippingResponse.data.shipping_methods.length > 0) {
-          setShippingMethods(shippingResponse.data.shipping_methods);
+        // Parse shipping methods from nested structure
+        if (shippingResponse.data.shipping_methods && typeof shippingResponse.data.shipping_methods === 'object') {
+          const parsedMethods = [];
           
-          // Auto-select first shipping method
-          if (!selectedShippingMethod) {
-            setSelectedShippingMethod(shippingResponse.data.shipping_methods[0]);
+          // Iterate through shipping methods (e.g., "flat")
+          for (const methodKey in shippingResponse.data.shipping_methods) {
+            const method = shippingResponse.data.shipping_methods[methodKey];
+            
+            // Iterate through quotes within each method
+            if (method.quote && typeof method.quote === 'object') {
+              for (const quoteKey in method.quote) {
+                const quote = method.quote[quoteKey];
+                parsedMethods.push({
+                  ...quote,
+                  title: quote.title || method.title,
+                  sort_order: method.sort_order
+                });
+              }
+            }
+          }
+          
+          if (parsedMethods.length > 0) {
+            setShippingMethods(parsedMethods);
+            
+            // Auto-select first shipping method
+            if (!selectedShippingMethod) {
+              setSelectedShippingMethod(parsedMethods[0]);
+            }
+          } else {
+            console.log('No shipping method quotes available');
+            setShippingMethods([]);
+            setSelectedShippingMethod(null);
           }
         } else {
           // No shipping methods available - this is expected if address is not set properly
@@ -236,13 +261,30 @@ export default function CheckoutScreen() {
       console.log('Payment methods response:', paymentResponse);
       
       if (paymentResponse.success === 1 && paymentResponse.data) {
-        // Check if payment_methods array exists and is not empty
-        if (paymentResponse.data.payment_methods && paymentResponse.data.payment_methods.length > 0) {
-          setPaymentMethods(paymentResponse.data.payment_methods);
+        // Parse payment methods from object structure
+        if (paymentResponse.data.payment_methods && typeof paymentResponse.data.payment_methods === 'object') {
+          const parsedMethods = [];
           
-          // Auto-select first payment method
-          if (!selectedPaymentMethod) {
-            setSelectedPaymentMethod(paymentResponse.data.payment_methods[0]);
+          // Iterate through payment methods (e.g., "custom", "knet", "cod")
+          for (const methodKey in paymentResponse.data.payment_methods) {
+            const method = paymentResponse.data.payment_methods[methodKey];
+            parsedMethods.push({
+              ...method,
+              sort_order: method.sort_order || "999" // Default sort order if not provided
+            });
+          }
+          
+          if (parsedMethods.length > 0) {
+            setPaymentMethods(parsedMethods);
+            
+            // Auto-select first payment method
+            if (!selectedPaymentMethod) {
+              setSelectedPaymentMethod(parsedMethods[0]);
+            }
+          } else {
+            console.log('No payment method options available');
+            setPaymentMethods([]);
+            setSelectedPaymentMethod(null);
           }
         } else {
           // No payment methods available - this is expected if address is not set properly
@@ -283,6 +325,42 @@ export default function CheckoutScreen() {
     setIsEditingAddress(true);
     setIsAddingNewAddress(false);
     setShowShippingAddressModal(true);
+  };
+
+  const handleShippingMethodSelection = async (method: any) => {
+    setSelectedShippingMethod(method);
+    
+    try {
+      // Call set shipping method API immediately when user selects
+      await makeApiCall(API_ENDPOINTS.setShippingMethod, {
+        method: 'POST',
+        data: {
+          shipping_method: method?.code || "flat.flat"
+        }
+      });
+      
+      console.log('Shipping method set successfully:', method?.code || "flat.flat");
+    } catch (error) {
+      console.error('Error setting shipping method:', error);
+    }
+  };
+
+  const handlePaymentMethodSelection = async (method: any) => {
+    setSelectedPaymentMethod(method);
+    
+    try {
+      // Call set payment method API immediately when user selects
+      await makeApiCall(API_ENDPOINTS.setPaymentMethod, {
+        method: 'POST',
+        data: {
+          payment_method: method?.code || "cod"
+        }
+      });
+      
+      console.log('Payment method set successfully:', method?.code || "cod");
+    } catch (error) {
+      console.error('Error setting payment method:', error);
+    }
   };
 
   const handlePlaceOrder = async () => {
@@ -328,21 +406,17 @@ export default function CheckoutScreen() {
         }
       });
 
-      // Set shipping method
-      await makeApiCall(API_ENDPOINTS.shippingMethods, {
-        method: 'POST',
-        data: {
-          shipping_method: selectedShippingMethod
-        }
-      });
+      // Shipping method is already set when user selects it
+      // Just verify it's selected
+      if (!selectedShippingMethod) {
+        throw new Error('Shipping method not selected');
+      }
 
-      // Set payment method
-      await makeApiCall(API_ENDPOINTS.paymentMethods, {
-        method: 'POST',
-        data: {
-          payment_method: selectedPaymentMethod
-        }
-      });
+      // Payment method is already set when user selects it
+      // Just verify it's selected
+      if (!selectedPaymentMethod) {
+        throw new Error('Payment method not selected');
+      }
 
       // Confirm order
       const confirmResponse = await makeApiCall(API_ENDPOINTS.confirmOrder, {
@@ -745,7 +819,7 @@ ${address.address_2 || ''}`;
                     styles.methodOption,
                     selectedShippingMethod === method && styles.selectedMethodOption
                   ]}
-                  onPress={() => setSelectedShippingMethod(method)}
+                  onPress={() => handleShippingMethodSelection(method)}
                 >
                   <View style={styles.methodRadio}>
                     <View style={[
@@ -757,8 +831,8 @@ ${address.address_2 || ''}`;
                   </View>
                   <View style={styles.methodInfo}>
                     <Text style={styles.methodTitle}>{method.title || method.name}</Text>
-                    {method.cost && (
-                      <Text style={styles.methodCost}>{method.cost}</Text>
+                    {method.text && (
+                      <Text style={styles.methodCost}>{method.text}</Text>
                     )}
                   </View>
                 </TouchableOpacity>
@@ -797,7 +871,7 @@ ${address.address_2 || ''}`;
                     styles.methodOption,
                     selectedPaymentMethod === method && styles.selectedMethodOption
                   ]}
-                  onPress={() => setSelectedPaymentMethod(method)}
+                  onPress={() => handlePaymentMethodSelection(method)}
                 >
                   <View style={styles.methodRadio}>
                     <View style={[

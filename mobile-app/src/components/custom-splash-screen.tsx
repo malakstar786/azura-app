@@ -2,7 +2,11 @@ import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
 import { theme } from '@theme';
 
-export default function CustomSplashScreen() {
+interface CustomSplashScreenProps {
+  onFinish: () => void;
+}
+
+export default function CustomSplashScreen({ onFinish }: CustomSplashScreenProps) {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -11,8 +15,11 @@ export default function CustomSplashScreen() {
       toValue: 1,
       duration: 1000,
       useNativeDriver: true,
-    }).start();
-  }, [fadeAnim]);
+    }).start(() => {
+      // Call onFinish when animation completes
+      setTimeout(onFinish, 500);
+    });
+  }, [fadeAnim, onFinish]);
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>  

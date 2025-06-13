@@ -60,7 +60,7 @@ export default function RootLayout() {
   }, [showSplash, isFirstTimeUser, router]);
 
   if (!isReady || showSplash) {
-    return <CustomSplashScreen />;
+    return <CustomSplashScreen onFinish={() => setShowSplash(false)} />;
   }
 
   return (
