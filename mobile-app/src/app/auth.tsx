@@ -17,9 +17,11 @@ import { useAuthStore } from '@store/auth-store';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@theme';
 import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
+import { useTranslation } from '@utils/translations';
 
 export default function Auth() {
     const { login, signup, isAuthenticated } = useAuthStore();
+    const { t } = useTranslation();
     const [isLogin, setIsLogin] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -105,16 +107,20 @@ export default function Auth() {
     };
 
     const handleSignup = async () => {
+      console.log('🔥 AUTH.TSX: SIGNUP BUTTON PRESSED - handleSignup called');
+      console.log('📋 AUTH.TSX: Current signup form data:', signupForm);
+      
       // Validate all required fields
       const validationErrors: Record<string, string> = {};
       
       if (!signupForm.firstname?.trim()) {
-        validationErrors.firstname = 'First name is required';
+        validationErrors.firstname = 'Full name is required';
       }
       
-      if (!signupForm.lastname?.trim()) {
-        validationErrors.lastname = 'Last name is required';
-      }
+      // We don't need lastname validation since we're using firstname for full name
+      // if (!signupForm.lastname?.trim()) {
+      //   validationErrors.lastname = 'Last name is required';
+      // }
       
       if (!signupForm.email?.trim()) {
         validationErrors.email = 'Email is required';
@@ -135,25 +141,48 @@ export default function Auth() {
       }
       
       if (Object.keys(validationErrors).length > 0) {
+        console.error('❌ AUTH.TSX: Validation failed:', validationErrors);
         setErrors(validationErrors);
         return;
       }
       
+      console.log('✅ AUTH.TSX: Validation passed, starting signup process...');
       setIsLoading(true);
       setErrors({});
       
+      // Parse full name into first name and last name
+      let firstName = signupForm.firstname.trim();
+      let lastName = '';
+
+      // Split the full name by space and handle different cases
+      const nameParts = signupForm.firstname.trim().split(' ');
+      if (nameParts.length > 1) {
+        firstName = nameParts[0];
+        lastName = nameParts.slice(1).join(' ');
+      }
+
+      const userData = {
+        firstname: firstName,
+        lastname: lastName,
+        email: signupForm.email.trim(),
+        telephone: signupForm.telephone.trim(),
+        password: signupForm.password,
+      };
+
+      console.log('📤 AUTH.TSX: Sending signup request with userData:', JSON.stringify(userData, null, 2));
+      
       try {
-        await signup({
-          firstname: signupForm.firstname.trim(),
-          lastname: signupForm.lastname.trim(),
-          email: signupForm.email.trim(),
-          telephone: signupForm.telephone.trim(),
-          password: signupForm.password,
-        });
+        await signup(userData);
         
+        console.log('✅ AUTH.TSX: Signup successful, redirection will be handled by useEffect');
         // Router will handle redirection in the useEffect hook
       } catch (error: any) {
-        console.error('Signup error:', error);
+        console.error('❌ AUTH.TSX: Signup error occurred:', error);
+        console.error('❌ AUTH.TSX: Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
         
         let errorMessage = error.message || 'An error occurred during signup';
         
@@ -164,6 +193,8 @@ export default function Auth() {
           errorMessage = 'An account with this email already exists. Please try logging in instead.';
         }
         
+        console.error('🔴 AUTH.TSX: Final error message shown to user:', errorMessage);
+        
         setErrors({ 
           email: errorMessage
         });
@@ -171,24 +202,25 @@ export default function Auth() {
         Alert.alert('Signup Failed', errorMessage);
       } finally {
         setIsLoading(false);
+        console.log('🏁 AUTH.TSX: Signup process completed');
       }
     };
 
     const renderLoginForm = () => (
       <View style={styles.formContainer}>
-        <Text style={styles.formTitle}>SIGN IN</Text>
-        <Text style={styles.formSubtitle}>WELCOME BACK TO AZURA</Text>
+        <Text style={styles.formTitle}>{t('auth.signIn')}</Text>
+        <Text style={styles.formSubtitle}>{t('auth.welcomeBack')}</Text>
         
         <View style={styles.divider} />
         
         <Text style={styles.instructionText}>
-          SIGN IN WITH YOUR REGISTERED EMAIL AND PASSWORD
+          {t('auth.enterLoginDetails')}
         </Text>
         
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="EMAIL"
+            placeholder={t('auth.email')}
             value={loginForm.email}
             onChangeText={text => handleLoginInputChange('email', text)}
             keyboardType="email-address"
@@ -203,7 +235,7 @@ export default function Auth() {
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
-              placeholder="PASSWORD"
+              placeholder={t('auth.password')}
               value={loginForm.password}
               onChangeText={text => handleLoginInputChange('password', text)}
               secureTextEntry={!showLoginPassword}
@@ -226,7 +258,7 @@ export default function Auth() {
         
         <Link href="/forgot-password" asChild>
           <TouchableOpacity style={styles.forgotPasswordButton}>
-            <Text style={styles.forgotPasswordText}>FORGOT PASSWORD?</Text>
+            <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
           </TouchableOpacity>
         </Link>
         
@@ -238,7 +270,7 @@ export default function Auth() {
           {isLoading ? (
             <ActivityIndicator color={theme.colors.white} size="small" />
           ) : (
-            <Text style={styles.submitButtonText}>LOGIN</Text>
+            <Text style={styles.submitButtonText}>{t('auth.login')}</Text>
           )}
         </TouchableOpacity>
         
@@ -246,26 +278,26 @@ export default function Auth() {
           style={styles.switchModeButton}
           onPress={() => setIsLogin(false)}
         >
-          <Text style={styles.switchModeText}>CREATE ACCOUNT?</Text>
+          <Text style={styles.switchModeText}>{t('auth.dontHaveAccount')}</Text>
         </TouchableOpacity>
       </View>
     );
 
     const renderSignupForm = () => (
       <View style={styles.formContainer}>
-        <Text style={styles.formTitle}>CREATE ACCOUNT</Text>
-        <Text style={styles.formSubtitle}>EASY SHOPPING WITH AZURA</Text>
+        <Text style={styles.formTitle}>{t('signup.title')}</Text>
+        <Text style={styles.formSubtitle}>{t('signup.subtitle')}</Text>
         
         <View style={styles.divider} />
         
         <Text style={styles.instructionText}>
-          CREATE AN ACCOUNT AND BENEFIT FROM A MORE PERSONAL SHOPPING EXPERIENCE, AND QUICKER ONLINE CHECKOUT.
+          {t('signup.instruction')}
         </Text>
         
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="FULL NAME"
+            placeholder={t('signup.fullName')}
             value={signupForm.firstname}
             onChangeText={text => handleSignupInputChange('firstname', text)}
             placeholderTextColor={theme.colors.mediumGray}
@@ -277,7 +309,7 @@ export default function Auth() {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="EMAIL"
+            placeholder={t('signup.email')}
             value={signupForm.email}
             onChangeText={text => handleSignupInputChange('email', text)}
             keyboardType="email-address"
@@ -291,7 +323,7 @@ export default function Auth() {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
-            placeholder="MOBILE"
+            placeholder={t('signup.mobile')}
             value={signupForm.telephone}
             onChangeText={text => handleSignupInputChange('telephone', text)}
             keyboardType="phone-pad"
@@ -305,7 +337,7 @@ export default function Auth() {
           <View style={styles.passwordContainer}>
             <TextInput
               style={styles.passwordInput}
-              placeholder="PASSWORD"
+              placeholder={t('signup.password')}
               value={signupForm.password}
               onChangeText={text => handleSignupInputChange('password', text)}
               secureTextEntry={!showSignupPassword}
@@ -334,7 +366,7 @@ export default function Auth() {
           {isLoading ? (
             <ActivityIndicator color={theme.colors.white} size="small" />
           ) : (
-            <Text style={styles.submitButtonText}>SIGN UP</Text>
+            <Text style={styles.submitButtonText}>{t('signup.signUp')}</Text>
           )}
         </TouchableOpacity>
         
@@ -342,7 +374,7 @@ export default function Auth() {
           style={styles.switchModeButton}
           onPress={() => setIsLogin(true)}
         >
-          <Text style={styles.switchModeText}>ALREADY HAVE ACCOUNT LOGIN?</Text>
+          <Text style={styles.switchModeText}>{t('signup.alreadyHaveAccount')}</Text>
         </TouchableOpacity>
       </View>
     );

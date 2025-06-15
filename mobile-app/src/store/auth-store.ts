@@ -194,15 +194,29 @@ export const useAuthStore = create<AuthState>()(
         try {
           set({ isLoading: true, error: null });
 
-          console.log('Attempting signup with:', { 
+          console.log('🔥 AUTH STORE: Attempting signup with:', { 
             email: userData.email,
             firstname: userData.firstname,
-            lastname: userData.lastname 
+            lastname: userData.lastname,
+            telephone: userData.telephone
           });
 
           // Generate and use a fresh OCSESSID for registration
           const freshOCSESSID = await generateRandomOCSESSID();
           await setOCSESSID(freshOCSESSID);
+          console.log('🔑 AUTH STORE: Generated fresh OCSESSID:', freshOCSESSID);
+
+          // Prepare the exact data format as specified by the user
+          const signupData = {
+            firstname: userData.firstname,
+            lastname: userData.lastname,
+            telephone: userData.telephone,
+            email: userData.email,
+            password: userData.password
+          };
+
+          console.log('📤 AUTH STORE: Sending signup request with data:', JSON.stringify(signupData, null, 2));
+          console.log('🌐 AUTH STORE: Making API call to:', `${API_BASE_URL}${API_ENDPOINTS.register}`);
 
           try {
             const response = await makeApiCall(API_ENDPOINTS.register, {
@@ -210,28 +224,19 @@ export const useAuthStore = create<AuthState>()(
               headers: {
                 'Content-Type': 'application/json',
               },
-              data: {
-                firstname: userData.firstname,
-                lastname: userData.lastname,
-                email: userData.email,
-                telephone: userData.telephone,
-                password: userData.password,
-                confirm: userData.password, // Password confirmation
-                agree: '1',  // Agreement to terms
-                newsletter: '0', // Default to not subscribing to newsletter
-                customer_group_id: '1', // Default customer group
-                custom_field: {} // Empty custom fields object
-              }
+              data: signupData
             });
 
-            console.log('Signup response:', response);
+            console.log('✅ AUTH STORE: Signup response received:', JSON.stringify(response, null, 2));
 
             if (response.success === 1) {
+              console.log('🚀 AUTH STORE: Signup successful! Attempting auto-login...');
               // If signup is successful, automatically log in
               try {
                 await get().login(userData.email, userData.password);
+                console.log('✅ AUTH STORE: Auto-login after signup successful');
               } catch (loginError) {
-                console.error('Auto-login after signup failed:', loginError);
+                console.error('❌ AUTH STORE: Auto-login after signup failed:', loginError);
                 // Still consider signup successful even if auto-login fails
                 set({
                   isLoading: false,
@@ -239,18 +244,25 @@ export const useAuthStore = create<AuthState>()(
                 });
               }
             } else {
+              console.error('❌ AUTH STORE: Signup failed with response:', response);
               throw new Error(
                 Array.isArray(response.error) ? response.error[0] : 'Registration failed'
               );
             }
           } catch (error: any) {
-            console.error('Signup API error:', error);
+            console.error('❌ AUTH STORE: Signup API error occurred:', error);
+            console.error('❌ AUTH STORE: Error details:', {
+              message: error.message,
+              response: error.response?.data,
+              status: error.response?.status,
+              headers: error.response?.headers
+            });
             
             // Check for server-side errors in the response
             if (error.response?.data && typeof error.response.data === 'string') {
               // Handle the specific utf8_strlen error from the server
               if (error.response.data.includes('utf8_strlen()')) {
-                console.error('Server has a function definition error. Treating as temporary server issue.');
+                console.error('❌ AUTH STORE: Server has a function definition error. Treating as temporary server issue.');
                 throw new Error('The registration service is temporarily unavailable. Please try again later or contact support.');
               }
             }
@@ -258,7 +270,13 @@ export const useAuthStore = create<AuthState>()(
             throw error; // Rethrow for general error handling
           }
         } catch (error: any) {
-          console.error('Signup error:', error);
+          console.error('❌ AUTH STORE: Final signup error:', error);
+          console.error('❌ AUTH STORE: Final error details:', {
+            message: error.message,
+            stack: error.stack,
+            name: error.name
+          });
+          
           set({ 
             isLoading: false, 
             error: error.message || 'Registration failed. Please try again.',

@@ -307,12 +307,12 @@ export default function CartScreen() {
 
   const handleEmptyCart = () => {
     Alert.alert(
-      'Empty Cart',
-      'Are you sure you want to remove all items from your cart?',
+      t('cart.emptyCartConfirm'),
+      t('cart.emptyCartMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         { 
-          text: 'Yes, Empty Cart', 
+          text: t('cart.emptyCartConfirmButton'), 
           style: 'destructive',
           onPress: () => clearCart()
         },
@@ -323,11 +323,11 @@ export default function CartScreen() {
   const handleCheckout = async () => {
     if (!isAuthenticated) {
       Alert.alert(
-        'Login Required',
-        'You need to sign in to proceed to checkout.',
+        t('cart.loginRequired'),
+        t('cart.loginRequiredMessage'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Sign In', onPress: () => router.push('/auth') },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('auth.signIn'), onPress: () => router.push('/auth') },
         ]
       );
       return;

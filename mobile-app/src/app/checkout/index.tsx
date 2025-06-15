@@ -215,9 +215,15 @@ export default function CheckoutScreen() {
 
   const fetchShippingAndPaymentMethods = async () => {
     try {
-      // Fetch shipping methods
+      // Get current language for API calls
+      const { useLanguageStore } = await import('@store/language-store');
+      const { currentLanguage } = useLanguageStore.getState();
+      console.log(`🌐 CHECKOUT: Fetching shipping/payment methods with language: ${currentLanguage}`);
+      
+      // Fetch shipping methods with language parameter
       const shippingResponse = await makeApiCall('/index.php?route=extension/mstore/shipping_method', {
-        method: 'GET'
+        method: 'GET',
+        params: currentLanguage === 'ar' ? { language: 'ar' } : undefined
       });
       
       console.log('Shipping methods response:', shippingResponse);
@@ -264,9 +270,10 @@ export default function CheckoutScreen() {
         }
       }
       
-      // Fetch payment methods
+      // Fetch payment methods with language parameter
       const paymentResponse = await makeApiCall('/index.php?route=extension/mstore/payment_method', {
-        method: 'GET'
+        method: 'GET',
+        params: currentLanguage === 'ar' ? { language: 'ar' } : undefined
       });
       
       console.log('Payment methods response:', paymentResponse);

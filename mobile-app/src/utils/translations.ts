@@ -18,6 +18,9 @@ const translations = {
     'nav.cart': 'MY CART',
     'nav.account': 'Account',
     
+    // Drawer Menu
+    'drawer.browse': 'BROWSE',
+    
     // Home
     'home.explore': 'Explore',
     'home.services': 'Our Services',
@@ -154,6 +157,30 @@ const translations = {
     'auth.enterDetails': 'Enter your details to continue',
     'auth.enterLoginDetails': 'Enter your login details',
     
+    // Signup specific
+    'signup.title': 'CREATE ACCOUNT',
+    'signup.subtitle': 'EASY SHOPPING WITH AZURA',
+    'signup.instruction': 'CREATE AN ACCOUNT AND BENEFIT FROM A MORE PERSONAL SHOPPING EXPERIENCE, AND QUICKER ONLINE CHECKOUT.',
+    'signup.fullName': 'FULL NAME',
+    'signup.email': 'EMAIL',
+    'signup.mobile': 'MOBILE',
+    'signup.password': 'PASSWORD',
+    'signup.signUp': 'SIGN UP',
+    'signup.alreadyHaveAccount': 'ALREADY HAVE ACCOUNT LOGIN?',
+    'signup.success': 'Account created successfully!',
+    'signup.failed': 'Sign up failed. Please try again.',
+    
+    // Validation messages
+    'validation.fullNameRequired': 'Full name is required',
+    'validation.invalidEmail': 'Invalid email address',
+    'validation.invalidMobile': 'Invalid mobile number',
+    'validation.passwordTooShort': 'Password must be at least 6 characters long',
+    
+    // Cart confirmation modal
+    'cart.emptyCartConfirm': 'Empty Cart',
+    'cart.emptyCartMessage': 'Are you sure you want to empty your cart?',
+    'cart.emptyCartConfirmButton': 'YES, EMPTY CART',
+    
     // Address
     'address.title': 'MY ADDRESS',
     'address.addNew': 'ADD NEW ADDRESS',
@@ -228,6 +255,7 @@ const translations = {
     // Error messages
     'error.serverError': 'Server error occurred',
     'error.networkError': 'Network error occurred',
+    'error.serverUnavailable': 'The registration service is currently unavailable. Please try again later or contact support.',
     
     // Policies
     'policies.title': 'POLICIES',
@@ -296,6 +324,9 @@ const translations = {
     'nav.search': 'بحث',
     'nav.cart': 'سلة التسوق',
     'nav.account': 'الحساب',
+    
+    // Drawer Menu
+    'drawer.browse': 'تصفح',
     
     // Home
     'home.explore': 'استكشف',
@@ -433,6 +464,30 @@ const translations = {
     'auth.enterDetails': 'أدخل بياناتك للمتابعة',
     'auth.enterLoginDetails': 'أدخل بيانات تسجيل الدخول',
     
+    // Signup specific
+    'signup.title': 'إنشاء حساب',
+    'signup.subtitle': 'تسوق سهل مع أزورا',
+    'signup.instruction': 'إنشاء حساب والاستفادة من تجربة تسوق أكثر شخصية وأسرع عبور الطلب عبر الإنترنت.',
+    'signup.fullName': 'الاسم الكامل',
+    'signup.email': 'البريد الإلكتروني',
+    'signup.mobile': 'رقم الجوال',
+    'signup.password': 'كلمة المرور',
+    'signup.signUp': 'التسجيل',
+    'signup.alreadyHaveAccount': 'هل لديك حساب بالفعل؟',
+    'signup.success': 'تم إنشاء الحساب بنجاح!',
+    'signup.failed': 'فشل إنشاء الحساب. يرجى المحاولة مرة أخرى.',
+    
+    // Validation messages
+    'validation.fullNameRequired': 'يجب إدخال الاسم الكامل',
+    'validation.invalidEmail': 'عنوان بريد إلكتروني غير صالح',
+    'validation.invalidMobile': 'رقم جوال غير صالح',
+    'validation.passwordTooShort': 'يجب أن تكون كلمة المرور على الأقل 6 أحرف طويلة',
+    
+    // Cart confirmation modal
+    'cart.emptyCartConfirm': 'إفراغ السلة',
+    'cart.emptyCartMessage': 'هل أنت متأكد من إفراغ سلة التسوق؟',
+    'cart.emptyCartConfirmButton': 'نعم، إفراغ السلة',
+    
     // Address
     'address.title': 'عنواني',
     'address.addNew': 'إضافة عنوان جديد',
@@ -507,6 +562,7 @@ const translations = {
     // Error messages
     'error.serverError': 'حدث خطأ في الخادم',
     'error.networkError': 'حدث خطأ في الشبكة',
+    'error.serverUnavailable': 'The registration service is currently unavailable. Please try again later or contact support.',
     
     // Policies
     'policies.title': 'السياسات',

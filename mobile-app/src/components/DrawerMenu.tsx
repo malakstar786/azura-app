@@ -140,7 +140,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
           }]}>
             <Text style={[styles.headerTitle, { 
               textAlign: getTextAlign() 
-            }]}>BROWSE</Text>
+            }]}>{t('drawer.browse')}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={theme.colors.white} />
             </TouchableOpacity>
