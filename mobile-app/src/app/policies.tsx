@@ -10,6 +10,7 @@ import {
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@theme';
+import { getFlexDirection } from '@utils/rtlStyles';
 import { useTranslation } from '@utils/translations';
 
 export default function PoliciesScreen() {
@@ -109,7 +110,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing.xs,
   },
   policyOption: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: theme.colors.lightGray,

@@ -18,6 +18,7 @@ import { theme } from '@/theme';
 import { useAuthStore } from '@store/auth-store';
 import { getCurrentOCSESSID } from '@utils/api-config';
 import { useLanguageStore } from '@store/language-store';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 interface Order {
   order_id: string;
@@ -138,10 +139,9 @@ export default function OrdersScreen() {
   };
 
   const getTranslatedStatus = (status: string) => {
-    const statusKey = `orders.status.${status.toLowerCase()}`;
-    const translatedStatus = t(statusKey);
-    // If translation doesn't exist, return original status
-    return translatedStatus !== statusKey ? translatedStatus : status;
+    // For now, return the original status since we don't have predefined translation keys for all status values
+    // This can be expanded later with specific status translations
+    return status;
   };
 
   const renderOrderItem = (order: Order) => (
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.lightGray,
   },
   searchInputContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     backgroundColor: theme.colors.white,
     borderRadius: theme.borderRadius.lg,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.borderColor,
   },
   searchIcon: {
-    marginRight: theme.spacing.sm,
+    marginEnd: theme.spacing.sm,
   },
   searchInput: {
     flex: 1,
@@ -304,7 +304,7 @@ const styles = StyleSheet.create({
     color: theme.colors.black,
   },
   clearButton: {
-    marginLeft: theme.spacing.sm,
+    marginStart: theme.spacing.sm,
   },
   content: {
     flex: 1,
@@ -328,7 +328,7 @@ const styles = StyleSheet.create({
     ...theme.shadows.md,
   },
   orderHeader: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'flex-start',
     marginBottom: theme.spacing.md,
@@ -360,7 +360,7 @@ const styles = StyleSheet.create({
     gap: theme.spacing.sm,
   },
   orderRow: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
   },

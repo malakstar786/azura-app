@@ -8,6 +8,7 @@ import { publicApi } from '@utils/api-service';
 import { useTranslation } from '@utils/translations';
 import { useLanguageStore } from '@store/language-store';
 import { theme } from '@/theme';
+import { getFlexDirection, getTextAlign, getStartEndMargin } from '@utils/rtlStyles';
 
 const { width } = Dimensions.get('window');
 
@@ -32,26 +33,26 @@ const SearchResultItem = ({ product }: { product: Product }) => {
   
   return (
     <Pressable 
-      style={[styles.resultItem, { flexDirection: isRTL() ? 'row-reverse' : 'row' }]}
+      style={[styles.resultItem, { flexDirection: getFlexDirection('row') }]}
       onPress={() => router.push(`/product/${product.product_id}`)}
     >
       <Image 
         source={{ uri: `https://new.azurakwt.com/image/${product.image}` }} 
         style={styles.productImage} 
       />
-      <View style={[styles.productInfo, { alignItems: isRTL() ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.productTitle, { textAlign: isRTL() ? 'right' : 'left' }]}>
+      <View style={[styles.productInfo, { alignItems: getTextAlign() === 'left' ? 'flex-start' : 'flex-end' }]}>
+        <Text style={[styles.productTitle, { textAlign: getTextAlign() }]}>
           {product.name.toUpperCase()}
         </Text>
-        <Text style={[styles.productPrice, { textAlign: isRTL() ? 'right' : 'left' }]}>
+        <Text style={[styles.productPrice, { textAlign: getTextAlign() }]}>
           {product.price}
         </Text>
-        <Text style={[styles.productStock, { textAlign: isRTL() ? 'right' : 'left' }]}>
+        <Text style={[styles.productStock, { textAlign: getTextAlign() }]}>
           {product.stock_status === "2-3 Days" ? t('product.inStock') : t('product.outOfStock')}
         </Text>
       </View>
       <Ionicons 
-        name={isRTL() ? "chevron-back" : "chevron-forward"} 
+        name={isRTL ? "chevron-back" : "chevron-forward"} 
         size={20} 
         color={theme.colors.mediumGray} 
       />
@@ -93,10 +94,10 @@ export default function SearchScreen() {
           setAllProducts(response.data.products || []);
           setProductsLoaded(true);
         } else {
-          setError(Array.isArray(response.error) ? response.error[0] : t('error.serverError'));
+          setError(Array.isArray(response.error) ? response.error[0] : t('common.error'));
         }
       } catch (err: any) {
-        setError(t('error.networkError'));
+        setError(t('common.error'));
       } finally {
         setIsLoading(false);
       }
@@ -128,22 +129,22 @@ export default function SearchScreen() {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { textAlign: isRTL() ? 'right' : 'left' }]}>
+      <Text style={[styles.title, { textAlign: getTextAlign() }]}>
         {t('search.title')}
       </Text>
       <View style={styles.dividerContainer}>
         <View style={styles.divider} />
       </View>
       <View style={styles.searchContainer}>
-        <View style={[styles.searchInputContainer, { flexDirection: isRTL() ? 'row-reverse' : 'row' }]}>
+        <View style={[styles.searchInputContainer, { flexDirection: getFlexDirection('row') }]}>
           <Ionicons 
             name="search" 
             size={20} 
             color={theme.colors.mediumGray} 
-            style={[styles.searchIcon, { marginLeft: isRTL() ? theme.spacing.sm : 0, marginRight: isRTL() ? 0 : theme.spacing.sm }]} 
+            style={[styles.searchIcon, { marginEnd: theme.spacing.sm }]} 
           />
           <TextInput
-            style={[styles.searchInput, { textAlign: isRTL() ? 'right' : 'left' }]}
+            style={[styles.searchInput, { textAlign: getTextAlign() }]}
             placeholder={t('search.placeholder')}
             placeholderTextColor={theme.colors.mediumGray}
             value={searchQuery}
@@ -167,7 +168,7 @@ export default function SearchScreen() {
       
       {error && !isLoading && (
         <View style={styles.errorContainer}>
-          <Text style={[styles.errorText, { textAlign: isRTL() ? 'right' : 'left' }]}>{error}</Text>
+          <Text style={[styles.errorText, { textAlign: getTextAlign() }]}>{error}</Text>
           <Pressable 
             style={styles.retryButton}
             onPress={() => setProductsLoaded(false)}
@@ -180,10 +181,10 @@ export default function SearchScreen() {
       {!isLoading && !error && productsLoaded && searchQuery.length > 0 && filteredProducts.length === 0 && (
         <View style={styles.noResultsContainer}>
           <Ionicons name="search-outline" size={60} color={theme.colors.mediumGray} style={styles.noResultsIcon} />
-          <Text style={[styles.noResultsText, { textAlign: isRTL() ? 'right' : 'left' }]}>
+          <Text style={[styles.noResultsText, { textAlign: getTextAlign() }]}>
             {t('empty.noProducts')}
           </Text>
-          <Text style={[styles.noResultsSubtext, { textAlign: isRTL() ? 'right' : 'left' }]}>
+          <Text style={[styles.noResultsSubtext, { textAlign: getTextAlign() }]}>
             {t('empty.noProductsDescription')}
           </Text>
         </View>
@@ -192,10 +193,10 @@ export default function SearchScreen() {
       {!isLoading && !error && productsLoaded && searchQuery.length === 0 && (
         <View style={styles.emptySearchContainer}>
           <Ionicons name="search" size={60} color={theme.colors.mediumGray} style={styles.emptySearchIcon} />
-          <Text style={[styles.emptySearchText, { textAlign: isRTL() ? 'right' : 'left' }]}>
+          <Text style={[styles.emptySearchText, { textAlign: getTextAlign() }]}>
             {t('search.placeholder')}
           </Text>
-          <Text style={[styles.emptySearchSubtext, { textAlign: isRTL() ? 'right' : 'left' }]}>
+          <Text style={[styles.emptySearchSubtext, { textAlign: getTextAlign() }]}>
             Type at least 2 characters to search
           </Text>
         </View>
@@ -243,7 +244,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   searchInputContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     backgroundColor: theme.colors.veryLightGray,
     borderRadius: theme.borderRadius.lg,
@@ -253,7 +254,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.lightBorder,
   },
   searchIcon: {
-    marginRight: theme.spacing.sm,
+    // marginEnd is applied inline for RTL support
   },
   searchInput: {
     flex: 1,
@@ -349,7 +350,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
   },
   resultItem: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
@@ -359,7 +360,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: theme.borderRadius.sm,
-    marginRight: theme.spacing.md,
+    marginEnd: theme.spacing.md,
   },
   productInfo: {
     flex: 1,

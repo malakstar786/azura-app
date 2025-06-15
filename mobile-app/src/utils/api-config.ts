@@ -405,6 +405,12 @@ export interface UserProfile {
   custom_field: any[];
 }
 
+// Get current language from store
+const getCurrentLanguage = () => {
+  const languageState = require('@store/language-store').useLanguageStore.getState();
+  return languageState.currentLanguage;
+};
+
 // Special function to fetch cart data using native fetch API
 // This is a workaround for Axios issues with decoding the cart response
 export const fetchCartData = async (): Promise<ApiResponse<any>> => {
@@ -412,8 +418,19 @@ export const fetchCartData = async (): Promise<ApiResponse<any>> => {
     const currentOcsessid = await getOrCreateOCSESSID();
     console.log(`Using OCSESSID for cart fetch: ${currentOcsessid}`);
     
-    const url = `${API_BASE_URL}${API_ENDPOINTS.cart}`;
+    // Get current language for API call
+    const language = getCurrentLanguage();
+    console.log(`Fetching cart with language: ${language}`);
+    
+    // Construct URL with language parameter using proper URLSearchParams
+    let url = `${API_BASE_URL}${API_ENDPOINTS.cart}`;
+    if (language === 'ar') {
+      const urlObj = new URL(url);
+      urlObj.searchParams.set('language', 'ar');
+      url = urlObj.toString();
+    }
     console.log(`Fetching cart data from: ${url}`);
+    console.log(`Language parameter: ${language}, URL contains 'language=ar': ${url.includes('language=ar')}`);
     
     const response = await fetch(url, {
       method: 'GET',
@@ -484,7 +501,16 @@ export const addToCart = async (productId: string, quantity: number): Promise<Ap
     const currentOcsessid = await getOrCreateOCSESSID();
     console.log(`Using OCSESSID for add to cart: ${currentOcsessid}`);
     
-    const url = `${API_BASE_URL}${API_ENDPOINTS.addToCart}`;
+    // Get current language for API call
+    const language = getCurrentLanguage();
+    
+    // Construct URL with language parameter
+    let url = `${API_BASE_URL}${API_ENDPOINTS.addToCart}`;
+    if (language === 'ar') {
+      const urlObj = new URL(url);
+      urlObj.searchParams.set('language', 'ar');
+      url = urlObj.toString();
+    }
     console.log(`Adding to cart: ${url}`);
     
     // Ensure quantity is a positive integer

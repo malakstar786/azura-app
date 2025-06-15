@@ -16,6 +16,7 @@ import { Link, Stack, router, useLocalSearchParams } from 'expo-router';
 import { useAuthStore } from '@store/auth-store';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@theme';
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 export default function Auth() {
     const { login, signup, isAuthenticated } = useAuthStore();
@@ -424,9 +425,10 @@ const styles = StyleSheet.create({
         fontSize: theme.typography.sizes.md,
         color: theme.colors.black,
         backgroundColor: theme.colors.white,
+        textAlign: getTextAlign(),
     },
     passwordContainer: {
-        flexDirection: 'row',
+        flexDirection: getFlexDirection('row'),
         alignItems: 'center',
         borderWidth: 1,
         borderColor: theme.colors.black,
@@ -437,6 +439,7 @@ const styles = StyleSheet.create({
         padding: theme.spacing.md,
         fontSize: theme.typography.sizes.md,
         color: theme.colors.black,
+        textAlign: getTextAlign(),
     },
     eyeButton: {
         padding: theme.spacing.md,

@@ -18,6 +18,7 @@ import { useToast } from 'react-native-toast-notifications';
 import { publicApi } from '@utils/api-service';
 import type { Product as ApiProduct } from '../../types/api';
 import { ProductListItem } from '@components/product-list-item';
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 const { width } = Dimensions.get('window');
 const COLUMN_GAP = 15;
@@ -199,7 +200,7 @@ export default function CategoryScreen() {
         />
         {isNewArrival(item) && (
           <View style={styles.newArrivalBadge}>
-            <Text style={styles.newArrivalText}>NEW ARRIVAL</Text>
+                            <Text style={styles.newArrivalText}>{t('product.newArrival')}</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -353,7 +354,7 @@ const styles = StyleSheet.create({
   categoryInfo: {
     padding: 20,
     backgroundColor: '#fff',
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
   },
@@ -362,7 +363,7 @@ const styles = StyleSheet.create({
     color: '#000',
     fontSize: 14,
     lineHeight: 20,
-    marginRight: 20,
+    marginEnd: 20,
   },
   productCount: {
     color: '#000',
@@ -371,7 +372,7 @@ const styles = StyleSheet.create({
   },
   productsGrid: {
     padding: COLUMN_GAP,
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
@@ -460,6 +461,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#888',
     marginTop: 8,
-    textAlign: 'right',
+    textAlign: getTextAlign() === 'left' ? 'right' : 'left',
   },
 });

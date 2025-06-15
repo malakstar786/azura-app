@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@store/auth-store';
+import { useTranslation } from '@utils/translations';
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 export interface EditUserDetailsProps {
   userData?: {
@@ -37,6 +39,7 @@ export default function EditUserDetails({
   onSubmit 
 }: EditUserDetailsProps) {
   const { user, updateUser } = useAuthStore();
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(false);
   
   // Initialize form data with provided userData or fallback to user from store
@@ -135,8 +138,8 @@ export default function EditUserDetails({
     >
       <ScrollView>
         <View style={styles.header}>
-          <Text style={styles.title}>EDIT DETAILS</Text>
-          <Text style={styles.subtitle}>Update your account information</Text>
+                  <Text style={styles.title}>{t('userDetails.title')}</Text>
+        <Text style={styles.subtitle}>Update your account information</Text>
         </View>
 
         <View style={styles.form}>
@@ -250,6 +253,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 16,
     fontSize: 16,
+    textAlign: getTextAlign(),
   },
   inputError: {
     borderColor: '#F05454',
@@ -260,7 +264,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   buttonContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     padding: 20,
     marginTop: 10,

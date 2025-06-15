@@ -15,6 +15,7 @@ import { useCartStore } from '@store/cart-store';
 import { useLanguageStore } from '@store/language-store';
 import { useTranslation } from '@utils/translations';
 import { publicApi } from '@utils/api-service';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 const { width } = Dimensions.get('window');
 
@@ -337,7 +338,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   quantityContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     height: 44,
     marginBottom: 16,
   },

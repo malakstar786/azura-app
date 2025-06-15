@@ -16,10 +16,12 @@ import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 import EditUserDetails from '@components/edit-user-details';
 import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
+import { useLanguageStore } from '@store/language-store';
 
 export default function MyDetailsScreen() {
   const { user, isAuthenticated, updateUser } = useAuthStore();
   const { t } = useTranslation();
+  const { isRTL } = useLanguageStore();
   const [isLoading, setIsLoading] = useState(false);
   const [userDetails, setUserDetails] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -110,7 +112,7 @@ export default function MyDetailsScreen() {
           headerShadowVisible: false,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()}>
-              <Ionicons name="arrow-back" size={24} color={theme.colors.black} />
+              <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color={theme.colors.black} />
             </TouchableOpacity>
           ),
         }} 

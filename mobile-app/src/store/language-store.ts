@@ -8,13 +8,15 @@ export type Language = 'en' | 'ar';
 
 interface LanguageState {
   currentLanguage: Language;
+  isRTL: boolean;
   isFirstTimeUser: boolean;
   isLoading: boolean;
+  restartRequired: boolean;
   lastUpdated: number; // Add timestamp to track updates
-  setLanguage: (language: Language) => void;
+  setLanguage: (language: Language) => Promise<void>;
   setIsFirstTimeUser: (isFirstTimeUser: boolean) => void;
   initialize: () => Promise<void>;
-  isRTL: () => boolean;
+  clearRestartFlag: () => void;
 }
 
 // Create store with persistence
@@ -23,34 +25,38 @@ export const useLanguageStore = create<LanguageState>()(
     (set, get) => ({
       // Default state
       currentLanguage: 'en',
+      isRTL: false,
       isFirstTimeUser: true,
       isLoading: true,
+      restartRequired: false,
       lastUpdated: Date.now(), // Initialize with current timestamp
       
-      // Check if current language is RTL
-      isRTL: () => {
-        const { currentLanguage } = get();
-        return currentLanguage === 'ar';
-      },
-      
-      // Update language and log for debugging
-      setLanguage: (language: Language) => {
+      // Sets the language, updates I18nManager, and persists
+      setLanguage: async (language: Language) => {
         console.log(`Setting language to: ${language}`);
-        const isRTL = language === 'ar';
+        const isNewRTL = language === 'ar';
+        let needsRestart = false;
+
+        // Check if direction needs to be flipped
+        if (I18nManager.isRTL !== isNewRTL) {
+          I18nManager.forceRTL(isNewRTL);
+          needsRestart = true;
+          // Forcing RTL requires a restart for *some* native components to re-layout correctly.
+          // This is crucial. We'll handle this with a reload prompt/mechanism.
+        }
         
         // Update theme RTL properties
-        theme.rtl.isRTL = isRTL;
-        theme.rtl.textAlign = isRTL ? 'right' : 'left';
-        theme.rtl.flexDirection = isRTL ? 'row-reverse' : 'row';
-        
-        // Update React Native RTL setting
-        I18nManager.allowRTL(isRTL);
-        I18nManager.forceRTL(isRTL);
+        theme.rtl.isRTL = isNewRTL;
+        theme.rtl.textAlign = isNewRTL ? 'right' : 'left';
+        theme.rtl.flexDirection = isNewRTL ? 'row-reverse' : 'row';
         
         set({ 
           currentLanguage: language,
+          isRTL: isNewRTL,
+          restartRequired: needsRestart,
           lastUpdated: Date.now() // Update timestamp to force subscribers to re-render
         });
+        await AsyncStorage.setItem('appLanguage', language);
       },
       
       // Update first-time user flag
@@ -59,46 +65,61 @@ export const useLanguageStore = create<LanguageState>()(
         set({ isFirstTimeUser });
       },
       
-      // Initialize store
+      // Initializes language on app start
       initialize: async () => {
         try {
           console.log("Initializing language store...");
           
-          // Check if storage has values already to determine if it's actually first time
-          const storedState = await AsyncStorage.getItem('language-storage');
-          if (storedState) {
-            try {
-              const parsedState = JSON.parse(storedState);
-              console.log("Found stored state:", parsedState);
-              
-              // Only update if we have valid stored values
-              if (parsedState && parsedState.state) {
-                const { currentLanguage, isFirstTimeUser } = parsedState.state;
-                console.log(`Stored values - language: ${currentLanguage}, isFirstTimeUser: ${isFirstTimeUser}`);
-                
-                // Set RTL for stored language
-                if (currentLanguage) {
-                  const isRTL = currentLanguage === 'ar';
-                  theme.rtl.isRTL = isRTL;
-                  theme.rtl.textAlign = isRTL ? 'right' : 'left';
-                  theme.rtl.flexDirection = isRTL ? 'row-reverse' : 'row';
-                  I18nManager.allowRTL(isRTL);
-                  I18nManager.forceRTL(isRTL);
+          // Get stored language preference from both sources for compatibility
+          let storedLanguage = (await AsyncStorage.getItem('appLanguage')) as Language | null;
+          
+          // If no appLanguage found, check the old persistence format for backwards compatibility
+          if (!storedLanguage) {
+            const storedState = await AsyncStorage.getItem('language-storage');
+            if (storedState) {
+              try {
+                const parsedState = JSON.parse(storedState);
+                if (parsedState && parsedState.state && parsedState.state.currentLanguage) {
+                  storedLanguage = parsedState.state.currentLanguage;
                 }
+              } catch (e) {
+                console.error("Error parsing stored state:", e);
               }
-            } catch (e) {
-              console.error("Error parsing stored state:", e);
             }
-          } else {
-            console.log("No stored state found, assumed first time user");
           }
           
-          // Mark as loaded
-          set({ isLoading: false });
+          const initialLanguage = storedLanguage || 'en'; // Default to 'en' if no stored preference
+
+          // Crucially, initialize I18nManager BEFORE rendering
+          const initialIsRTL = initialLanguage === 'ar';
+          if (I18nManager.isRTL !== initialIsRTL) {
+            I18nManager.forceRTL(initialIsRTL);
+            // Do NOT restart here immediately. We'll prompt the user for the very first switch.
+          }
+          
+          // Update theme RTL properties
+          theme.rtl.isRTL = initialIsRTL;
+          theme.rtl.textAlign = initialIsRTL ? 'right' : 'left';
+          theme.rtl.flexDirection = initialIsRTL ? 'row-reverse' : 'row';
+          
+          set({ 
+            currentLanguage: initialLanguage, 
+            isRTL: initialIsRTL,
+            isLoading: false 
+          });
+
         } catch (error) {
-          console.error('Failed to initialize language store:', error);
-          set({ isLoading: false });
+          console.error('Failed to load language from AsyncStorage', error);
+          // Fallback to default if error
+          set({ 
+            currentLanguage: 'en', 
+            isRTL: false,
+            isLoading: false 
+          });
         }
+      },
+      clearRestartFlag: () => {
+        set({ restartRequired: false });
       }
     }),
     {

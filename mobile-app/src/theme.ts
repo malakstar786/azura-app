@@ -1,3 +1,7 @@
+import { Dimensions, I18nManager } from 'react-native';
+
+const { width, height } = Dimensions.get('window');
+
 export const theme = {
   colors: {
     // Primary Colors
@@ -55,6 +59,7 @@ export const theme = {
   },
   
   typography: {
+    fontFamily: I18nManager.isRTL ? 'System' : 'System', // Example: Use a specific font for Arabic if needed
     sizes: {
       xs: 10,
       sm: 12,
@@ -104,6 +109,14 @@ export const theme = {
       elevation: 8,
     },
   },
+  
+  dimensions: {
+    width,
+    height,
+  },
+  
+  // Add a utility to check current RTL status
+  isRTL: I18nManager.isRTL,
   
   // RTL Support
   rtl: {

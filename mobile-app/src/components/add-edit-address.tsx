@@ -19,6 +19,7 @@ import { useAddressStore } from '@store/address-store';
 import { LocationService, Country, Governorate, Zone } from '@utils/location-service';
 import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -612,7 +613,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 16,
@@ -621,7 +622,7 @@ const styles = StyleSheet.create({
   },
   backButton: {
     padding: 8,
-    marginRight: 8,
+    marginEnd: 8,
   },
   title: {
     fontSize: 18,
@@ -643,6 +644,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#000',
     backgroundColor: '#fff',
+    textAlign: getTextAlign(),
   },
   dropdownInput: {
     height: 56,
@@ -651,13 +653,13 @@ const styles = StyleSheet.create({
     borderRadius: 0,
     paddingHorizontal: 16,
     marginBottom: 16,
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: '#fff',
   },
   rowInputs: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
   },
   halfInput: {
@@ -672,7 +674,7 @@ const styles = StyleSheet.create({
     color: '#999',
   },
   footer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     padding: 16,
     gap: 16,
   },
@@ -714,7 +716,7 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_HEIGHT * 0.7,
   },
   dropdownHeader: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 16,

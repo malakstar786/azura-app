@@ -1,6 +1,7 @@
 import { Stack, useRouter } from "expo-router";
 import { ToastProvider } from "react-native-toast-notifications";
 import { useEffect, useState } from 'react';
+import { I18nManager } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import CustomSplashScreen from '@components/custom-splash-screen';
 import { getOrCreateOCSESSID } from '@utils/api-config';
@@ -15,7 +16,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {
 export default function RootLayout() {
   const [isReady, setIsReady] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
-  const { isFirstTimeUser, initialize } = useLanguageStore();
+  const { isFirstTimeUser, isRTL, initialize } = useLanguageStore();
   const router = useRouter();
 
   useEffect(() => {
@@ -71,6 +72,8 @@ export default function RootLayout() {
             backgroundColor: theme.colors.white,
           },
           headerTintColor: theme.colors.black,
+          // Configure RTL-aware navigation direction
+          animation: isRTL ? 'slide_from_left' : 'slide_from_right',
         }}
       >
         <Stack.Screen
@@ -93,7 +96,7 @@ export default function RootLayout() {
           name="orders/index"
           options={{
             headerShown: false,
-            animation: 'slide_from_right',
+            animation: isRTL ? 'slide_from_left' : 'slide_from_right',
             presentation: 'card'
           }}
         />

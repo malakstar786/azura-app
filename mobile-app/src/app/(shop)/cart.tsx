@@ -21,6 +21,7 @@ import { StatusBar } from 'expo-status-bar';
 import { CartItem } from '@utils/api-config';
 import { useTranslation } from '@utils/translations';
 import { useLanguageStore } from '@store/language-store';
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 import { theme } from '@theme';
 
 // Import the empty cart icon
@@ -72,7 +73,7 @@ const DeleteConfirmationModal = ({ visible, onClose, onConfirm, item }: DeleteMo
       <View style={styles.deleteModalOverlay}>
         <View style={styles.deleteModalContent}>
           <Text style={styles.deleteModalTitle}>
-            Remove from Cart?
+            {t('cart.removeFromCart')}
           </Text>
           
           <View style={styles.deleteModalItem}>
@@ -102,13 +103,13 @@ const DeleteConfirmationModal = ({ visible, onClose, onConfirm, item }: DeleteMo
               style={[styles.deleteModalButton, styles.cancelButton]} 
               onPress={onClose}
             >
-              <Text style={styles.cancelButtonText}>CANCEL</Text>
+              <Text style={styles.cancelButtonText}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={[styles.deleteModalButton, styles.confirmButton]}
               onPress={onConfirm}
             >
-              <Text style={styles.confirmButtonText}>YES, REMOVE</Text>
+              <Text style={styles.confirmButtonText}>{t('cart.yesRemove')}</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -187,14 +188,14 @@ const CartItemRow = ({
         style={styles.itemImage} 
         resizeMode="contain"
       />
-      <View style={[styles.itemDetails, { alignItems: isRTL() ? 'flex-end' : 'flex-start' }]}>
-        <Text style={[styles.itemSku, { textAlign: isRTL() ? 'right' : 'left' }]}>
+      <View style={[styles.itemDetails, { alignItems: isRTL ? 'flex-end' : 'flex-start' }]}>
+        <Text style={[styles.itemSku, { textAlign: getTextAlign() }]}>
           SKU: {item.sku || item.product_id}
         </Text>
-        <Text style={[styles.itemTitle, { textAlign: isRTL() ? 'right' : 'left' }]}>
+        <Text style={[styles.itemTitle, { textAlign: getTextAlign() }]}>
           {item.name.toUpperCase()}
         </Text>
-        <View style={[styles.quantityContainer, { flexDirection: isRTL() ? 'row-reverse' : 'row' }]}>
+        <View style={[styles.quantityContainer, { flexDirection: getFlexDirection('row') }]}>
           <TouchableOpacity 
             onPress={handleDecrement}
             style={[styles.quantityButton, isUpdating && styles.disabledButton]}
@@ -226,7 +227,7 @@ const CartItemRow = ({
             <Text style={[styles.quantityButtonText, isUpdating && styles.disabledText]}>+</Text>
           </TouchableOpacity>
         </View>
-        <Text style={[styles.itemPrice, { textAlign: isRTL() ? 'right' : 'left' }]}>
+        <Text style={[styles.itemPrice, { textAlign: getTextAlign() }]}>
           {item.total || (parseFloat(item.price) * Number(item.quantity)).toFixed(3)} KD
         </Text>
       </View>
@@ -287,9 +288,14 @@ const CartItemRow = ({
 
 export default function CartScreen() {
   const { t } = useTranslation();
-  const { isRTL } = useLanguageStore();
-  const { items, removeItem, updateQuantity, incrementQuantity, decrementQuantity, getTotalPrice, clearCart } = useCartStore();
+  const { isRTL, currentLanguage } = useLanguageStore();
+  const { items, removeItem, updateQuantity, incrementQuantity, decrementQuantity, getTotalPrice, clearCart, getCart } = useCartStore();
   const { isAuthenticated } = useAuthStore();
+
+  // Refresh cart when language changes to get localized product names
+  useEffect(() => {
+    getCart();
+  }, [currentLanguage, getCart]);
 
   const handleRemoveFromCart = (productId: string) => {
     removeItem(productId);
@@ -334,7 +340,7 @@ export default function CartScreen() {
       <View style={styles.container}>
         <StatusBar style="dark" />
         <View style={styles.emptyHeaderContainer}>
-          <Text style={[styles.emptyTitle, { textAlign: isRTL() ? 'right' : 'left' }]}>
+          <Text style={[styles.emptyTitle, { textAlign: getTextAlign() }]}>
             {t('nav.cart')}
           </Text>
         </View>
@@ -342,14 +348,20 @@ export default function CartScreen() {
           <View style={styles.divider} />
         </View>
         <View style={styles.emptyContainer}>
-          <Image source={emptyCartIcon} style={styles.emptyCartIcon} />
+          <Image 
+            source={emptyCartIcon} 
+            style={[
+              styles.emptyCartIcon,
+              isRTL ? { transform: [{ scaleX: -1 }] } : null
+            ]} 
+          />
           <Text style={styles.emptyCartTitle}>
-            Your Cart is Empty
+{t('cart.empty')}
           </Text>
           <Link href="/(shop)" asChild>
             <TouchableOpacity style={styles.shopButton}>
-              <Text style={styles.shopButtonText}>START SHOPPING</Text>
-              <Ionicons name="arrow-forward" size={16} color={theme.colors.white} style={styles.shopButtonIcon} />
+              <Text style={styles.shopButtonText}>{t('cart.startShopping')}</Text>
+              <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={16} color={theme.colors.white} style={styles.shopButtonIcon} />
             </TouchableOpacity>
           </Link>
         </View>
@@ -361,7 +373,7 @@ export default function CartScreen() {
     <View style={styles.container}>
       <StatusBar style="dark" />
       <View style={styles.headerContainer}>
-        <Text style={[styles.title, { textAlign: isRTL() ? 'right' : 'left' }]}>
+        <Text style={[styles.title, { textAlign: getTextAlign() }]}>
           {t('nav.cart')}
         </Text>
         <TouchableOpacity 
@@ -369,7 +381,7 @@ export default function CartScreen() {
           onPress={handleEmptyCart}
         >
           <Ionicons name="trash-outline" size={16} color={theme.colors.error} />
-          <Text style={styles.emptyCartButtonText}>Empty Cart</Text>
+          <Text style={styles.emptyCartButtonText}>{t('cart.emptyCart')}</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.dividerContainer}>
@@ -395,11 +407,11 @@ export default function CartScreen() {
 
       <View style={styles.footer}>
         <View style={styles.totalContainer}>
-          <Text style={styles.totalLabel}>CART TOTAL : {getTotalPrice().toFixed(3)} KD</Text>
+          <Text style={styles.totalLabel}>{t('cart.total')} : {getTotalPrice().toFixed(3)} KD</Text>
         </View>
         <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
-          <Text style={styles.checkoutButtonText}>CHECKOUT</Text>
-          <Ionicons name="arrow-forward" size={20} color={theme.colors.white} />
+                      <Text style={styles.checkoutButtonText}>{t('cart.checkout')}</Text>
+          <Ionicons name={isRTL ? "arrow-back" : "arrow-forward"} size={20} color={theme.colors.white} />
         </TouchableOpacity>
       </View>
     </View>
@@ -412,7 +424,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.white,
   },
   headerContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: theme.colors.white,
@@ -424,12 +436,12 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.xxxl,
     fontWeight: theme.typography.weights.bold as any,
     marginTop: 20,
-    paddingLeft: 0,
+    paddingStart: 0,
     color: theme.colors.black,
     flex: 1,
   },
   emptyHeaderContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: theme.colors.white,
@@ -442,7 +454,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.bold as any,
     color: theme.colors.black,
     flex: 1,
-    paddingLeft: 20,
+    paddingStart: 20,
   },
   dividerContainer: {
     paddingHorizontal: theme.spacing.md,
@@ -482,17 +494,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.xl,
     paddingVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.sm,
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
   },
   shopButtonText: {
     color: theme.colors.white,
     fontSize: theme.typography.sizes.md,
     fontWeight: theme.typography.weights.semibold as any,
-    marginRight: theme.spacing.sm,
+    marginEnd: theme.spacing.sm,
   },
   shopButtonIcon: {
-    marginLeft: theme.spacing.xs,
+    marginStart: theme.spacing.xs,
   },
   cartList: {
     flex: 1,
@@ -501,7 +513,7 @@ const styles = StyleSheet.create({
     paddingBottom: theme.spacing.lg,
   },
   emptyCartButton: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     marginTop: 25,
     paddingHorizontal: theme.spacing.sm,
@@ -514,11 +526,11 @@ const styles = StyleSheet.create({
   emptyCartButtonText: {
     fontSize: theme.typography.sizes.xs,
     color: theme.colors.error,
-    marginLeft: theme.spacing.xs,
+    marginStart: theme.spacing.xs,
     fontWeight: theme.typography.weights.medium as any,
   },
   cartItemRow: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'flex-start',
     paddingVertical: theme.spacing.lg,
     paddingHorizontal: theme.spacing.md,
@@ -530,7 +542,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: theme.borderRadius.sm,
-    marginRight: theme.spacing.md,
+    marginEnd: theme.spacing.md,
     backgroundColor: theme.colors.veryLightGray,
   },
   itemDetails: {
@@ -551,7 +563,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   quantityContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     marginBottom: theme.spacing.md,
   },
@@ -571,7 +583,7 @@ const styles = StyleSheet.create({
     color: theme.colors.black,
   },
   quantityDisplay: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     marginHorizontal: theme.spacing.sm,
     backgroundColor: theme.colors.white,
@@ -579,7 +591,7 @@ const styles = StyleSheet.create({
   quantityDropdown: {
     paddingHorizontal: 4,
     paddingVertical: 2,
-    marginLeft: theme.spacing.xs,
+    marginStart: theme.spacing.xs,
   },
   itemQuantity: {
     fontSize: theme.typography.sizes.sm,
@@ -608,7 +620,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.white,
   },
   totalContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'flex-end',
     alignItems: 'center',
     marginBottom: theme.spacing.sm,
@@ -618,7 +630,7 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     fontWeight: theme.typography.weights.semibold as any,
     color: theme.colors.black,
-    textAlign: 'right',
+    textAlign: getTextAlign() === 'left' ? 'right' : 'left',
   },
   totalPrice: {
     fontSize: theme.typography.sizes.xl,
@@ -630,7 +642,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.lg,
     borderRadius: 0,
     alignItems: 'center',
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'center',
   },
   checkoutButtonText: {
@@ -638,7 +650,7 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.bold as any,
     letterSpacing: 1,
-    marginRight: theme.spacing.sm,
+    marginEnd: theme.spacing.sm,
   },
   // Modal styles
   deleteModalOverlay: {
@@ -663,7 +675,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   deleteModalItem: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     marginBottom: theme.spacing.xl,
     paddingHorizontal: theme.spacing.md,
@@ -672,7 +684,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: theme.borderRadius.sm,
-    marginRight: theme.spacing.lg,
+    marginEnd: theme.spacing.lg,
     backgroundColor: theme.colors.veryLightGray,
   },
   deleteModalItemDetails: {
@@ -704,7 +716,7 @@ const styles = StyleSheet.create({
     color: theme.colors.black,
   },
   deleteModalButtons: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     gap: theme.spacing.md,
     paddingHorizontal: theme.spacing.sm,
   },

@@ -4,6 +4,7 @@ import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useLanguageStore } from '@store/language-store';
 import { useTranslation } from '@utils/translations';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 export default function LanguageScreen() {
   const { currentLanguage, setLanguage } = useLanguageStore();
@@ -15,11 +16,11 @@ export default function LanguageScreen() {
     setSelectedLanguage(currentLanguage);
   }, [currentLanguage]);
 
-  const handleLanguageChange = (language: 'en' | 'ar') => {
+  const handleLanguageChange = async (language: 'en' | 'ar') => {
     // Only update if actually changing
     if (language !== currentLanguage) {
       setSelectedLanguage(language);
-      setLanguage(language);
+      await setLanguage(language);
       
       // Show confirmation and navigate back
       Alert.alert(
@@ -130,7 +131,7 @@ const styles = StyleSheet.create({
     marginVertical: 20,
   },
   buttonsContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     marginTop: 20,
   },

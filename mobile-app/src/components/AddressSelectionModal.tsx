@@ -3,6 +3,7 @@ import { Modal, View, Text, TouchableOpacity, ScrollView, StyleSheet, Dimensions
 import { Ionicons } from '@expo/vector-icons';
 import { Address } from '@store/address-store';
 import { theme } from '@theme';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 interface AddressSelectionModalProps {
   visible: boolean;
@@ -71,7 +72,7 @@ const styles = StyleSheet.create({
     maxHeight: SCREEN_HEIGHT * 0.8,
   },
   modalHeader: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: theme.spacing.md,

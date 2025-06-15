@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 import { useTranslation } from '@utils/translations';
 import { theme } from '@theme';
 import { useAuthStore } from '@store/auth-store';
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 import { getCurrentOCSESSID } from '@utils/api-config';
 import { useLanguageStore } from '@store/language-store';
 
@@ -58,11 +59,6 @@ export default function OrdersScreen() {
       default:
         return theme.colors.statusDefault;
     }
-  };
-
-  const translateStatus = (status: string) => {
-    const statusKey = `orders.status.${status.toLowerCase()}`;
-    return t(statusKey);
   };
 
   const fetchOrders = async () => {
@@ -141,7 +137,7 @@ export default function OrdersScreen() {
         <Stack.Screen options={{ title: t('orders.title'), headerShown: false }} />
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={theme.colors.black} />
+            <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color={theme.colors.black} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>{t('orders.title')}</Text>
         </View>
@@ -164,16 +160,16 @@ export default function OrdersScreen() {
       
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color={theme.colors.black} />
+          <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color={theme.colors.black} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('orders.title')}</Text>
       </View>
 
       <View style={styles.searchContainer}>
-        <View style={[styles.searchInputContainer, { flexDirection: isRTL() ? 'row-reverse' : 'row' }]}>
+        <View style={[styles.searchInputContainer, { flexDirection: getFlexDirection('row') }]}>
           <Ionicons name="search" size={20} color={theme.colors.mediumGray} style={styles.searchIcon} />
           <TextInput
-            style={[styles.searchInput, { textAlign: isRTL() ? 'right' : 'left' }]}
+            style={[styles.searchInput, { textAlign: getTextAlign() }]}
             placeholder={t('orders.searchPlaceholder')}
             placeholderTextColor={theme.colors.mediumGray}
             value={searchQuery}
@@ -244,9 +240,9 @@ export default function OrdersScreen() {
             <View key={order.order_id} style={styles.orderCard}>
               <View style={styles.productSection}>
                 <View style={styles.productInfo}>
-                  <Text style={styles.sku}>SKU:00322100</Text>
-                  <Text style={styles.productName}>AZURA NAIL HARDENER</Text>
-                  <Text style={styles.quantity}>QTY: 1</Text>
+                          <Text style={styles.sku}>{t('order.sku')}00322100</Text>
+        <Text style={styles.productName}>AZURA NAIL HARDENER</Text>
+        <Text style={styles.quantity}>{t('order.qty')} 1</Text>
                 </View>
               </View>
 
@@ -254,12 +250,12 @@ export default function OrdersScreen() {
 
               <View style={styles.orderDetails}>
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>ORDER ID:</Text>
+                  <Text style={styles.detailLabel}>{t('order.orderId')}</Text>
                   <Text style={styles.detailValue}>#{order.order_id}</Text>
                 </View>
 
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>DATE:</Text>
+                  <Text style={styles.detailLabel}>{t('order.date')}</Text>
                   <Text style={styles.detailValue}>
                     {new Date(order.date_added).toLocaleDateString('en-GB', {
                       day: 'numeric',
@@ -270,21 +266,21 @@ export default function OrdersScreen() {
                 </View>
 
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>EMAIL:</Text>
+                  <Text style={styles.detailLabel}>{t('order.email')}</Text>
                   <Text style={styles.detailValue}>
                     {user?.email?.toUpperCase() || 'N/A'}
                   </Text>
                 </View>
 
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>STATUS:</Text>
+                  <Text style={styles.detailLabel}>{t('orders.status')}:</Text>
                   <Text style={[styles.detailValue, { color: getStatusColor(order.status) }]}>
                     {order.status.toUpperCase()}
                   </Text>
                 </View>
 
                 <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>TOTAL:</Text>
+                  <Text style={styles.detailLabel}>{t('orders.total')}:</Text>
                   <Text style={styles.detailValue}>
                     {order.total} {order.currency_code}
                   </Text>
@@ -304,7 +300,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.white,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     paddingHorizontal: theme.spacing.md,
     paddingTop: 50,
@@ -313,7 +309,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.lightBorder,
   },
   backButton: {
-    marginRight: theme.spacing.md,
+    marginEnd: theme.spacing.md,
   },
   headerTitle: {
     fontSize: theme.typography.sizes.xl,
@@ -325,7 +321,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.md,
   },
   searchInputContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     backgroundColor: theme.colors.veryLightGray,
     borderRadius: theme.borderRadius.lg,
@@ -335,7 +331,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.lightBorder,
   },
   searchIcon: {
-    marginRight: theme.spacing.sm,
+    marginEnd: theme.spacing.sm,
   },
   searchInput: {
     flex: 1,
@@ -344,7 +340,7 @@ const styles = StyleSheet.create({
     paddingVertical: theme.spacing.sm,
   },
   clearButton: {
-    marginLeft: theme.spacing.sm,
+    marginStart: theme.spacing.sm,
   },
   loadingContainer: {
     flex: 1,
@@ -456,7 +452,7 @@ const styles = StyleSheet.create({
     ...theme.shadows.sm,
   },
   orderHeader: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: theme.spacing.sm,
@@ -490,7 +486,7 @@ const styles = StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   productSection: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     marginBottom: 20,
   },
@@ -522,7 +518,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   detailRow: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
@@ -537,6 +533,6 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.bold as any,
     color: theme.colors.textPrimary,
     flex: 2,
-    textAlign: 'right',
+    textAlign: getTextAlign() === 'left' ? 'right' : 'left',
   },
 }); 

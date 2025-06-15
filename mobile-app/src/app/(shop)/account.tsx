@@ -16,6 +16,8 @@ import { useAuthStore } from '@store/auth-store';
 import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTranslation } from '@utils/translations';
+import { useLanguageStore } from '@store/language-store';
+import { getFlexDirection } from '@utils/rtlStyles';
 import { theme } from '@theme';
 import CurrencyDropdown from '@components/CurrencyDropdown';
 
@@ -24,6 +26,7 @@ export default function AccountScreen() {
   const [isLoading, setIsLoading] = React.useState(false);
   const [userProfile, setUserProfile] = React.useState<any>(null);
   const { t } = useTranslation();
+  const { isRTL } = useLanguageStore();
 
   // Fetch user profile data
   useEffect(() => {
@@ -130,7 +133,7 @@ export default function AccountScreen() {
               />
               <Text style={styles.optionText}>{t('account.language')}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
+            <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={theme.colors.black} />
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -144,7 +147,7 @@ export default function AccountScreen() {
               />
               <Text style={styles.optionText}>{t('account.policies')}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
+            <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={theme.colors.black} />
           </TouchableOpacity>
         </View>
 
@@ -184,7 +187,10 @@ export default function AccountScreen() {
             >
               <Image 
                 source={require('../../assets/account_tab/whatsapp_icon.png')} 
-                style={styles.socialIconImage}
+                style={[
+                  styles.socialIconImage,
+                  isRTL ? { transform: [{ scaleX: -1 }] } : null
+                ]}
               />
             </TouchableOpacity>
             
@@ -236,11 +242,14 @@ export default function AccountScreen() {
           <View style={styles.optionRow}>
             <Image 
               source={require('../../assets/account_tab/language_icon.png')} 
-              style={styles.optionIcon}
+              style={[
+                styles.optionIcon,
+                isRTL ? { transform: [{ scaleX: -1 }] } : null
+              ]}
             />
             <Text style={styles.optionText}>{t('account.language')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
+          <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={theme.colors.black} />
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -250,11 +259,14 @@ export default function AccountScreen() {
           <View style={styles.optionRow}>
             <Image 
               source={require('../../assets/account_tab/details_icon.png')} 
-              style={styles.optionIcon}
+              style={[
+                styles.optionIcon,
+                isRTL ? { transform: [{ scaleX: -1 }] } : null
+              ]}
             />
             <Text style={styles.optionText}>{t('account.details')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
+          <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={theme.colors.black} />
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -268,7 +280,7 @@ export default function AccountScreen() {
             />
             <Text style={styles.optionText}>{t('account.address')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
+          <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={theme.colors.black} />
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -282,7 +294,7 @@ export default function AccountScreen() {
             />
             <Text style={styles.optionText}>{t('account.orders')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
+          <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={theme.colors.black} />
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -296,7 +308,7 @@ export default function AccountScreen() {
             />
             <Text style={styles.optionText}>{t('account.policies')}</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={theme.colors.black} />
+          <Ionicons name={isRTL ? "chevron-back" : "chevron-forward"} size={20} color={theme.colors.black} />
         </TouchableOpacity>
       </View>
 
@@ -399,7 +411,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.md,
   },
   option: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: theme.spacing.lg,
@@ -407,7 +419,7 @@ const styles = StyleSheet.create({
     borderBottomColor: theme.colors.lightGray,
   },
   optionRow: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     gap: theme.spacing.md,
   },
@@ -449,7 +461,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.semibold as any,
   },
   menuItem: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: theme.spacing.lg,
@@ -473,7 +485,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.lg,
   },
   socialIcons: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     gap: theme.spacing.md,
   },
   socialIcon: {

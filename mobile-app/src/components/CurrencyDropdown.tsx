@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
 import { theme } from '@theme';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 interface Currency {
   title: string;
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
     padding: theme.spacing.sm,
   },
   dropdownButton: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: theme.spacing.xs,
@@ -161,7 +162,7 @@ const styles = StyleSheet.create({
     minWidth: 85,
   },
   selectedCurrency: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     gap: theme.spacing.xs,
   },
@@ -196,7 +197,7 @@ const styles = StyleSheet.create({
     maxHeight: 280,
   },
   currencyItem: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     paddingVertical: theme.spacing.md,
     paddingHorizontal: theme.spacing.md,

@@ -9,6 +9,7 @@ import AddEditAddress from '@components/add-edit-address';
 import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 export default function CheckoutScreen() {
   const { isAuthenticated } = useAuthStore();
@@ -1086,12 +1087,12 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E5E5E5',
   },
   sectionTitleRow: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     marginBottom: 16,
   },
   sectionIcon: {
-    marginRight: 8,
+    marginEnd: 8,
   },
   sectionTitle: {
     fontSize: 14,
@@ -1124,7 +1125,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   editAddressButton: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     alignSelf: 'flex-start',
     marginTop: 18,
@@ -1136,7 +1137,7 @@ const styles = StyleSheet.create({
   editAddressText: {
     fontSize: 15,
     color: theme.colors.black,
-    marginLeft: 4,
+    marginStart: 4,
   },
   addAddressButton: {
     borderWidth: 1,
@@ -1147,20 +1148,20 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   addAddressContent: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     justifyContent: 'center',
   },
   addAddressText: {
-    marginLeft: 8,
+    marginStart: 8,
     fontSize: 14,
     color: '#000',
   },
   shipToDifferentRow: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     marginVertical: 10,
-    paddingLeft: 3,
+    paddingStart: 3,
   },
   customCheckbox: {
     width: 18,
@@ -1169,7 +1170,7 @@ const styles = StyleSheet.create({
     borderColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    marginEnd: 8,
   },
   checkboxFill: {
     width: 12,
@@ -1188,7 +1189,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   totalRow: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     marginBottom: 8,
   },
@@ -1229,11 +1230,11 @@ const styles = StyleSheet.create({
     borderColor: '#000',
   },
   radioContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
   },
   paymentIcon: {
-    marginRight: 12,
+    marginEnd: 12,
   },
   paymentText: {
     flex: 1,
@@ -1298,7 +1299,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   paymentMethodsRow: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'center',
     gap: 8,
   },
@@ -1350,7 +1351,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   productCard: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     padding: 8,
   },
@@ -1361,7 +1362,7 @@ const styles = StyleSheet.create({
   },
   productInfo: {
     flex: 1,
-    paddingLeft: 12,
+    paddingStart: 12,
   },
   productName: {
     fontSize: 14,
@@ -1410,7 +1411,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   methodOption: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     padding: 12,
     borderWidth: 1,
@@ -1424,7 +1425,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8f8f8',
   },
   methodRadio: {
-    marginRight: 12,
+    marginEnd: 12,
   },
   methodInfo: {
     flex: 1,
@@ -1444,7 +1445,7 @@ const styles = StyleSheet.create({
     color: '#666',
   },
   methodsLoadingContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     padding: 16,
     justifyContent: 'center',
@@ -1452,7 +1453,7 @@ const styles = StyleSheet.create({
   methodsLoadingText: {
     fontSize: 14,
     color: '#666',
-    marginLeft: 8,
+    marginStart: 8,
   },
   noMethodsContainer: {
     padding: 16,
@@ -1467,7 +1468,7 @@ const styles = StyleSheet.create({
     color: '#FF0000',
     fontSize: 12,
     marginTop: 8,
-    marginLeft: 16,
+    marginStart: 16,
     fontWeight: '500',
   },
 }); 

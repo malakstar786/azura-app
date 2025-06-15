@@ -11,6 +11,7 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 interface OrderData {
   order_id: string;
@@ -74,18 +75,18 @@ export default function OrderSuccessScreen() {
           <Ionicons name="checkmark" size={32} color={theme.colors.white} />
         </View>
         
-        <Text style={styles.thankYouTitle}>{t('order.thankYou')}</Text>
+        <Text style={styles.thankYouTitle}>THANK YOU</Text>
         <Text style={styles.successMessage}>
-          {t('order.successMessage')}
+          YOUR ORDER HAS BEEN PLACED SUCCESSFULLY
         </Text>
       </View>
 
       <View style={styles.orderCard}>
         <View style={styles.productSection}>
           <View style={styles.productInfo}>
-            <Text style={styles.sku}>{t('order.sku')}{productData.sku}</Text>
+            <Text style={styles.sku}>SKU: {productData.sku}</Text>
             <Text style={styles.productName}>{productData.name}</Text>
-            <Text style={styles.quantity}>{t('order.qty')} {productData.quantity}</Text>
+            <Text style={styles.quantity}>QTY: {productData.quantity}</Text>
           </View>
         </View>
 
@@ -93,35 +94,35 @@ export default function OrderSuccessScreen() {
 
         <View style={styles.orderDetails}>
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t('order.orderId')}</Text>
+            <Text style={styles.detailLabel}>ORDER ID</Text>
             <Text style={styles.detailValue}>
               {orderData?.order_id ? formatOrderId(orderData.order_id) : '#2231123'}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t('order.date')}</Text>
+            <Text style={styles.detailLabel}>DATE</Text>
             <Text style={styles.detailValue}>
               {orderData?.date_added ? formatDate(orderData.date_added) : '4 APRIL 2024'}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t('order.email')}</Text>
+            <Text style={styles.detailLabel}>EMAIL</Text>
             <Text style={styles.detailValue}>
               {orderData?.email ? orderData.email.toUpperCase() : 'AHMED@GMAIL.COM'}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t('order.transId')}</Text>
+            <Text style={styles.detailLabel}>TRANSACTION ID</Text>
             <Text style={styles.detailValue}>
               TT#23332222111122121111234413
             </Text>
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>{t('order.paymentMethod')}</Text>
+            <Text style={styles.detailLabel}>PAYMENT METHOD</Text>
             <Text style={styles.detailValue}>
               {orderData?.payment_method ? orderData.payment_method.toUpperCase() : 'K-NET'}
             </Text>
@@ -130,7 +131,7 @@ export default function OrderSuccessScreen() {
       </View>
 
       <TouchableOpacity style={styles.continueButton} onPress={handleContinueShopping}>
-        <Text style={styles.continueButtonText}>{t('order.continueShopping')}</Text>
+        <Text style={styles.continueButtonText}>CONTINUE SHOPPING</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -180,7 +181,7 @@ const styles = StyleSheet.create({
     marginBottom: 40,
   },
   productSection: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     marginBottom: 20,
   },
@@ -212,7 +213,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   detailRow: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
@@ -227,7 +228,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.bold as any,
     color: theme.colors.textPrimary,
     flex: 2,
-    textAlign: 'right',
+    textAlign: getTextAlign() === 'left' ? 'right' : 'left',
   },
   continueButton: {
     backgroundColor: theme.colors.black,

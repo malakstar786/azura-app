@@ -7,6 +7,8 @@ import AddEditAddress from '@components/add-edit-address';
 import { useAuthStore } from '@store/auth-store';
 import { theme } from '@/theme';
 import { useTranslation } from '@utils/translations';
+import { useLanguageStore } from '@store/language-store';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 // Define the interface for AddressFormData to match AddEditAddress component
 interface AddressFormData {
@@ -33,6 +35,7 @@ interface AddressFormData {
 
 export default function AddressScreen() {
   const { t } = useTranslation();
+  const { isRTL } = useLanguageStore();
   const { addresses, fetchAddresses, deleteAddress, isLoading } = useAddressStore();
   const { isAuthenticated } = useAuthStore();
   const [isModalVisible, setIsModalVisible] = useState(false);
@@ -119,7 +122,7 @@ export default function AddressScreen() {
         style={styles.editButton}
       >
         <Ionicons name="create-outline" size={18} color="black" />
-        <Text style={styles.editButtonText}>{t('addresses.edit')}</Text>
+        <Text style={styles.editButtonText}>Edit</Text>
       </Pressable>
     </View>
   );
@@ -131,7 +134,7 @@ export default function AddressScreen() {
           title: t('addresses.title'),
           headerLeft: () => (
             <Pressable onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color="black" />
+              <Ionicons name={isRTL ? "arrow-forward" : "arrow-back"} size={24} color="black" />
             </Pressable>
           ),
           headerShadowVisible: false,
@@ -232,14 +235,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     marginBottom: theme.spacing.lg,
   },
   addMoreButton: {
     marginTop: theme.spacing.md,
   },
   addIcon: {
-    marginRight: theme.spacing.sm,
+    marginEnd: theme.spacing.sm,
   },
   addAddressText: {
     fontSize: theme.typography.sizes.md,
@@ -267,7 +270,7 @@ const styles = StyleSheet.create({
     marginBottom: theme.spacing.xs / 2,
   },
   editButton: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     justifyContent: 'center',
     gap: theme.spacing.sm,

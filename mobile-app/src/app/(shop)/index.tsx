@@ -9,6 +9,7 @@ import { useTranslation } from "@utils/translations";
 import { theme } from "@theme";
 import { Ionicons } from '@expo/vector-icons';
 import DrawerMenu from "@components/DrawerMenu";
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 const { width, height } = Dimensions.get("window");
 
@@ -424,7 +425,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 28,
     fontWeight: "600",
-    paddingLeft: 10,
+    paddingStart: 10,
     letterSpacing: 4,
   },
   fullScreenSection: {
@@ -561,7 +562,7 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   servicesContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-around',
     flexWrap: 'wrap',
     gap: 20,

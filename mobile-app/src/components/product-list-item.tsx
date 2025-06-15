@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { Product } from '../types/api';
 import { useCartStore } from '@store/cart-store';
 import { theme } from '@theme';
+import { getFlexDirection, getTextAlign, getAbsolutePosition } from '@utils/rtlStyles';
 
 export const ProductListItem = ({
   product,
@@ -148,12 +149,12 @@ const styles = StyleSheet.create({
   specialBadge: {
     position: 'absolute',
     top: theme.spacing.sm,
-    left: theme.spacing.sm,
+    ...getAbsolutePosition('left', theme.spacing.sm),
     backgroundColor: theme.colors.red,
     paddingHorizontal: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
     borderRadius: theme.borderRadius.sm,
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     gap: theme.spacing.xs,
   },
@@ -170,11 +171,13 @@ const styles = StyleSheet.create({
     fontSize: theme.typography.sizes.md,
     fontWeight: theme.typography.weights.medium as any,
     color: theme.colors.textPrimary,
+    textAlign: getTextAlign(),
   },
   price: {
     fontSize: theme.typography.sizes.md,
     fontWeight: theme.typography.weights.semibold as any,
     color: theme.colors.textPrimary,
+    textAlign: getTextAlign(),
   },
   buttonContainer: {
     gap: theme.spacing.sm,
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.buttonPrimary,
     paddingVertical: 10,
     borderRadius: theme.borderRadius.sm,
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
@@ -193,7 +196,7 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.red,
     paddingVertical: 10,
     borderRadius: theme.borderRadius.sm,
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
@@ -204,7 +207,7 @@ const styles = StyleSheet.create({
     fontWeight: theme.typography.weights.semibold as any,
   },
   quantityControls: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     height: 36,
   },
   quantityButton: {

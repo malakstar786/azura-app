@@ -5,17 +5,18 @@ import { useLanguageStore } from '@store/language-store';
 import { useTranslation } from '@utils/translations';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@theme';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 const LanguageSelection = () => {
   const router = useRouter();
   const { setLanguage, setIsFirstTimeUser, currentLanguage } = useLanguageStore();
   const { t } = useTranslation();
 
-  const handleLanguageSelection = (language: 'en' | 'ar') => {
+  const handleLanguageSelection = async (language: 'en' | 'ar') => {
     console.log(`Selected language: ${language}`);
     
     // Update language and mark as not first-time user
-    setLanguage(language);
+    await setLanguage(language);
     setIsFirstTimeUser(false);
     
     // Navigate to the shop screen
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
   },
   selectionContainer: {
     width: '100%',
-    marginLeft: -20,
+    marginStart: -20,
     paddingHorizontal: theme.spacing.lg,
     marginTop: 'auto',
     marginBottom: 75,
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
     marginVertical: theme.spacing.lg,
   },
   buttonsContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     marginTop: theme.spacing.lg,
   },

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useLanguageStore, Language } from '@store/language-store';
 import { useTranslation } from '@utils/translations';
 import { Ionicons } from '@expo/vector-icons';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 interface LanguageSelectionProps {
   onLanguageSelected: () => void;
@@ -102,7 +103,7 @@ const styles = StyleSheet.create({
     color: '#333',
   },
   languagesContainer: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     paddingHorizontal: 0,
   },

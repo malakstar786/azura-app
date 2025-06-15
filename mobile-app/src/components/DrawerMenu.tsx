@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { theme } from '@/theme';
 import { useTranslation } from '@utils/translations';
+import { useLanguageStore } from '@store/language-store';
+import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 import { publicApi } from '@utils/api-service';
 
 const { width } = Dimensions.get('window');
@@ -39,6 +41,7 @@ interface DrawerMenuProps {
 export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   const router = useRouter();
   const { t } = useTranslation();
+  const { isRTL } = useLanguageStore();
   const [categories, setCategories] = useState<MenuCategory[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -127,11 +130,17 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
       transparent={true}
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, { 
+        flexDirection: getFlexDirection('row') 
+      }]}>
         <View style={styles.drawer}>
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.headerTitle}>BROWSE</Text>
+          <View style={[styles.header, { 
+            flexDirection: getFlexDirection('row') 
+          }]}>
+            <Text style={[styles.headerTitle, { 
+              textAlign: getTextAlign() 
+            }]}>BROWSE</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Ionicons name="close" size={24} color={theme.colors.white} />
             </TouchableOpacity>
@@ -153,7 +162,9 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                     onPress={() => handleCategoryPress(category)}
                     style={styles.categoryHeader}
                   >
-                    <Text style={styles.categoryTitle}>{category.name}</Text>
+                    <Text style={[styles.categoryTitle, { 
+                      textAlign: getTextAlign() 
+                    }]}>{category.name}</Text>
                   </TouchableOpacity>
 
                   {/* Subcategories */}
@@ -163,7 +174,9 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
                       onPress={() => handleSubCategoryPress(category, subCategory)}
                       style={styles.productItem}
                     >
-                      <Text style={styles.productName}>{subCategory.name}</Text>
+                      <Text style={[styles.productName, { 
+                        textAlign: getTextAlign() 
+                      }]}>{subCategory.name}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -186,7 +199,7 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
   },
   backgroundOverlay: {
     flex: 1,
@@ -199,7 +212,7 @@ const styles = StyleSheet.create({
     paddingTop: 50,
   },
   header: {
-    flexDirection: 'row',
+    flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,

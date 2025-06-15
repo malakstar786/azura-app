@@ -1,1057 +1,593 @@
-import { useLanguageStore } from '@store/language-store';
+import { useLanguageStore, Language } from '../store/language-store';
 
-interface TranslationMap {
-  [key: string]: {
-    en: string;
-    ar: string;
-  };
-}
-
-// Common UI translations
-const translations: TranslationMap = {
-  // Language Selection
-  'language.select': {
-    en: 'SELECT LANGUAGE',
-    ar: 'اختر اللغة',
-  },
-  'language.subtitle': {
-    en: 'THIS HELPS US SERVE YOU BETTER.',
-    ar: 'هذا يساعدنا على خدمتك بشكل أفضل.',
-  },
-  'language.english': {
-    en: 'ENGLISH',
-    ar: 'ENGLISH',
-  },
-  'language.arabic': {
-    en: 'العربية',
-    ar: 'العربية',
-  },
-  
-  // Common
-  'app.name': {
-    en: 'AZURA',
-    ar: 'أزورا',
-  },
-  
-  // Navigation
-  'nav.home': {
-    en: 'Home',
-    ar: 'الرئيسية',
-  },
-  'nav.search': {
-    en: 'Search',
-    ar: 'بحث',
-  },
-  'nav.cart': {
-    en: 'MY CART',
-    ar: 'سلة التسوق',
-  },
-  'nav.account': {
-    en: 'Account',
-    ar: 'الحساب',
-  },
-  
-  // Home
-  'home.explore': {
-    en: 'Explore',
-    ar: 'استكشف',
-  },
-  'home.services': {
-    en: 'Our Services',
-    ar: 'خدماتنا',
-  },
-  'home.features': {
-    en: 'Features',
-    ar: 'المميزات',
-  },
-  'home.fragrance': {
-    en: 'OUR NEW FRAGRANCE',
-    ar: 'عطرنا الجديد',
-  },
-  'home.nailcare': {
-    en: 'Nail Polish Remover',
-    ar: 'مزيل طلاء الأظافر',
-  },
-  'home.perfumes': {
-    en: 'PERFUMES',
-    ar: 'العطور',
-  },
-  'home.cologne': {
-    en: 'COLOGNE',
-    ar: 'كولونيا',
-  },
-  
-  // Categories
-  'categories.fragrance_description': {
-    en: 'Our new collection of fragrances offers a unique experience of freshness, where each spray takes you on a special journey.',
-    ar: 'تقدم مجموعتنا الجديدة من العطور تجربة فريدة من الانتعاش، حيث تأخذك كل رشة في رحلة خاصة.',
-  },
-  'categories.nailcare_description': {
-    en: 'Azura provides premium nail care products designed to promote the growth of long, strong, and healthy nails',
-    ar: 'توفر أزورا منتجات عناية بالأظافر متميزة مصممة لتعزيز نمو أظافر طويلة وقوية وصحية',
-  },
-  'categories.makeup_description': {
-    en: 'Premium makeup for every occasion',
-    ar: 'مكياج فاخر لكل مناسبة',
-  },
-  'categories.products': {
-    en: 'PRODUCTS',
-    ar: 'منتجات',
-  },
-  
-  // Product Details
-  'product.newArrival': {
-    en: 'NEW ARRIVAL',
-    ar: 'وصل حديثًا',
-  },
-  'product.readMore': {
-    en: 'READ MORE',
-    ar: 'قراءة المزيد',
-  },
-  'product.outOfStock': {
-    en: 'Out of Stock',
-    ar: 'نفذ من المخزون',
-  },
-  'product.inStock': {
-    en: 'In Stock',
-    ar: 'متوفر',
-  },
-  'product.limitedStock': {
-    en: 'Only {0} items available.',
-    ar: 'متوفر {0} قطع فقط.',
-  },
-  'product.addedToCart': {
-    en: 'Product has been added to your cart.',
-    ar: 'تمت إضافة المنتج إلى سلة التسوق الخاصة بك.',
-  },
-  'product.quantity': {
-    en: 'Quantity',
-    ar: 'الكمية',
-  },
-  'product.goBack': {
-    en: 'Go Back',
-    ar: 'الرجوع',
-  },
-  'product.productNotFound': {
-    en: 'Product not found',
-    ar: 'المنتج غير موجود',
-  },
-  
-  // Account
-  'account.title': {
-    en: 'MY ACCOUNT',
-    ar: 'حسابي',
-  },
-  'account.subtitle': {
-    en: 'Easy shopping with Azura',
-    ar: 'تسوق سهل مع أزورا',
-  },
-  'account.subtitleUpper': {
-    en: 'EASY SHOPPING WITH AZURA',
-    ar: 'تسوق سهل مع أزورا',
-  },
-  'account.country': {
-    en: 'COUNTRY / REGION',
-    ar: 'البلد / المنطقة',
-  },
-  'account.language': {
-    en: 'LANGUAGE',
-    ar: 'اللغة',
-  },
-  'account.details': {
-    en: 'MY DETAILS',
-    ar: 'بياناتي',
-  },
-  'account.address': {
-    en: 'MY ADDRESS',
-    ar: 'عنواني',
-  },
-  'account.orders': {
-    en: 'MY ORDERS',
-    ar: 'طلباتي',
-  },
-  'account.policies': {
-    en: 'POLICIES',
-    ar: 'السياسات',
-  },
-  'account.login': {
-    en: 'LOGIN / REGISTER',
-    ar: 'تسجيل الدخول / التسجيل',
-  },
-  'account.logout': {
-    en: 'LOGOUT',
-    ar: 'تسجيل الخروج',
-  },
-  'account.followUs': {
-    en: 'FOLLOW US',
-    ar: 'تابعنا',
-  },
-  'account.loading': {
-    en: 'Loading...',
-    ar: 'جاري التحميل...',
-  },
-  
-  // Orders
-  'orders.title': {
-    en: 'My Orders',
-    ar: 'طلباتي',
-  },
-  'orders.searchPlaceholder': {
-    en: 'Search by Order ID...',
-    ar: 'البحث برقم الطلب...',
-  },
-  'orders.loading': {
-    en: 'Loading orders...',
-    ar: 'جاري تحميل الطلبات...',
-  },
-  'orders.noOrders': {
-    en: 'No orders yet',
-    ar: 'لا توجد طلبات بعد',
-  },
-  'orders.noOrdersDescription': {
-    en: 'Your orders will appear here once you make a purchase',
-    ar: 'ستظهر طلباتك هنا بمجرد إجراء عملية شراء',
-  },
-  'orders.noOrdersFound': {
-    en: 'No orders found',
-    ar: 'لم يتم العثور على طلبات',
-  },
-  'orders.noOrdersFoundDescription': {
-    en: 'No orders match "{0}"',
-    ar: 'لا توجد طلبات تطابق "{0}"',
-  },
-  'orders.clearSearch': {
-    en: 'Clear Search',
-    ar: 'مسح البحث',
-  },
-  'orders.ordersCount': {
-    en: '{0} {1} found',
-    ar: 'تم العثور على {0} {1}',
-  },
-  'orders.order': {
-    en: 'order',
-    ar: 'طلب',
-  },
-  'orders.orders': {
-    en: 'orders',
-    ar: 'طلبات',
-  },
-  'orders.orderId': {
-    en: 'Order ID',
-    ar: 'رقم الطلب',
-  },
-  'orders.customer': {
-    en: 'Customer:',
-    ar: 'العميل:',
-  },
-  'orders.date': {
-    en: 'Date:',
-    ar: 'التاريخ:',
-  },
-  'orders.total': {
-    en: 'Total:',
-    ar: 'المجموع:',
-  },
-  'orders.status.pending': {
-    en: 'Pending',
-    ar: 'قيد الانتظار',
-  },
-  'orders.status.processing': {
-    en: 'Processing',
-    ar: 'قيد المعالجة',
-  },
-  'orders.status.shipped': {
-    en: 'Shipped',
-    ar: 'تم الشحن',
-  },
-  'orders.status.delivered': {
-    en: 'Delivered',
-    ar: 'تم التسليم',
-  },
-  'orders.status.cancelled': {
-    en: 'Cancelled',
-    ar: 'ملغي',
-  },
-  'orders.status.failed': {
-    en: 'Failed',
-    ar: 'فشل',
-  },
-
-  // Addresses
-  'addresses.title': {
-    en: 'My Addresses',
-    ar: 'عناويني',
-  },
-  'addresses.addNew': {
-    en: 'Add New Address',
-    ar: 'إضافة عنوان جديد',
-  },
-  'addresses.edit': {
-    en: 'Edit',
-    ar: 'تعديل',
-  },
-  'addresses.delete': {
-    en: 'Delete',
-    ar: 'حذف',
-  },
-  'addresses.noAddresses': {
-    en: 'No addresses yet',
-    ar: 'لا توجد عناوين بعد',
-  },
-  'addresses.noAddressesDescription': {
-    en: 'Add your first address to get started',
-    ar: 'أضف عنوانك الأول للبدء',
-  },
-  'addresses.loading': {
-    en: 'Loading addresses...',
-    ar: 'جاري تحميل العناوين...',
-  },
-  'addresses.name': {
-    en: 'Name',
-    ar: 'الاسم',
-  },
-  'addresses.phone': {
-    en: 'Phone',
-    ar: 'الهاتف',
-  },
-  'addresses.country': {
-    en: 'Country',
-    ar: 'البلد',
-  },
-  'addresses.city': {
-    en: 'City',
-    ar: 'المدينة',
-  },
-  'addresses.area': {
-    en: 'Area',
-    ar: 'المنطقة',
-  },
-  'addresses.block': {
-    en: 'Block',
-    ar: 'القطعة',
-  },
-  'addresses.street': {
-    en: 'Street',
-    ar: 'الشارع',
-  },
-  'addresses.building': {
-    en: 'Building',
-    ar: 'المبنى',
-  },
-  'addresses.apartment': {
-    en: 'Apartment',
-    ar: 'الشقة',
-  },
-  'addresses.additionalInfo': {
-    en: 'Additional Information',
-    ar: 'معلومات إضافية',
-  },
-  'addresses.save': {
-    en: 'Save',
-    ar: 'حفظ',
-  },
-  'addresses.cancel': {
-    en: 'Cancel',
-    ar: 'إلغاء',
-  },
-  'addresses.required': {
-    en: 'This field is required',
-    ar: 'هذا الحقل مطلوب',
-  },
-  'addresses.selectCountry': {
-    en: 'Select Country',
-    ar: 'اختر البلد',
-  },
-  'addresses.selectCity': {
-    en: 'Select City',
-    ar: 'اختر المدينة',
-  },
-  'addresses.selectArea': {
-    en: 'Select Area',
-    ar: 'اختر المنطقة',
-  },
-
-  // My Details
-  'details.title': {
-    en: 'MY DETAILS',
-    ar: 'بياناتي',
-  },
-  'details.fullName': {
-    en: 'FULL NAME',
-    ar: 'الاسم الكامل',
-  },
-  'details.email': {
-    en: 'EMAIL',
-    ar: 'البريد الإلكتروني',
-  },
-  'details.mobile': {
-    en: 'MOBILE NUMBER',
-    ar: 'رقم الجوال',
-  },
-  'details.password': {
-    en: 'PASSWORD',
-    ar: 'كلمة المرور',
-  },
-  'details.editButton': {
-    en: 'EDIT DETAILS',
-    ar: 'تعديل البيانات',
-  },
-  
-  // Policies
-  'policies.title': {
-    en: 'POLICIES',
-    ar: 'السياسات',
-  },
-  'policies.aboutUs': {
-    en: 'ABOUT US',
-    ar: 'من نحن',
-  },
-  'policies.contactUs': {
-    en: 'CONTACT US',
-    ar: 'اتصل بنا',
-  },
-  'policies.terms': {
-    en: 'TERMS & CONDITIONS',
-    ar: 'الشروط والأحكام',
-  },
-  'policies.privacy': {
-    en: 'PRIVACY & RETURN POLICY',
-    ar: 'سياسة الخصوصية والإرجاع',
-  },
-  
-  // Cart
-  'cart.title': {
-    en: 'MY CART',
-    ar: 'سلة التسوق',
-  },
-  'cart.empty': {
-    en: 'YOUR CART IS EMPTY',
-    ar: 'سلة التسوق فارغة',
-  },
-  'cart.startShopping': {
-    en: 'START SHOPPING',
-    ar: 'ابدأ التسوق',
-  },
-  'cart.checkout': {
-    en: 'CHECKOUT',
-    ar: 'الدفع',
-  },
-  'cart.remove': {
-    en: 'Remove from Cart?',
-    ar: 'إزالة من سلة التسوق؟',
-  },
-  'cart.cancel': {
-    en: 'CANCEL',
-    ar: 'إلغاء',
-  },
-  'cart.confirmRemove': {
-    en: 'YES, REMOVE',
-    ar: 'نعم، أزل',
-  },
-  'cart.removeFromCart': {
-    en: 'Remove from Cart?',
-    ar: 'إزالة من سلة التسوق؟',
-  },
-  'cart.yesRemove': {
-    en: 'YES, REMOVE',
-    ar: 'نعم، أزل',
-  },
-  'cart.quantity': {
-    en: 'QTY',
-    ar: 'الكمية',
-  },
-  'cart.total': {
-    en: 'TOTAL',
-    ar: 'المجموع',
-  },
-  'cart.loginRequired': {
-    en: 'Login Required',
-    ar: 'تسجيل الدخول مطلوب',
-  },
-  'cart.loginRequiredMessage': {
-    en: 'Please login to proceed with checkout',
-    ar: 'يرجى تسجيل الدخول للمتابعة إلى الدفع',
-  },
-  
-  // Product
-  'product.addToCart': {
-    en: 'ADD TO CART',
-    ar: 'أضف إلى السلة',
-  },
-  'product.buyNow': {
-    en: 'BUY NOW',
-    ar: 'اشتر الآن',
-  },
-  
-  // Search
-  'search.title': {
-    en: 'SEARCH',
-    ar: 'بحث',
-  },
-  'search.placeholder': {
-    en: 'Search for products...',
-    ar: 'ابحث عن المنتجات...',
-  },
-  'search.notFound': {
-    en: 'Product Not Found',
-    ar: 'المنتج غير موجود',
-  },
-
-  // Authentication
-  'auth.login': {
-    en: 'LOGIN',
-    ar: 'تسجيل الدخول',
-  },
-  'auth.register': {
-    en: 'REGISTER',
-    ar: 'التسجيل',
-  },
-  'auth.email': {
-    en: 'EMAIL',
-    ar: 'البريد الإلكتروني',
-  },
-  'auth.password': {
-    en: 'PASSWORD',
-    ar: 'كلمة المرور',
-  },
-  'auth.confirmPassword': {
-    en: 'CONFIRM PASSWORD',
-    ar: 'تأكيد كلمة المرور',
-  },
-  'auth.firstName': {
-    en: 'FIRST NAME',
-    ar: 'الاسم الأول',
-  },
-  'auth.lastName': {
-    en: 'LAST NAME',
-    ar: 'اسم العائلة',
-  },
-  'auth.mobile': {
-    en: 'MOBILE NUMBER',
-    ar: 'رقم الجوال',
-  },
-  'auth.forgotPassword': {
-    en: 'FORGOT PASSWORD?',
-    ar: 'نسيت كلمة المرور؟',
-  },
-  'auth.dontHaveAccount': {
-    en: "Don't have an account?",
-    ar: 'ليس لديك حساب؟',
-  },
-  'auth.alreadyHaveAccount': {
-    en: 'Already have an account?',
-    ar: 'لديك حساب بالفعل؟',
-  },
-  'auth.signUp': {
-    en: 'Sign Up',
-    ar: 'إنشاء حساب',
-  },
-  'auth.signIn': {
-    en: 'Sign In',
-    ar: 'تسجيل الدخول',
-  },
-  'auth.resetPassword': {
-    en: 'RESET PASSWORD',
-    ar: 'إعادة تعيين كلمة المرور',
-  },
-  'auth.enterEmail': {
-    en: 'Enter your email address to reset your password',
-    ar: 'أدخل عنوان بريدك الإلكتروني لإعادة تعيين كلمة المرور',
-  },
-  'auth.sendResetLink': {
-    en: 'SEND RESET LINK',
-    ar: 'إرسال رابط الإعادة',
-  },
-  'auth.backToLogin': {
-    en: 'Back to Login',
-    ar: 'العودة لتسجيل الدخول',
-  },
-
-  // Validation Messages
-  'validation.required': {
-    en: 'This field is required',
-    ar: 'هذا الحقل مطلوب',
-  },
-  'validation.emailInvalid': {
-    en: 'Please enter a valid email address',
-    ar: 'يرجى إدخال عنوان بريد إلكتروني صحيح',
-  },
-  'validation.passwordTooShort': {
-    en: 'Password must be at least 6 characters',
-    ar: 'كلمة المرور يجب أن تكون 6 أحرف على الأقل',
-  },
-  'validation.passwordsNotMatch': {
-    en: 'Passwords do not match',
-    ar: 'كلمات المرور غير متطابقة',
-  },
-  'validation.phoneInvalid': {
-    en: 'Please enter a valid phone number',
-    ar: 'يرجى إدخال رقم هاتف صحيح',
-  },
-
-  // Checkout
-  'checkout.title': {
-    en: 'CHECKOUT',
-    ar: 'الدفع',
-  },
-  'checkout.shippingAddress': {
-    en: 'SHIPPING ADDRESS',
-    ar: 'عنوان الشحن',
-  },
-  'checkout.paymentMethod': {
-    en: 'PAYMENT METHOD',
-    ar: 'طريقة الدفع',
-  },
-  'checkout.orderSummary': {
-    en: 'ORDER SUMMARY',
-    ar: 'ملخص الطلب',
-  },
-  'checkout.subtotal': {
-    en: 'Subtotal',
-    ar: 'المجموع الفرعي',
-  },
-  'checkout.shipping': {
-    en: 'Shipping',
-    ar: 'الشحن',
-  },
-  'checkout.total': {
-    en: 'Total',
-    ar: 'المجموع',
-  },
-  'checkout.placeOrder': {
-    en: 'PLACE ORDER',
-    ar: 'تأكيد الطلب',
-  },
-  'checkout.cashOnDelivery': {
-    en: 'Cash on Delivery',
-    ar: 'الدفع عند الاستلام',
-  },
-  'checkout.creditCard': {
-    en: 'Credit Card',
-    ar: 'بطاقة ائتمان',
-  },
-  'checkout.selectAddress': {
-    en: 'Select Address',
-    ar: 'اختر العنوان',
-  },
-  'checkout.addNewAddress': {
-    en: 'Add New Address',
-    ar: 'إضافة عنوان جديد',
-  },
-  'checkout.orderPlaced': {
-    en: 'Order Placed Successfully!',
-    ar: 'تم تأكيد الطلب بنجاح!',
-  },
-  'checkout.orderFailed': {
-    en: 'Order Failed',
-    ar: 'فشل في تأكيد الطلب',
-  },
-
-  // Product Categories
-  'categories.nailCare': {
-    en: 'Nail Care',
-    ar: 'العناية بالأظافر',
-  },
-  'categories.makeup': {
-    en: 'Makeup',
-    ar: 'المكياج',
-  },
-  'categories.fragrance': {
-    en: 'Fragrance',
-    ar: 'العطور',
-  },
-  'categories.all': {
-    en: 'All Products',
-    ar: 'جميع المنتجات',
-  },
-
-  // Common Actions
-  'common.save': {
-    en: 'SAVE',
-    ar: 'حفظ',
-  },
-  'common.cancel': {
-    en: 'CANCEL',
-    ar: 'إلغاء',
-  },
-  'common.edit': {
-    en: 'EDIT',
-    ar: 'تعديل',
-  },
-  'common.delete': {
-    en: 'DELETE',
-    ar: 'حذف',
-  },
-  'common.add': {
-    en: 'ADD',
-    ar: 'إضافة',
-  },
-  'common.remove': {
-    en: 'REMOVE',
-    ar: 'إزالة',
-  },
-  'common.update': {
-    en: 'UPDATE',
-    ar: 'تحديث',
-  },
-  'common.confirm': {
-    en: 'CONFIRM',
-    ar: 'تأكيد',
-  },
-  'common.back': {
-    en: 'BACK',
-    ar: 'رجوع',
-  },
-  'common.next': {
-    en: 'NEXT',
-    ar: 'التالي',
-  },
-  'common.done': {
-    en: 'DONE',
-    ar: 'تم',
-  },
-  'common.close': {
-    en: 'CLOSE',
-    ar: 'إغلاق',
-  },
-  'common.select': {
-    en: 'SELECT',
-    ar: 'اختيار',
-  },
-  'common.search': {
-    en: 'SEARCH',
-    ar: 'بحث',
-  },
-  'common.filter': {
-    en: 'FILTER',
-    ar: 'تصفية',
-  },
-  'common.sort': {
-    en: 'SORT',
-    ar: 'ترتيب',
-  },
-  'common.clear': {
-    en: 'CLEAR',
-    ar: 'مسح',
-  },
-  'common.apply': {
-    en: 'APPLY',
-    ar: 'تطبيق',
-  },
-  'common.yes': {
-    en: 'YES',
-    ar: 'نعم',
-  },
-  'common.no': {
-    en: 'NO',
-    ar: 'لا',
-  },
-  'common.ok': {
-    en: 'OK',
-    ar: 'موافق',
-  },
-  'common.error': {
-    en: 'Error',
-    ar: 'خطأ',
-  },
-  'common.success': {
-    en: 'Success',
-    ar: 'نجح',
-  },
-  'common.warning': {
-    en: 'Warning',
-    ar: 'تحذير',
-  },
-  'common.info': {
-    en: 'Info',
-    ar: 'معلومات',
-  },
-  'common.loading': {
-    en: 'Loading...',
-    ar: 'جاري التحميل...',
-  },
-  'common.retry': {
-    en: 'RETRY',
-    ar: 'إعادة المحاولة',
-  },
-  'common.refresh': {
-    en: 'REFRESH',
-    ar: 'تحديث',
-  },
-
-  // Error Messages
-  'error.networkError': {
-    en: 'Network error. Please check your connection.',
-    ar: 'خطأ في الشبكة. يرجى التحقق من اتصالك.',
-  },
-  'error.serverError': {
-    en: 'Server error. Please try again later.',
-    ar: 'خطأ في الخادم. يرجى المحاولة مرة أخرى لاحقاً.',
-  },
-  'error.unknownError': {
-    en: 'An unknown error occurred.',
-    ar: 'حدث خطأ غير معروف.',
-  },
-  'error.sessionExpired': {
-    en: 'Session expired. Please login again.',
-    ar: 'انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.',
-  },
-  'error.invalidCredentials': {
-    en: 'Invalid email or password.',
-    ar: 'بريد إلكتروني أو كلمة مرور غير صحيحة.',
-  },
-  'error.emailAlreadyExists': {
-    en: 'Email address already exists.',
-    ar: 'عنوان البريد الإلكتروني موجود بالفعل.',
-  },
-
-  // Success Messages
-  'success.loginSuccess': {
-    en: 'Login successful!',
-    ar: 'تم تسجيل الدخول بنجاح!',
-  },
-  'success.registerSuccess': {
-    en: 'Registration successful!',
-    ar: 'تم التسجيل بنجاح!',
-  },
-  'success.passwordResetSent': {
-    en: 'Password reset link sent to your email.',
-    ar: 'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.',
-  },
-  'success.profileUpdated': {
-    en: 'Profile updated successfully!',
-    ar: 'تم تحديث الملف الشخصي بنجاح!',
-  },
-  'success.addressAdded': {
-    en: 'Address added successfully!',
-    ar: 'تم إضافة العنوان بنجاح!',
-  },
-  'success.addressUpdated': {
-    en: 'Address updated successfully!',
-    ar: 'تم تحديث العنوان بنجاح!',
-  },
-  'success.addressDeleted': {
-    en: 'Address deleted successfully!',
-    ar: 'تم حذف العنوان بنجاح!',
-  },
-
-  // Empty States
-  'empty.noProducts': {
-    en: 'No products found',
-    ar: 'لم يتم العثور على منتجات',
-  },
-  'empty.noProductsDescription': {
-    en: 'Try adjusting your search or browse our categories',
-    ar: 'جرب تعديل البحث أو تصفح فئاتنا',
-  },
-  'empty.cartEmpty': {
-    en: 'Your cart is empty',
-    ar: 'سلة التسوق فارغة',
-  },
-  'empty.cartEmptyDescription': {
-    en: 'Add some products to get started',
-    ar: 'أضف بعض المنتجات للبدء',
-  },
-
-  // Order Success/Failure
-  'order.thankYou': {
-    en: 'THANK YOU! ✓',
-    ar: 'شكراً لك! ✓',
-  },
-  'order.successMessage': {
-    en: 'YOUR ORDER HAS BEEN PLACED SUCCESSFULLY',
-    ar: 'تم تأكيد طلبك بنجاح',
-  },
-  'order.continueShopping': {
-    en: 'CONTINUE SHOPPING',
-    ar: 'متابعة التسوق',
-  },
-  'order.errorTitle': {
-    en: 'OOPS! SOMETHING WENT WRONG',
-    ar: 'عذراً! حدث خطأ ما',
-  },
-  'order.errorMessage': {
-    en: 'YOUR ORDER WAS NOT PLACED',
-    ar: 'لم يتم تأكيد طلبك',
-  },
-  'order.errorSubMessage': {
-    en: 'PLEASE TRY AGAIN',
-    ar: 'يرجى المحاولة مرة أخرى',
-  },
-  'order.tryAgain': {
-    en: 'TRY AGAIN?',
-    ar: 'حاول مرة أخرى؟',
-  },
-  'order.orderId': {
-    en: 'ORDER ID:',
-    ar: 'رقم الطلب:',
-  },
-  'order.date': {
-    en: 'DATE:',
-    ar: 'التاريخ:',
-  },
-  'order.email': {
-    en: 'EMAIL:',
-    ar: 'البريد الإلكتروني:',
-  },
-  'order.transId': {
-    en: 'TRANS ID:',
-    ar: 'رقم المعاملة:',
-  },
-  'order.paymentMethod': {
-    en: 'PAYMENT METHOD:',
-    ar: 'طريقة الدفع:',
-  },
-  'order.sku': {
-    en: 'SKU:',
-    ar: 'رقم المنتج:',
-  },
-  'order.qty': {
-    en: 'QTY:',
-    ar: 'الكمية:',
-  },
-
-  // Checkout 
-  'checkout.completeDetails': {
-    en: 'Complete checkout details',
-    ar: 'أكمل تفاصيل الطلب',
-  },
-  'checkout.billingAddress': {
-    en: 'BILLING ADDRESS',
-    ar: 'عنوان الفوترة',
-  },
-  'checkout.selectShippingMethod': {
-    en: 'Please select a shipping method to continue.',
-    ar: 'يرجى اختيار طريقة الشحن للمتابعة.',
-  },
-  'checkout.selectPaymentMethod': {
-    en: 'Please select a payment method to continue.',
-    ar: 'يرجى اختيار طريقة الدفع للمتابعة.',
-  },
-  'checkout.addBillingAddress': {
-    en: 'Please add a billing address to continue.',
-    ar: 'يرجى إضافة عنوان الفوترة للمتابعة.',
-  },
-  'checkout.addShippingAddress': {
-    en: 'Please add a shipping address to continue.',
-    ar: 'يرجى إضافة عنوان الشحن للمتابعة.',
-  },
-  'checkout.easyShoppingWithAzura': {
-    en: 'EASY SHOPPING WITH AZURA',
-    ar: 'تسوق سهل مع أزورا',
-  },
-  'checkout.billingShippingAddress': {
-    en: 'BILLING & SHIPPING ADDRESS',
-    ar: 'عنوان الفوترة والشحن',
-  },
-  'checkout.editAddress': {
-    en: 'Edit Address',
-    ar: 'تعديل العنوان',
-  },
-  'checkout.addAddress': {
-    en: 'ADD ADDRESS',
-    ar: 'إضافة عنوان',
-  },
-  'checkout.shipToDifferentAddress': {
-    en: 'Ship to Different Address?',
-    ar: 'الشحن إلى عنوان مختلف؟',
-  },
-  'checkout.shippingAddressTitle': {
-    en: 'SHIPPING ADDRESS',
-    ar: 'عنوان الشحن',
-  },
-  'checkout.addShippingAddressButton': {
-    en: 'ADD SHIPPING ADDRESS',
-    ar: 'إضافة عنوان الشحن',
-  },
-  'checkout.orderSummaryTitle': {
-    en: 'Order Summary',
-    ar: 'ملخص الطلب',
-  },
-  'checkout.product': {
-    en: 'Product',
-    ar: 'المنتج',
-  },
-  'checkout.noProducts': {
-    en: 'No products in cart',
-    ar: 'لا توجد منتجات في السلة',
-  },
-  'checkout.itemSubtotal': {
-    en: 'Item Sub total',
-    ar: 'مجموع المنتجات',
-  },
-  'checkout.shippingFee': {
-    en: 'Shipping Fee',
-    ar: 'رسوم الشحن',
-  },
-  'checkout.grandTotal': {
-    en: 'Grand Total',
-    ar: 'المجموع الكلي',
-  },
-  'checkout.selectShipping': {
-    en: 'Select Shipping Method',
-    ar: 'اختر طريقة الشحن',
-  },
-  'checkout.loadingShippingMethods': {
-    en: 'Loading shipping methods...',
-    ar: 'جاري تحميل طرق الشحن...',
-  },
-  'checkout.selectPaymentTitle': {
-    en: 'Select Payment Method',
-    ar: 'اختر طريقة الدفع',
-  },
-  'checkout.loadingPaymentMethods': {
-    en: 'Loading payment methods...',
-    ar: 'جاري تحميل طرق الدفع...',
-  },
-  'checkout.noShippingMethods': {
-    en: 'No shipping methods available for your address',
-    ar: 'لا توجد طرق شحن متاحة لعنوانك',
-  },
-  'checkout.addAddressForShipping': {
-    en: 'Please add an address to see shipping methods',
-    ar: 'يرجى إضافة عنوان لرؤية طرق الشحن',
-  },
-  'checkout.noPaymentMethods': {
-    en: 'No payment methods available for your address',
-    ar: 'لا توجد طرق دفع متاحة لعنوانك',
-  },
-  'checkout.addAddressForPayment': {
-    en: 'Please add an address to see payment methods',
-    ar: 'يرجى إضافة عنوان لرؤية طرق الدفع',
-  },
-  'checkout.paymentMethodsTitle': {
-    en: 'PAYMENT METHODS',
-    ar: 'طرق الدفع',
-  },
-};
-
-// Get translation function
-export const useTranslation = () => {
-  const { currentLanguage } = useLanguageStore();
-  
-  const t = (key: string) => {
-    const translation = translations[key];
-    if (!translation) {
-      console.warn(`Translation key not found: ${key}`);
-      return key;
-    }
+// Define translations structure by language first, then keys
+const translations = {
+  en: {
+    // Language Selection
+    'language.select': 'SELECT LANGUAGE',
+    'language.subtitle': 'THIS HELPS US SERVE YOU BETTER.',
+    'language.english': 'ENGLISH',
+    'language.arabic': 'العربية',
     
-    return translation[currentLanguage] || translation.en;
+    // Common
+    'app.name': 'AZURA',
+    
+    // Navigation
+    'nav.home': 'Home',
+    'nav.search': 'Search',
+    'nav.cart': 'MY CART',
+    'nav.account': 'Account',
+    
+    // Home
+    'home.explore': 'Explore',
+    'home.services': 'Our Services',
+    'home.features': 'Features',
+    'home.fragrance': 'OUR NEW FRAGRANCE',
+    'home.nailcare': 'Nail Polish Remover',
+    'home.perfumes': 'PERFUMES',
+    'home.cologne': 'COLOGNE',
+    
+    // Categories
+    'categories.fragrance_description': 'Our new collection of fragrances offers a unique experience of freshness, where each spray takes you on a special journey.',
+    'categories.nailcare_description': 'Azura provides premium nail care products designed to promote the growth of long, strong, and healthy nails',
+    'categories.makeup_description': 'Premium makeup for every occasion',
+    'categories.products': 'PRODUCTS',
+    
+    // Product Details
+    'product.newArrival': 'NEW ARRIVAL',
+    'product.readMore': 'READ MORE',
+    'product.outOfStock': 'Out of Stock',
+    'product.inStock': 'In Stock',
+    'product.limitedStock': 'Only {0} items available.',
+    'product.addedToCart': 'Product has been added to your cart.',
+    'product.quantity': 'Quantity',
+    'product.goBack': 'Go Back',
+    'product.productNotFound': 'Product not found',
+    
+    // Account
+    'account.title': 'MY ACCOUNT',
+    'account.subtitle': 'Easy shopping with Azura',
+    'account.subtitleUpper': 'EASY SHOPPING WITH AZURA',
+    'account.country': 'COUNTRY / REGION',
+    'account.language': 'LANGUAGE',
+    'account.details': 'MY DETAILS',
+    'account.address': 'MY ADDRESS',
+    'account.orders': 'MY ORDERS',
+    'account.policies': 'POLICIES',
+    'account.login': 'LOGIN / REGISTER',
+    'account.logout': 'LOGOUT',
+    'account.followUs': 'FOLLOW US',
+    'account.loading': 'Loading...',
+    
+    // Orders
+    'orders.title': 'My Orders',
+    'orders.searchPlaceholder': 'Search by Order ID...',
+    'orders.status.pending': 'Pending',
+    'orders.status.processing': 'Processing',
+    'orders.status.shipped': 'Shipped',
+    'orders.status.delivered': 'Delivered',
+    'orders.status.cancelled': 'Cancelled',
+    'orders.status.failed': 'Failed',
+    'orders.total': 'Total',
+    'orders.noOrders': 'No orders found',
+    'orders.loading': 'Loading orders...',
+    'orders.orderNumber': 'Order #',
+    'orders.date': 'Date',
+    'orders.status': 'Status',
+    'orders.viewDetails': 'View Details',
+    
+    // Empty states
+    'empty.noProducts': 'No products found',
+    'empty.noProductsDescription': 'Try searching with different keywords',
+    'empty.cart': 'Your cart is empty',
+    'empty.cartDescription': 'Add some products to your cart',
+    'empty.startShopping': 'START SHOPPING',
+    
+    // Common UI
+    'common.loading': 'Loading...',
+    'common.error': 'Error',
+    'common.retry': 'Try Again',
+    'common.cancel': 'Cancel',
+    'common.save': 'Save',
+    'common.delete': 'Delete',
+    'common.edit': 'Edit',
+    'common.add': 'Add',
+    'common.remove': 'Remove',
+    'common.back': 'Back',
+    'common.next': 'Next',
+    'common.done': 'Done',
+    'common.ok': 'OK',
+    'common.yes': 'Yes',
+    'common.no': 'No',
+    
+    // Cart
+    'cart.title': 'MY CART',
+    'cart.empty': 'Your cart is empty',
+    'cart.emptyDescription': 'Add some products to your cart to get started',
+    'cart.startShopping': 'START SHOPPING',
+    'cart.remove': 'Remove',
+    'cart.quantity': 'QTY',
+    'cart.total': 'CART TOTAL',
+    'cart.checkout': 'CHECKOUT',
+    'cart.emptyCart': 'Empty Cart',
+    'cart.removeItem': 'Remove Item',
+    'cart.confirmRemove': 'YES, REMOVE',
+    'cart.removeFromCart': 'Remove from Cart?',
+    'cart.yesRemove': 'YES, REMOVE',
+    'cart.loginRequired': 'Login Required',
+    'cart.loginRequiredMessage': 'Please login to proceed with checkout',
+    
+    // Product
+    'product.addToCart': 'ADD TO CART',
+    'product.buyNow': 'BUY NOW',
+    
+    // Search
+    'search.title': 'SEARCH',
+    'search.placeholder': 'Search for products...',
+    'search.notFound': 'Product Not Found',
+
+    // Authentication
+    'auth.login': 'LOGIN',
+    'auth.register': 'REGISTER',
+    'auth.email': 'EMAIL',
+    'auth.password': 'PASSWORD',
+    'auth.confirmPassword': 'CONFIRM PASSWORD',
+    'auth.firstName': 'FIRST NAME',
+    'auth.lastName': 'LAST NAME',
+    'auth.mobile': 'MOBILE NUMBER',
+    'auth.forgotPassword': 'FORGOT PASSWORD?',
+    'auth.signIn': 'SIGN IN',
+    'auth.signUp': 'SIGN UP',
+    'auth.alreadyHaveAccount': 'Already have an account?',
+    'auth.dontHaveAccount': "Don't have an account?",
+    'auth.terms': 'By creating an account, you agree to our Terms & Conditions',
+    'auth.loginSuccess': 'Login successful',
+    'auth.registrationSuccess': 'Registration successful',
+    'auth.loginError': 'Login failed. Please check your credentials.',
+    'auth.registrationError': 'Registration failed. Please try again.',
+    'auth.userDetails': 'USER DETAILS',
+    'auth.loginTitle': 'LOGIN',
+    'auth.signUpTitle': 'SIGN UP',
+    'auth.createAccount': 'CREATE ACCOUNT',
+    'auth.welcome': 'Welcome',
+    'auth.welcomeBack': 'Welcome back',
+    'auth.enterDetails': 'Enter your details to continue',
+    'auth.enterLoginDetails': 'Enter your login details',
+    
+    // Address
+    'address.title': 'MY ADDRESS',
+    'address.addNew': 'ADD NEW ADDRESS',
+    'address.edit': 'EDIT ADDRESS',
+    'address.delete': 'DELETE',
+    'address.setDefault': 'SET AS DEFAULT',
+    'address.default': 'DEFAULT',
+    'address.firstName': 'FIRST NAME',
+    'address.lastName': 'LAST NAME',
+    'address.mobile': 'MOBILE NUMBER',
+    'address.governorate': 'GOVERNORATE',
+    'address.area': 'AREA',
+    'address.block': 'BLOCK',
+    'address.street': 'STREET',
+    'address.building': 'HOUSE/BUILDING',
+    'address.apartment': 'APARTMENT',
+    'address.additionalInfo': 'ADDITIONAL INFO (OPTIONAL)',
+    'address.selectGovernorate': 'Select Governorate',
+    'address.selectArea': 'Select Area',
+    'address.save': 'SAVE ADDRESS',
+    'address.update': 'UPDATE ADDRESS',
+    'address.deleteConfirm': 'Are you sure you want to delete this address?',
+    'address.saved': 'Address saved successfully',
+    'address.updated': 'Address updated successfully',
+    'address.deleted': 'Address deleted successfully',
+    'address.noAddresses': 'No addresses found',
+    'address.addFirstAddress': 'Add your first address',
+    
+    // User Details
+    'userDetails.title': 'USER DETAILS',
+    'userDetails.firstName': 'FIRST NAME',
+    'userDetails.lastName': 'LAST NAME',
+    'userDetails.email': 'EMAIL',
+    'userDetails.mobile': 'MOBILE NUMBER',
+    'userDetails.save': 'SAVE CHANGES',
+    'userDetails.saved': 'Profile updated successfully',
+    'userDetails.error': 'Failed to update profile',
+    
+    // Details (Account Details)
+    'details.title': 'MY DETAILS',
+    'details.fullName': 'FULL NAME',
+    'details.email': 'EMAIL',
+    'details.mobile': 'MOBILE NUMBER',
+    'details.password': 'PASSWORD',
+    'details.editButton': 'EDIT DETAILS',
+    
+    // Addresses
+    'addresses.title': 'MY ADDRESS',
+    'addresses.edit': 'Edit',
+    'addresses.noAddresses': 'No addresses found',
+    'addresses.noAddressesDescription': 'Add your first address to get started',
+    'addresses.addNew': 'ADD NEW ADDRESS',
+    
+    // Orders (extended)
+    'orders.orderId': 'Order ID',
+    'orders.customer': 'Customer',
+    'orders.noOrdersFound': 'No orders found',
+    'orders.noOrdersFoundDescription': 'No orders found for "{0}"',
+    'orders.noOrdersDescription': 'You have no orders yet',
+    'orders.clearSearch': 'Clear search',
+    'orders.ordersCount': 'Showing {0} {1}',
+    'orders.order': 'order',
+    'orders.orders': 'orders',
+    
+    // Checkout (extended)
+    'checkout.title': 'CHECKOUT',
+    'checkout.placeOrder': 'PLACE ORDER',
+    'checkout.completeDetails': 'Complete Details',
+    
+
+    
+    // Error messages
+    'error.serverError': 'Server error occurred',
+    'error.networkError': 'Network error occurred',
+    
+    // Policies
+    'policies.title': 'POLICIES',
+    'policies.aboutUs': 'About Us',
+    'policies.contactUs': 'Contact Us',
+    'policies.terms': 'Terms & Conditions',
+    'policies.privacy': 'Privacy Policy',
+    
+    // Order Success/Failure
+    'order.success': 'THANK YOU! ✓',
+    'order.successMessage': 'YOUR ORDER HAS BEEN PLACED SUCCESSFULLY',
+    'order.continueShopping': 'CONTINUE SHOPPING',
+    'order.errorTitle': 'OOPS! SOMETHING WENT WRONG',
+    'order.errorMessage': 'YOUR ORDER WAS NOT PLACED',
+    'order.errorSubMessage': 'PLEASE TRY AGAIN',
+    'order.tryAgain': 'TRY AGAIN?',
+    'order.orderId': 'ORDER ID:',
+    'order.date': 'DATE:',
+    'order.email': 'EMAIL:',
+    'order.transId': 'TRANS ID:',
+    'order.paymentMethod': 'PAYMENT METHOD:',
+    'order.sku': 'SKU:',
+    'order.qty': 'QTY:',
+
+    // Checkout 
+    'checkout.billingAddress': 'BILLING ADDRESS',
+    'checkout.selectShippingMethod': 'Please select a shipping method to continue.',
+    'checkout.selectPaymentMethod': 'Please select a payment method to continue.',
+    'checkout.addBillingAddress': 'Please add a billing address to continue.',
+    'checkout.addShippingAddress': 'Please add a shipping address to continue.',
+    'checkout.easyShoppingWithAzura': 'EASY SHOPPING WITH AZURA',
+    'checkout.billingShippingAddress': 'BILLING & SHIPPING ADDRESS',
+    'checkout.editAddress': 'Edit Address',
+    'checkout.addAddress': 'ADD ADDRESS',
+    'checkout.shipToDifferentAddress': 'Ship to Different Address?',
+    'checkout.shippingAddressTitle': 'SHIPPING ADDRESS',
+    'checkout.addShippingAddressButton': 'ADD SHIPPING ADDRESS',
+    'checkout.orderSummaryTitle': 'Order Summary',
+    'checkout.product': 'Product',
+    'checkout.noProducts': 'No products in cart',
+    'checkout.itemSubtotal': 'Item Sub total',
+    'checkout.shippingFee': 'Shipping Fee',
+    'checkout.grandTotal': 'Grand Total',
+    'checkout.selectShipping': 'Select Shipping Method',
+    'checkout.loadingShippingMethods': 'Loading shipping methods...',
+    'checkout.selectPaymentTitle': 'Select Payment Method',
+    'checkout.loadingPaymentMethods': 'Loading payment methods...',
+    'checkout.noShippingMethods': 'No shipping methods available for your address',
+    'checkout.addAddressForShipping': 'Please add an address to see shipping methods',
+    'checkout.noPaymentMethods': 'No payment methods available for your address',
+    'checkout.addAddressForPayment': 'Please add an address to see payment methods',
+    'checkout.paymentMethodsTitle': 'PAYMENT METHODS',
+  },
+  ar: {
+    // Language Selection
+    'language.select': 'اختر اللغة',
+    'language.subtitle': 'هذا يساعدنا على خدمتك بشكل أفضل.',
+    'language.english': 'ENGLISH',
+    'language.arabic': 'العربية',
+    
+    // Common
+    'app.name': 'أزورا',
+    
+    // Navigation
+    'nav.home': 'الرئيسية',
+    'nav.search': 'بحث',
+    'nav.cart': 'سلة التسوق',
+    'nav.account': 'الحساب',
+    
+    // Home
+    'home.explore': 'استكشف',
+    'home.services': 'خدماتنا',
+    'home.features': 'المميزات',
+    'home.fragrance': 'عطرنا الجديد',
+    'home.nailcare': 'مزيل طلاء الأظافر',
+    'home.perfumes': 'العطور',
+    'home.cologne': 'كولونيا',
+    
+    // Categories
+    'categories.fragrance_description': 'تقدم مجموعتنا الجديدة من العطور تجربة فريدة من الانتعاش، حيث تأخذك كل رشة في رحلة خاصة.',
+    'categories.nailcare_description': 'توفر أزورا منتجات عناية بالأظافر متميزة مصممة لتعزيز نمو أظافر طويلة وقوية وصحية',
+    'categories.makeup_description': 'مكياج فاخر لكل مناسبة',
+    'categories.products': 'منتجات',
+    
+    // Product Details
+    'product.newArrival': 'وصل حديثًا',
+    'product.readMore': 'قراءة المزيد',
+    'product.outOfStock': 'نفذ من المخزون',
+    'product.inStock': 'متوفر',
+    'product.limitedStock': 'متوفر {0} قطع فقط.',
+    'product.addedToCart': 'تمت إضافة المنتج إلى سلة التسوق الخاصة بك.',
+    'product.quantity': 'الكمية',
+    'product.goBack': 'الرجوع',
+    'product.productNotFound': 'المنتج غير موجود',
+    
+    // Account
+    'account.title': 'حسابي',
+    'account.subtitle': 'تسوق سهل مع أزورا',
+    'account.subtitleUpper': 'تسوق سهل مع أزورا',
+    'account.country': 'البلد / المنطقة',
+    'account.language': 'اللغة',
+    'account.details': 'بياناتي',
+    'account.address': 'عنواني',
+    'account.orders': 'طلباتي',
+    'account.policies': 'السياسات',
+    'account.login': 'تسجيل الدخول / التسجيل',
+    'account.logout': 'تسجيل الخروج',
+    'account.followUs': 'تابعنا',
+    'account.loading': 'جاري التحميل...',
+    
+    // Orders
+    'orders.title': 'طلباتي',
+    'orders.searchPlaceholder': 'البحث برقم الطلب...',
+    'orders.status.pending': 'قيد الانتظار',
+    'orders.status.processing': 'قيد المعالجة',
+    'orders.status.shipped': 'تم الشحن',
+    'orders.status.delivered': 'تم التوصيل',
+    'orders.status.cancelled': 'ملغي',
+    'orders.status.failed': 'فشل',
+    'orders.total': 'المجموع',
+    'orders.noOrders': 'لا توجد طلبات',
+    'orders.loading': 'جاري تحميل الطلبات...',
+    'orders.orderNumber': 'طلب رقم',
+    'orders.date': 'التاريخ',
+    'orders.status': 'الحالة',
+    'orders.viewDetails': 'عرض التفاصيل',
+    
+    // Empty states
+    'empty.noProducts': 'لا توجد منتجات',
+    'empty.noProductsDescription': 'جرب البحث بكلمات مختلفة',
+    'empty.cart': 'سلة التسوق فارغة',
+    'empty.cartDescription': 'أضف بعض المنتجات إلى سلة التسوق',
+    'empty.startShopping': 'ابدأ التسوق',
+    
+    // Common UI
+    'common.loading': 'جاري التحميل...',
+    'common.error': 'خطأ',
+    'common.retry': 'حاول مرة أخرى',
+    'common.cancel': 'إلغاء',
+    'common.save': 'حفظ',
+    'common.delete': 'حذف',
+    'common.edit': 'تعديل',
+    'common.add': 'إضافة',
+    'common.remove': 'إزالة',
+    'common.back': 'رجوع',
+    'common.next': 'التالي',
+    'common.done': 'تم',
+    'common.ok': 'حسناً',
+    'common.yes': 'نعم',
+    'common.no': 'لا',
+    
+    // Cart
+    'cart.title': 'سلة التسوق',
+    'cart.empty': 'سلة التسوق فارغة',
+    'cart.emptyDescription': 'أضف بعض المنتجات إلى سلة التسوق للبدء',
+    'cart.startShopping': 'ابدأ التسوق',
+    'cart.remove': 'إزالة',
+    'cart.quantity': 'الكمية',
+    'cart.total': 'مجموع السلة',
+    'cart.checkout': 'الدفع',
+    'cart.emptyCart': 'إفراغ السلة',
+    'cart.removeItem': 'إزالة المنتج',
+    'cart.confirmRemove': 'نعم، أزل',
+    'cart.removeFromCart': 'إزالة من سلة التسوق؟',
+    'cart.yesRemove': 'نعم، أزل',
+    'cart.loginRequired': 'تسجيل الدخول مطلوب',
+    'cart.loginRequiredMessage': 'يرجى تسجيل الدخول للمتابعة إلى الدفع',
+    
+    // Product
+    'product.addToCart': 'أضف إلى السلة',
+    'product.buyNow': 'اشتر الآن',
+    
+    // Search
+    'search.title': 'بحث',
+    'search.placeholder': 'ابحث عن المنتجات...',
+    'search.notFound': 'المنتج غير موجود',
+
+    // Authentication
+    'auth.login': 'تسجيل الدخول',
+    'auth.register': 'التسجيل',
+    'auth.email': 'البريد الإلكتروني',
+    'auth.password': 'كلمة المرور',
+    'auth.confirmPassword': 'تأكيد كلمة المرور',
+    'auth.firstName': 'الاسم الأول',
+    'auth.lastName': 'اسم العائلة',
+    'auth.mobile': 'رقم الجوال',
+    'auth.forgotPassword': 'نسيت كلمة المرور؟',
+    'auth.signIn': 'تسجيل الدخول',
+    'auth.signUp': 'التسجيل',
+    'auth.alreadyHaveAccount': 'لديك حساب بالفعل؟',
+    'auth.dontHaveAccount': 'ليس لديك حساب؟',
+    'auth.terms': 'بإنشاء حساب، فإنك توافق على الشروط والأحكام',
+    'auth.loginSuccess': 'تم تسجيل الدخول بنجاح',
+    'auth.registrationSuccess': 'تم التسجيل بنجاح',
+    'auth.loginError': 'فشل تسجيل الدخول. يرجى التحقق من البيانات.',
+    'auth.registrationError': 'فشل التسجيل. يرجى المحاولة مرة أخرى.',
+    'auth.userDetails': 'بيانات المستخدم',
+    'auth.loginTitle': 'تسجيل الدخول',
+    'auth.signUpTitle': 'التسجيل',
+    'auth.createAccount': 'إنشاء حساب',
+    'auth.welcome': 'مرحباً',
+    'auth.welcomeBack': 'مرحباً بعودتك',
+    'auth.enterDetails': 'أدخل بياناتك للمتابعة',
+    'auth.enterLoginDetails': 'أدخل بيانات تسجيل الدخول',
+    
+    // Address
+    'address.title': 'عنواني',
+    'address.addNew': 'إضافة عنوان جديد',
+    'address.edit': 'تعديل العنوان',
+    'address.delete': 'حذف',
+    'address.setDefault': 'تعيين كافتراضي',
+    'address.default': 'افتراضي',
+    'address.firstName': 'الاسم الأول',
+    'address.lastName': 'اسم العائلة',
+    'address.mobile': 'رقم الجوال',
+    'address.governorate': 'المحافظة',
+    'address.area': 'المنطقة',
+    'address.block': 'القطعة',
+    'address.street': 'الشارع',
+    'address.building': 'المنزل/المبنى',
+    'address.apartment': 'الشقة',
+    'address.additionalInfo': 'معلومات إضافية (اختياري)',
+    'address.selectGovernorate': 'اختر المحافظة',
+    'address.selectArea': 'اختر المنطقة',
+    'address.save': 'حفظ العنوان',
+    'address.update': 'تحديث العنوان',
+    'address.deleteConfirm': 'هل أنت متأكد من حذف هذا العنوان؟',
+    'address.saved': 'تم حفظ العنوان بنجاح',
+    'address.updated': 'تم تحديث العنوان بنجاح',
+    'address.deleted': 'تم حذف العنوان بنجاح',
+    'address.noAddresses': 'لا توجد عناوين',
+    'address.addFirstAddress': 'أضف عنوانك الأول',
+    
+    // User Details
+    'userDetails.title': 'بيانات المستخدم',
+    'userDetails.firstName': 'الاسم الأول',
+    'userDetails.lastName': 'اسم العائلة',
+    'userDetails.email': 'البريد الإلكتروني',
+    'userDetails.mobile': 'رقم الجوال',
+    'userDetails.save': 'حفظ التغييرات',
+    'userDetails.saved': 'تم تحديث الملف الشخصي بنجاح',
+    'userDetails.error': 'فشل في تحديث الملف الشخصي',
+    
+    // Details (Account Details)
+    'details.title': 'بياناتي',
+    'details.fullName': 'الاسم الكامل',
+    'details.email': 'البريد الإلكتروني',
+    'details.mobile': 'رقم الجوال',
+    'details.password': 'كلمة المرور',
+    'details.editButton': 'تعديل البيانات',
+    
+    // Addresses
+    'addresses.title': 'عنواني',
+    'addresses.edit': 'تعديل',
+    'addresses.noAddresses': 'لا توجد عناوين',
+    'addresses.noAddressesDescription': 'أضف عنوانك الأول للبدء',
+    'addresses.addNew': 'إضافة عنوان جديد',
+    
+    // Orders (extended)
+    'orders.orderId': 'رقم الطلب',
+    'orders.customer': 'العميل',
+    'orders.noOrdersFound': 'لا توجد طلبات',
+    'orders.noOrdersFoundDescription': 'لا توجد طلبات لـ "{0}"',
+    'orders.noOrdersDescription': 'ليس لديك طلبات بعد',
+    'orders.clearSearch': 'مسح البحث',
+    'orders.ordersCount': 'عرض {0} {1}',
+    'orders.order': 'طلب',
+    'orders.orders': 'طلبات',
+    
+    // Checkout (extended)
+    'checkout.title': 'الدفع',
+    'checkout.placeOrder': 'تأكيد الطلب',
+    'checkout.completeDetails': 'أكمل البيانات',
+    
+
+    
+    // Error messages
+    'error.serverError': 'حدث خطأ في الخادم',
+    'error.networkError': 'حدث خطأ في الشبكة',
+    
+    // Policies
+    'policies.title': 'السياسات',
+    'policies.aboutUs': 'من نحن',
+    'policies.contactUs': 'اتصل بنا',
+    'policies.terms': 'الشروط والأحكام',
+    'policies.privacy': 'سياسة الخصوصية',
+    
+    // Order Success/Failure
+    'order.success': 'شكراً لك! ✓',
+    'order.successMessage': 'تم تأكيد طلبك بنجاح',
+    'order.continueShopping': 'متابعة التسوق',
+    'order.errorTitle': 'عذراً! حدث خطأ ما',
+    'order.errorMessage': 'لم يتم تأكيد طلبك',
+    'order.errorSubMessage': 'يرجى المحاولة مرة أخرى',
+    'order.tryAgain': 'حاول مرة أخرى؟',
+    'order.orderId': 'رقم الطلب:',
+    'order.date': 'التاريخ:',
+    'order.email': 'البريد الإلكتروني:',
+    'order.transId': 'رقم المعاملة:',
+    'order.paymentMethod': 'طريقة الدفع:',
+    'order.sku': 'رقم المنتج:',
+    'order.qty': 'الكمية:',
+
+    // Checkout 
+    'checkout.billingAddress': 'عنوان الفوترة',
+    'checkout.selectShippingMethod': 'يرجى اختيار طريقة الشحن للمتابعة.',
+    'checkout.selectPaymentMethod': 'يرجى اختيار طريقة الدفع للمتابعة.',
+    'checkout.addBillingAddress': 'يرجى إضافة عنوان الفوترة للمتابعة.',
+    'checkout.addShippingAddress': 'يرجى إضافة عنوان الشحن للمتابعة.',
+    'checkout.easyShoppingWithAzura': 'تسوق سهل مع أزورا',
+    'checkout.billingShippingAddress': 'عنوان الفوترة والشحن',
+    'checkout.editAddress': 'تعديل العنوان',
+    'checkout.addAddress': 'إضافة عنوان',
+    'checkout.shipToDifferentAddress': 'الشحن إلى عنوان مختلف؟',
+    'checkout.shippingAddressTitle': 'عنوان الشحن',
+    'checkout.addShippingAddressButton': 'إضافة عنوان الشحن',
+    'checkout.orderSummaryTitle': 'ملخص الطلب',
+    'checkout.product': 'المنتج',
+    'checkout.noProducts': 'لا توجد منتجات في السلة',
+    'checkout.itemSubtotal': 'مجموع المنتجات',
+    'checkout.shippingFee': 'رسوم الشحن',
+    'checkout.grandTotal': 'المجموع الكلي',
+    'checkout.selectShipping': 'اختر طريقة الشحن',
+    'checkout.loadingShippingMethods': 'جاري تحميل طرق الشحن...',
+    'checkout.selectPaymentTitle': 'اختر طريقة الدفع',
+    'checkout.loadingPaymentMethods': 'جاري تحميل طرق الدفع...',
+    'checkout.noShippingMethods': 'لا توجد طرق شحن متاحة لعنوانك',
+    'checkout.addAddressForShipping': 'يرجى إضافة عنوان لرؤية طرق الشحن',
+    'checkout.noPaymentMethods': 'لا توجد طرق دفع متاحة لعنوانك',
+    'checkout.addAddressForPayment': 'يرجى إضافة عنوان لرؤية طرق الدفع',
+    'checkout.paymentMethodsTitle': 'طرق الدفع',
+  }
+} as const;
+
+type TranslationKeys = keyof typeof translations['en']; // Infer keys from English translations
+
+export const useTranslation = () => {
+  const language = useLanguageStore((state) => state.currentLanguage);
+
+  const t = (key: TranslationKeys) => {
+    // Fallback to English if translation for current language is missing
+    const translatedText = translations[language][key];
+    if (translatedText === undefined) {
+      console.warn(`Translation key "${key}" not found for language "${language}". Falling back to English.`);
+      return translations.en[key] || `MISSING_TRANSLATION:${key}`;
+    }
+    return translatedText;
   };
-  
-  return { t };
+
+  return { t, language };
 };
 
 // Get translation directly (for non-component contexts)
-export const getTranslation = (key: string) => {
+export const getTranslation = (key: TranslationKeys) => {
   const { currentLanguage } = useLanguageStore.getState();
   
-  const translation = translations[key];
-  if (!translation) {
-    console.warn(`Translation key not found: ${key}`);
-    return key;
+  const translatedText = translations[currentLanguage][key];
+  if (translatedText === undefined) {
+    console.warn(`Translation key "${key}" not found for language "${currentLanguage}". Falling back to English.`);
+    return translations.en[key] || `MISSING_TRANSLATION:${key}`;
   }
-  
-  return translation[currentLanguage] || translation.en;
+  return translatedText;
 }; 
