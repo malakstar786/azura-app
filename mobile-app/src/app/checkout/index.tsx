@@ -34,8 +34,18 @@ export default function CheckoutScreen() {
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [methodsLoading, setMethodsLoading] = useState(false);
 
+  // Dynamic shipping cost calculation based on selected shipping method
+  const getShippingCost = () => {
+    if (!selectedShippingMethod || !selectedShippingMethod.cost) {
+      return 0;
+    }
+    // Parse cost from string like "0.000 KD" to number
+    const costString = selectedShippingMethod.cost.toString();
+    const costNumber = parseFloat(costString.replace(/[^\d.]/g, ''));
+    return isNaN(costNumber) ? 0 : costNumber;
+  };
 
-  const shippingCost = 5.000;
+  const shippingCost = getShippingCost();
   const orderTotal = total + shippingCost;
 
   // Helper function to check if all required fields are completed
@@ -252,11 +262,6 @@ export default function CheckoutScreen() {
           
           if (parsedMethods.length > 0) {
             setShippingMethods(parsedMethods);
-            
-            // Auto-select first shipping method
-            if (!selectedShippingMethod) {
-              setSelectedShippingMethod(parsedMethods[0]);
-            }
           } else {
             console.log('No shipping method quotes available');
             setShippingMethods([]);
@@ -294,11 +299,6 @@ export default function CheckoutScreen() {
           
           if (parsedMethods.length > 0) {
             setPaymentMethods(parsedMethods);
-            
-            // Auto-select first payment method
-            if (!selectedPaymentMethod) {
-              setSelectedPaymentMethod(parsedMethods[0]);
-            }
           } else {
             console.log('No payment method options available');
             setPaymentMethods([]);
@@ -750,59 +750,6 @@ ${address.address_2 || ''}`;
           )}
         </View>
 
-        {/* Order Summary Section */}
-        <View style={styles.section}>
-          <View style={styles.sectionTitleRow}>
-            <Ionicons name="cube-outline" size={20} color="#000" style={styles.sectionIcon} />
-            <Text style={styles.sectionTitle}>{t('checkout.orderSummaryTitle')}</Text>
-          </View>
-          
-          {/* Product subheading and product list */}
-          <Text style={styles.productSubheading}>{t('checkout.product')}</Text>
-          
-          <FlatList
-            data={items}
-            horizontal={true}
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.cart_id}
-            renderItem={({ item }) => (
-              <View style={styles.productCard}>
-                <Image
-                  source={{ uri: item.thumb }}
-                  style={styles.productImage}
-                  resizeMode="contain"
-                />
-                <View style={styles.productInfo}>
-                  <Text style={styles.productName}>{item.name.toUpperCase()}</Text>
-                  <Text style={styles.productQuantity}>x {item.quantity}</Text>
-                  <Text style={styles.productPrice}>{item.total}</Text>
-                </View>
-              </View>
-            )}
-            contentContainerStyle={styles.productsContainer}
-            ListEmptyComponent={
-              <View style={styles.emptyProductsContainer}>
-                <Text style={styles.emptyProductsText}>{t('checkout.noProducts')}</Text>
-              </View>
-            }
-          />
-          
-          <View style={styles.totalSection}>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>{t('checkout.itemSubtotal')}</Text>
-              <Text style={styles.totalValue}>{formatPrice(total)}</Text>
-            </View>
-            <View style={styles.totalRow}>
-              <Text style={styles.totalLabel}>{t('checkout.shippingFee')}</Text>
-              <Text style={styles.totalValue}>{formatPrice(shippingCost)}</Text>
-            </View>
-            <View style={[styles.totalRow, styles.grandTotal]}>
-              <Text style={styles.grandTotalLabel}>{t('checkout.grandTotal')}</Text>
-              <Text style={styles.grandTotalValue}>{formatPrice(orderTotal)}</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Shipping Method Section */}
         <View style={styles.section}>
           <View style={styles.sectionTitleRow}>
@@ -913,6 +860,63 @@ ${address.address_2 || ''}`;
           {!selectedPaymentMethod && ((isAuthenticated && selectedAddress) || (!isAuthenticated && localAddress)) && (
             <Text style={styles.validationError}>{t('checkout.selectPaymentMethod')}</Text>
           )}
+        </View>
+
+        {/* Order Summary Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionTitleRow}>
+            <Ionicons name="cube-outline" size={20} color="#000" style={styles.sectionIcon} />
+            <Text style={styles.sectionTitle}>{t('checkout.orderSummaryTitle')}</Text>
+          </View>
+          
+          {/* Product subheading and product list */}
+          <Text style={styles.productSubheading}>{t('checkout.product')}</Text>
+          
+          <FlatList
+            data={items}
+            horizontal={true}
+            showsHorizontalScrollIndicator={true}
+            keyExtractor={(item) => item.cart_id}
+            renderItem={({ item }) => (
+              <View style={styles.productCard}>
+                <Image
+                  source={{ uri: item.thumb }}
+                  style={styles.productImage}
+                  resizeMode="contain"
+                />
+                <View style={styles.productInfo}>
+                  <Text style={styles.productName} numberOfLines={2} ellipsizeMode="tail">
+                    {item.name.toUpperCase()}
+                  </Text>
+                  <Text style={styles.productQuantity}>x {item.quantity}</Text>
+                  <Text style={styles.productPrice}>{item.total}</Text>
+                </View>
+              </View>
+            )}
+            contentContainerStyle={styles.productsContainer}
+            ListEmptyComponent={
+              <View style={styles.emptyProductsContainer}>
+                <Text style={styles.emptyProductsText}>{t('checkout.noProducts')}</Text>
+              </View>
+            }
+          />
+          
+          <View style={styles.totalSection}>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>{t('checkout.itemSubtotal')}</Text>
+              <Text style={styles.totalValue}>{formatPrice(total)}</Text>
+            </View>
+            <View style={styles.totalRow}>
+              <Text style={styles.totalLabel}>{t('checkout.shippingFee')}</Text>
+              <Text style={styles.totalValue}>
+                {selectedShippingMethod ? formatPrice(shippingCost) : formatPrice(0)}
+              </Text>
+            </View>
+            <View style={[styles.totalRow, styles.grandTotal]}>
+              <Text style={styles.grandTotalLabel}>{t('checkout.grandTotal')}</Text>
+              <Text style={styles.grandTotalValue}>{formatPrice(orderTotal)}</Text>
+            </View>
+          </View>
         </View>
 
         {error && (
@@ -1358,35 +1362,48 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   productCard: {
-    flexDirection: getFlexDirection('row'),
+    width: 160,
+    flexDirection: 'column',
     alignItems: 'center',
     padding: 8,
+    marginEnd: 12,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
   },
   productImage: {
     width: 80,
     height: 80,
     borderRadius: 4,
+    marginBottom: 8,
   },
   productInfo: {
-    flex: 1,
-    paddingStart: 12,
+    width: '100%',
+    alignItems: 'center',
   },
   productName: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
     color: '#000',
+    textAlign: 'center',
   },
   productQuantity: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#666',
+    marginTop: 4,
+    textAlign: 'center',
   },
   productPrice: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
     color: '#000',
+    marginTop: 4,
+    textAlign: 'center',
   },
   productsContainer: {
-    padding: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
   productSubheading: {
     fontSize: 14,
