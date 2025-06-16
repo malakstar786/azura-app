@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, Image, FlatList, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, Image, FlatList, Modal, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import { useAuthStore, Address } from '@store/auth-store';
 import { useCartStore } from '@store/cart-store';
-import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
+import { makeApiCall, API_ENDPOINTS, API_BASE_URL } from '@utils/api-config';
 import AddEditAddress from '@components/add-edit-address';
 import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
@@ -36,6 +36,9 @@ export default function CheckoutScreen() {
   const [methodsLoading, setMethodsLoading] = useState(false);
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
+  const [showApplePayButton, setShowApplePayButton] = useState(false);
+  const [applePayLoading, setApplePayLoading] = useState(false);
+  const [useApplePay, setUseApplePay] = useState(false);
 
   // Dynamic shipping cost calculation based on selected shipping method
   const getShippingCost = () => {
@@ -56,6 +59,144 @@ export default function CheckoutScreen() {
     const hasAddress = isAuthenticated ? !!selectedAddress : !!localAddress;
     const hasShippingAddress = shipToDifferentAddress ? !!shippingAddress : true;
     return hasAddress && hasShippingAddress && !!selectedShippingMethod && !!selectedPaymentMethod;
+  };
+
+  // Helper function to parse price strings to numeric values for Apple Pay
+  const parsePrice = (priceString: string): number => {
+    // Remove all non-digit and non-decimal characters
+    const numericValue = parseFloat(priceString.replace(/[^\d.]/g, ''));
+    return isNaN(numericValue) ? 0 : numericValue;
+  };
+
+  // Check if Apple Pay should be shown (iOS only, all requirements met)
+  const shouldShowApplePayButton = () => {
+    return Platform.OS === 'ios' && 
+           isCheckoutComplete() && 
+           selectedPaymentMethod?.code === 'cod'; // Show only when COD is selected
+  };
+
+  // Apple Pay payment flow function
+  const initiateApplePayPayment = async (orderId: string) => {
+    setApplePayLoading(true);
+    
+    try {
+      // Calculate total amount for Apple Pay
+      const totalAmount = parsePrice(formatPrice(orderTotal));
+      
+      console.log('Initiating Apple Pay with amount:', totalAmount);
+      
+      // Check if PaymentRequest API is available
+      if (!window.PaymentRequest) {
+        throw new Error('Apple Pay not supported on this device');
+      }
+
+      // Create PaymentRequest for Apple Pay
+      const paymentRequest = new PaymentRequest(
+        [{
+          supportedMethods: 'https://apple.com/apple-pay',
+          data: {
+            version: 3,
+            merchantIdentifier: 'merchant.kw.com.azura',
+            merchantCapabilities: ['supports3DS'],
+            supportedNetworks: ['visa', 'masterCard'],
+            countryCode: 'KW',
+            currencyCode: 'KWD'
+          }
+        }],
+        {
+          total: {
+            label: 'Azura',
+            amount: { currency: 'KWD', value: totalAmount.toString() }
+          }
+        }
+      );
+
+      // Handle merchant validation
+      paymentRequest.addEventListener('merchantvalidation', async (event: any) => {
+        console.log('✅ Merchant validation triggered');
+        try {
+          const response = await fetch(`${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|validateMerchant`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ validationURL: event.validationURL })
+          });
+
+          const merchantSession = await response.json();
+          console.log('✅ Merchant session received');
+          event.complete(merchantSession);
+        } catch (err) {
+          console.error('❌ Merchant validation failed:', err);
+          event.complete(null);
+        }
+      });
+
+      // Show Apple Pay sheet
+      const paymentResponse = await paymentRequest.show();
+
+      console.log('✅ Payment authorized');
+      
+      // Generate track ID
+      const trackId = 'ORDER_' + Date.now();
+
+      // Extract payment data
+      const token = paymentResponse.details.token?.paymentData 
+        ? paymentResponse.details.token.paymentData 
+        : paymentResponse.details.paymentData;
+      
+      const method = paymentResponse.details.token?.paymentMethod 
+        ? paymentResponse.details.token.paymentMethod 
+        : paymentResponse.details.paymentMethod;
+
+      // Process payment with backend
+      const processResponse = await fetch(`${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPayment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: {
+            paymentData: token,
+            paymentMethod: method
+          },
+          amount: totalAmount.toString(),
+          currencyCode: '414', // KWD currency code
+          trackId: trackId
+        })
+      });
+
+      const result = await processResponse.json();
+
+      if (result.status === 'success') {
+        await paymentResponse.complete('success');
+        
+        // Clear cart
+        await clearCart();
+        
+        // Navigate to success page with order data
+        router.replace({
+          pathname: '/order-success',
+          params: { 
+            orderData: JSON.stringify({
+              order_id: orderId,
+              payment_method: 'Apple Pay',
+              status: 'success'
+            })
+          }
+        });
+      } else {
+        await paymentResponse.complete('fail');
+        Alert.alert(
+          'Payment Failed',
+          `Payment failed: For Amount ${result.amount}KWD on ${result.date} (GMT+3) Your PaymentId: ${result.apple_pay_paymentID}, ReferenceId: ${result.apple_pay_referenceNo}`
+        );
+        
+        // Navigate to failure page
+        router.replace('/order-failure');
+      }
+    } catch (error: any) {
+      console.error('❌ Apple Pay payment failed:', error);
+      Alert.alert('Apple Pay Error', error.message || 'Apple Pay payment failed');
+    }
+    
+    setApplePayLoading(false);
   };
 
   // Load addresses and cart on mount
@@ -98,17 +239,23 @@ export default function CheckoutScreen() {
       });
       
       if (response.success === 1 && Array.isArray(response.data) && response.data.length > 0) {
-        // Get the last address from the original API response (most recent)
-        const lastAddress = response.data[response.data.length - 1];
-        setSelectedAddress(lastAddress);
+        // Get the LAST address from the original API response (most recent)
+        // The API returns addresses in order of creation, so the last one is the newest
+        const mostRecentAddress = response.data[response.data.length - 1];
+        setSelectedAddress(mostRecentAddress);
         
-        console.log('Selected last address from API response:', lastAddress);
+        console.log('Using most recent address for checkout:', mostRecentAddress);
+        console.log('Total addresses available:', response.data.length);
+      } else {
+        setSelectedAddress(null);
+        console.log('No addresses found for checkout');
       }
       
       // Also fetch for the address store (for the address modal)
       await fetchAddresses();
     } catch (error) {
       console.error('Error loading addresses for checkout:', error);
+      setSelectedAddress(null);
     }
     
     setAddressLoading(false);
@@ -429,6 +576,19 @@ export default function CheckoutScreen() {
           return;
         }
         
+        // Check if Apple Pay was selected
+        if (useApplePay && Platform.OS === 'ios') {
+          // Set order success state but don't redirect yet
+          setOrderSuccess(true);
+          
+          // Extract order ID for Apple Pay processing
+          const orderId = confirmResponse.data.order_id;
+          
+          // Trigger Apple Pay payment flow
+          await initiateApplePayPayment(orderId);
+          return;
+        }
+        
         // For COD or direct payments without redirect_url
         setOrderSuccess(true);
         
@@ -579,8 +739,8 @@ ${address.address_2 || ''}`;
         console.log('Payment address response:', response);
 
         if (response.success === 1) {
-          // Refresh addresses for authenticated users
-          await loadAddresses();
+          // Refresh addresses for authenticated users and get the most recent one
+          await loadAddresses(); // This will automatically select the most recent address
           // Explicitly trigger method fetching after address is set
           await setAddressInCheckoutAndFetchMethods();
           setIsLoading(false);
@@ -892,7 +1052,10 @@ ${address.address_2 || ''}`;
                     styles.methodOption,
                     selectedPaymentMethod === method && styles.selectedMethodOption
                   ]}
-                  onPress={() => handlePaymentMethodSelection(method)}
+                  onPress={() => {
+                    handlePaymentMethodSelection(method);
+                    setUseApplePay(false); // Reset Apple Pay selection when selecting other methods
+                  }}
                 >
                   <View style={styles.methodRadio}>
                     <View style={[
@@ -910,6 +1073,39 @@ ${address.address_2 || ''}`;
                   </View>
                 </TouchableOpacity>
               ))}
+              
+              {/* Apple Pay Button - Show on iOS when COD is selected */}
+              {shouldShowApplePayButton() && (
+                <TouchableOpacity
+                  style={[
+                    styles.applePayButton,
+                    useApplePay && styles.selectedApplePayButton
+                  ]}
+                  onPress={() => setUseApplePay(!useApplePay)}
+                >
+                  <View style={styles.applePayIcon}>
+                    <Ionicons 
+                      name="logo-apple" 
+                      size={20} 
+                      color={useApplePay ? "#fff" : "#000"} 
+                    />
+                  </View>
+                  <Text style={[
+                    styles.applePayText,
+                    useApplePay && styles.selectedApplePayText
+                  ]}>
+                    Pay with Apple Pay
+                  </Text>
+                  <View style={styles.methodRadio}>
+                    <View style={[
+                      styles.radioOuter,
+                      useApplePay && styles.radioSelected
+                    ]}>
+                      {useApplePay && <View style={styles.radioInner} />}
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
             </View>
           ) : (
             <View style={styles.noMethodsContainer}>
@@ -1070,9 +1266,9 @@ ${address.address_2 || ''}`;
             address_id: selectedAddress.address_id
           } : undefined}
           onAddressUpdated={async () => {
-            // Refresh addresses and methods when address is updated
+            // Refresh addresses and automatically select the most recent one
             if (isAuthenticated) {
-              await loadAddresses();
+              await loadAddresses(); // This will get the most recent address
             }
             
             // Always refresh shipping and payment methods after address change
@@ -1657,5 +1853,32 @@ const styles = StyleSheet.create({
     marginTop: 16,
     fontSize: 16,
     color: '#666',
+  },
+  // Apple Pay styles
+  applePayButton: {
+    flexDirection: getFlexDirection('row'),
+    alignItems: 'center',
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#E5E5E5',
+    borderRadius: 8,
+    marginTop: 8,
+    backgroundColor: '#fff',
+  },
+  selectedApplePayButton: {
+    borderColor: '#000',
+    backgroundColor: '#000',
+  },
+  applePayIcon: {
+    marginEnd: 12,
+  },
+  applePayText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#000',
+  },
+  selectedApplePayText: {
+    color: '#fff',
   },
 }); 

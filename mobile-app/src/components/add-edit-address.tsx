@@ -11,7 +11,9 @@ import {
   Modal, 
   SafeAreaView, 
   Dimensions,
-  FlatList 
+  FlatList,
+  KeyboardAvoidingView,
+  Platform
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '@store/auth-store';
@@ -79,6 +81,13 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
     },
     default: address?.default || false,
     address_id: address?.address_id
+  });
+
+  // Separate state for full name to allow free typing with spaces
+  const [fullName, setFullName] = useState(() => {
+    const first = address?.firstname || '';
+    const last = address?.lastname || '';
+    return first + (last ? ' ' + last : '');
   });
 
   // Location data state
@@ -226,7 +235,6 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
   };
 
   const validateForm = () => {
-    const fullName = formData.firstname + (formData.lastname ? ' ' + formData.lastname : '');
     const nameParts = fullName.trim().split(' ').filter(part => part.length > 0);
     
     if (nameParts.length < 2) {
@@ -266,6 +274,27 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
   };
 
   const handleSubmit = async () => {
+    // Split full name before validation and submission
+    const splitName = () => {
+      const trimmedName = fullName.trim();
+      if (trimmedName === '') {
+        return { firstname: '', lastname: '' };
+      }
+      
+      const lastSpaceIndex = trimmedName.lastIndexOf(' ');
+      if (lastSpaceIndex === -1) {
+        return { firstname: trimmedName, lastname: '' };
+      }
+      
+      return {
+        firstname: trimmedName.substring(0, lastSpaceIndex),
+        lastname: trimmedName.substring(lastSpaceIndex + 1)
+      };
+    };
+
+    const { firstname, lastname } = splitName();
+    const updatedFormData = { ...formData, firstname, lastname };
+
     if (!validateForm()) return;
 
     try {
@@ -276,20 +305,20 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
         
         // For new addresses in checkout context, use custom payment address endpoint
         const addressData = {
-          firstname: formData.firstname,
-          lastname: formData.lastname || '',
-          telephone: formData.phone || user?.telephone || '',
+          firstname: updatedFormData.firstname,
+          lastname: updatedFormData.lastname || '',
+          telephone: updatedFormData.phone || user?.telephone || '',
           email: user?.email || '', // Use user's email from auth store
-          country_id: formData.country_id,
-          city: formData.city,
-          zone_id: formData.zone_id,
-          address_2: formData.address_2 || '',
+          country_id: updatedFormData.country_id,
+          city: updatedFormData.city,
+          zone_id: updatedFormData.zone_id,
+          address_2: updatedFormData.address_2 || '',
           custom_field: {
-            '30': formData.custom_field['30'], // Block
-            '31': formData.custom_field['31'], // Street
-            '32': formData.custom_field['32'], // House Building
-            '33': formData.custom_field['33'], // Apartment No.
-            '35': formData.custom_field['35'] || '' // avenue
+            '30': updatedFormData.custom_field['30'], // Block
+            '31': updatedFormData.custom_field['31'], // Street
+            '32': updatedFormData.custom_field['32'], // House Building
+            '33': updatedFormData.custom_field['33'], // Apartment No.
+            '35': updatedFormData.custom_field['35'] || '' // avenue
           }
         };
 
@@ -303,21 +332,21 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
       } else {
         // For account context or editing existing addresses, use existing address store logic
         const addressData = {
-          firstName: formData.firstname,
-          lastName: formData.lastname || '',
-          phone: formData.phone,
-          city: formData.city,
-          block: formData.custom_field['30'],
-          street: formData.custom_field['31'],
-          houseNumber: formData.custom_field['32'],
-          apartmentNumber: formData.custom_field['33'] || '',
-          avenue: formData.custom_field['35'] || '',
-          additionalDetails: formData.address_2 || '',
-          isDefault: formData.default
+          firstName: updatedFormData.firstname,
+          lastName: updatedFormData.lastname || '',
+          phone: updatedFormData.phone,
+          city: updatedFormData.city,
+          block: updatedFormData.custom_field['30'],
+          street: updatedFormData.custom_field['31'],
+          houseNumber: updatedFormData.custom_field['32'],
+          apartmentNumber: updatedFormData.custom_field['33'] || '',
+          avenue: updatedFormData.custom_field['35'] || '',
+          additionalDetails: updatedFormData.address_2 || '',
+          isDefault: updatedFormData.default
         };
 
-        if (formData.address_id) {
-          await updateAddress(formData.address_id, addressData);
+        if (updatedFormData.address_id) {
+          await updateAddress(updatedFormData.address_id, addressData);
         } else {
           await addAddress(addressData);
         }
@@ -403,39 +432,29 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
         </View>
 
         {/* Form Content */}
-        <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView 
+          style={styles.keyboardAvoidingView}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        >
+          <ScrollView 
+            style={styles.formContainer} 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollViewContent}
+          >
           {/* Full Name Field */}
           <TextInput
             style={styles.input}
-            placeholder="Ahmed Al Farsi"
-            value={formData.firstname + (formData.lastname ? ' ' + formData.lastname : '')}
-            onChangeText={(text) => {
-              // Split the full name into first and last name, but allow spaces while typing
-              const trimmedText = text.trim();
-              if (trimmedText === '') {
-                setFormData({ 
-                  ...formData, 
-                  firstname: '',
-                  lastname: ''
-                });
-              } else {
-                const nameParts = trimmedText.split(' ');
-                const firstName = nameParts[0] || '';
-                const lastName = nameParts.slice(1).join(' ') || '';
-                setFormData({ 
-                  ...formData, 
-                  firstname: firstName,
-                  lastname: lastName
-                });
-              }
-            }}
+            placeholder="Full Name"
+            value={fullName}
+            onChangeText={setFullName}
             placeholderTextColor="#999"
           />
 
           {/* Phone Field */}
           <TextInput
             style={styles.input}
-            placeholder="+965 66112321"
+            placeholder="Phone Number"
             value={formData.phone}
             onChangeText={(text) => setFormData({ ...formData, phone: text })}
             keyboardType="phone-pad"
@@ -548,29 +567,30 @@ export default function ImprovedAddEditAddress({ address, onClose, onAddressUpda
             placeholderTextColor="#999"
             multiline
           />
-        </ScrollView>
 
-        {/* Footer Buttons */}
-        <View style={styles.footer}>
-          <TouchableOpacity 
-            style={styles.cancelButton} 
-            onPress={onClose}
-          >
-            <Text style={styles.cancelButtonText}>CANCEL</Text>
-          </TouchableOpacity>
+          {/* Footer Buttons */}
+          <View style={styles.footer}>
+            <TouchableOpacity 
+              style={styles.cancelButton} 
+              onPress={onClose}
+            >
+              <Text style={styles.cancelButtonText}>CANCEL</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity 
-            style={styles.saveButton} 
-            onPress={handleSubmit}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.saveButtonText}>SAVE</Text>
-            )}
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity 
+              style={styles.saveButton} 
+              onPress={handleSubmit}
+              disabled={isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.saveButtonText}>SAVE</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
 
         {/* Dropdown Modals */}
         {renderDropdownModal(
@@ -630,9 +650,15 @@ const styles = StyleSheet.create({
     color: '#000',
     flex: 1,
   },
+  keyboardAvoidingView: {
+    flex: 1,
+  },
   formContainer: {
     flex: 1,
     padding: 16,
+  },
+  scrollViewContent: {
+    paddingBottom: 100,
   },
   input: {
     height: 56,
@@ -730,6 +756,7 @@ const styles = StyleSheet.create({
   },
   dropdownItem: {
     padding: 16,
+    marginBottom: 20,
     borderBottomWidth: 1,
     borderBottomColor: '#F5F5F5',
   },

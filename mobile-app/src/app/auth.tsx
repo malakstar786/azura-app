@@ -35,6 +35,8 @@ export default function Auth() {
       if (isAuthenticated) {
         if (redirect === 'checkout') {
           router.replace('/checkout');
+        } else if (redirect === 'cart') {
+          router.replace('/(shop)/cart');
         } else {
           router.replace('/');
         }

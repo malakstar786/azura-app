@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useToast } from 'react-native-toast-notifications';
 import { useCartStore } from '@store/cart-store';
+import { useAuthStore } from '@store/auth-store';
 import { useLanguageStore } from '@store/language-store';
 import { useTranslation } from '@utils/translations';
 import { publicApi } from '@utils/api-service';
@@ -46,6 +47,7 @@ const ProductDetails = () => {
   const toast = useToast();
   const { t } = useTranslation();
   const { currentLanguage, lastUpdated } = useLanguageStore();
+  const { isAuthenticated, validateSession } = useAuthStore();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -125,8 +127,29 @@ const ProductDetails = () => {
     addToCart(product.product_id, quantity);
   };
 
-  const handleBuyNow = () => {
+  const handleBuyNow = async () => {
+    if (!product) return;
+    
+    // First add product to cart (locally or server-side depending on auth status)
     handleAddToCart();
+    
+    // Check if user is authenticated and validate session
+    if (!isAuthenticated) {
+      // If not authenticated, redirect to login screen with cart redirect parameter
+      // The auth screen will handle redirecting to cart after successful login
+      router.push('/auth?redirect=cart');
+      return;
+    }
+    
+    // If user appears authenticated, validate the session with server
+    const isSessionValid = await validateSession();
+    if (!isSessionValid) {
+      // Session is invalid, redirect to login
+      router.push('/auth?redirect=cart');
+      return;
+    }
+    
+    // If authenticated and session is valid, proceed to checkout
     router.push('/checkout');
   };
 

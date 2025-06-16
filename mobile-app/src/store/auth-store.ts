@@ -73,6 +73,7 @@ export interface AuthState {
   deleteAddress: (addressId: string) => Promise<void>;
   clearError: () => void;
   logout: () => void;
+  validateSession: () => Promise<boolean>;
 }
 
 // Function to handle common API errors
@@ -540,6 +541,46 @@ export const useAuthStore = create<AuthState>()(
       },
 
       clearError: () => set({ error: null }),
+
+      validateSession: async () => {
+        try {
+          // Quick check - if no user data, definitely not authenticated
+          const { user, isAuthenticated } = get();
+          if (!isAuthenticated || !user) {
+            return false;
+          }
+
+          // Try to fetch addresses as a session validation test
+          // This endpoint requires authentication and will fail if session is invalid
+          const response = await makeApiCall(API_ENDPOINTS.addresses, {
+            method: 'GET'
+          });
+
+          // If addresses call succeeds, session is valid
+          if (response.success === 1) {
+            return true;
+          } else {
+            // Session invalid, clear auth state
+            set({ 
+              isAuthenticated: false, 
+              user: null,
+              addresses: [],
+              error: null
+            });
+            return false;
+          }
+        } catch (error: any) {
+          console.warn('Session validation failed:', error);
+          // Session invalid, clear auth state
+          set({ 
+            isAuthenticated: false, 
+            user: null,
+            addresses: [],
+            error: null
+          });
+          return false;
+        }
+      },
 
       logout: () => {
         set({ 
