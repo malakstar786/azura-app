@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, Image, FlatList } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Alert, ActivityIndicator, Image, FlatList, Modal } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { WebView } from 'react-native-webview';
 import { useAuthStore, Address } from '@store/auth-store';
 import { useCartStore } from '@store/cart-store';
 import { makeApiCall, API_ENDPOINTS } from '@utils/api-config';
@@ -33,6 +34,8 @@ export default function CheckoutScreen() {
   const [shippingMethods, setShippingMethods] = useState<any[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
   const [methodsLoading, setMethodsLoading] = useState(false);
+  const [showPaymentWebView, setShowPaymentWebView] = useState(false);
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
 
   // Dynamic shipping cost calculation based on selected shipping method
   const getShippingCost = () => {
@@ -407,6 +410,26 @@ export default function CheckoutScreen() {
       });
 
       if (confirmResponse.success === 1) {
+        // Check if there's a redirect_url for payment gateway (KNet, Credit Card)
+        if (confirmResponse.data.redirect_url) {
+          console.log('Payment redirect URL detected:', confirmResponse.data.redirect_url);
+          
+          // Decode HTML entities and fix URL format
+          let processedUrl = confirmResponse.data.redirect_url.replace(/&amp;/g, '&');
+          
+          // Fix specific URL format: change "&order_id=" to "&amp&order_id="
+          processedUrl = processedUrl.replace(/&order_id=/g, '&amp&order_id=');
+          
+          console.log('Processed payment URL:', processedUrl);
+          
+          // Open payment gateway in WebView
+          setPaymentUrl(processedUrl);
+          setShowPaymentWebView(true);
+          setIsLoading(false);
+          return;
+        }
+        
+        // For COD or direct payments without redirect_url
         setOrderSuccess(true);
         
         // Clear cart
@@ -437,6 +460,48 @@ export default function CheckoutScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  // Handle payment WebView navigation changes
+  const handlePaymentNavigation = async (navState: any) => {
+    const currentUrl = navState.url;
+    console.log('Payment WebView navigation:', currentUrl);
+    
+    // Monitor for success URL
+    if (currentUrl.includes('checkout/success')) {
+      console.log('Payment successful - closing WebView and navigating to success');
+      
+      // Close WebView
+      setShowPaymentWebView(false);
+      setPaymentUrl(null);
+      
+      // Clear cart
+      await clearCart();
+      
+      // Navigate to success page
+      router.replace('/order-success');
+      return;
+    }
+    
+    // Monitor for failure URL (cart page indicates failed payment)
+    if (currentUrl.includes('checkout/cart')) {
+      console.log('Payment failed - closing WebView and navigating to failure');
+      
+      // Close WebView
+      setShowPaymentWebView(false);
+      setPaymentUrl(null);
+      
+      // Navigate to failure page
+      router.replace('/order-failure');
+      return;
+    }
+  };
+
+  // Close payment WebView manually
+  const closePaymentWebView = () => {
+    setShowPaymentWebView(false);
+    setPaymentUrl(null);
+    setIsLoading(false);
   };
 
   const formatPrice = (price: number) => {
@@ -1065,6 +1130,67 @@ ${address.address_2 || ''}`;
           }}
         />
       )}
+
+      {/* Payment WebView Modal */}
+      {showPaymentWebView && paymentUrl && (
+        <Modal
+          visible={showPaymentWebView}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={closePaymentWebView}
+        >
+          <View style={styles.paymentWebViewContainer}>
+            {/* Header with close button */}
+            <View style={styles.paymentWebViewHeader}>
+              <Text style={styles.paymentWebViewTitle}>Secure Payment</Text>
+              <TouchableOpacity
+                style={styles.paymentWebViewCloseButton}
+                onPress={closePaymentWebView}
+              >
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* WebView */}
+            <WebView
+              source={{ uri: paymentUrl }}
+              style={styles.paymentWebView}
+              onNavigationStateChange={handlePaymentNavigation}
+              startInLoadingState={true}
+              renderLoading={() => (
+                <View style={styles.paymentWebViewLoading}>
+                  <ActivityIndicator size="large" color="#000" />
+                  <Text style={styles.paymentWebViewLoadingText}>Loading secure payment...</Text>
+                </View>
+              )}
+              // Security settings
+              javaScriptEnabled={true}
+              domStorageEnabled={true}
+              allowsInlineMediaPlayback={false}
+              mediaPlaybackRequiresUserAction={true}
+              // Additional security
+              onShouldStartLoadWithRequest={(request) => {
+                // Only allow navigation to trusted domains
+                const url = request.url.toLowerCase();
+                const trustedDomains = [
+                  'new.azurakwt.com',
+                  'kpaytest.com.kw',               // KNet test environment
+                  'knet.com.kw',                   // KNet production environment  
+                  'kpg.com.kw',                    // KNet payment gateway
+                  'testsecureacceptance.cybersource.com',  // CyberSource test environment
+                  'secureacceptance.cybersource.com',      // CyberSource production environment
+                ];
+                
+                const isAllowed = trustedDomains.some(domain => url.includes(domain));
+                if (!isAllowed) {
+                  console.warn('Blocked navigation to untrusted domain:', request.url);
+                }
+                return isAllowed;
+              }}
+            />
+          </View>
+        </Modal>
+      )}
     </>
   );
 }
@@ -1494,5 +1620,42 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginStart: 16,
     fontWeight: '500',
+  },
+  // Payment WebView styles
+  paymentWebViewContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  paymentWebViewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E5E5',
+    backgroundColor: '#fff',
+  },
+  paymentWebViewTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#000',
+  },
+  paymentWebViewCloseButton: {
+    padding: 8,
+  },
+  paymentWebView: {
+    flex: 1,
+  },
+  paymentWebViewLoading: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+  },
+  paymentWebViewLoadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    color: '#666',
   },
 }); 
