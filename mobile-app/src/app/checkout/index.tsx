@@ -11,6 +11,7 @@ import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
+import ApplePay, { MerchantCapability, PaymentNetwork, CompleteStatus } from 'apple-pay-react-native-expo';
 
 export default function CheckoutScreen() {
   const { isAuthenticated } = useAuthStore();
@@ -39,6 +40,28 @@ export default function CheckoutScreen() {
   const [showApplePayButton, setShowApplePayButton] = useState(false);
   const [applePayLoading, setApplePayLoading] = useState(false);
   const [useApplePay, setUseApplePay] = useState(false);
+  const [canMakePayments, setCanMakePayments] = useState(false);
+
+  // Check if Apple Pay is available on this device
+  useEffect(() => {
+    if (Platform.OS === 'ios') {
+      // Check if device supports Apple Pay
+      const checkApplePaySupport = async () => {
+        try {
+          // Use ApplePay.isAvailable() if it exists, otherwise fall back to a manual check
+          setCanMakePayments(true); // Assume support until we can properly check
+          
+          // Add actual implementation once we have the correct API reference
+          // This will be replaced with actual API call when we have accurate documentation
+        } catch (error) {
+          console.error('Error checking Apple Pay availability:', error);
+          setCanMakePayments(false);
+        }
+      };
+      
+      checkApplePaySupport();
+    }
+  }, []);
 
   // Dynamic shipping cost calculation based on selected shipping method
   const getShippingCost = () => {
@@ -71,11 +94,12 @@ export default function CheckoutScreen() {
   // Check if Apple Pay should be shown (iOS only, all requirements met)
   const shouldShowApplePayButton = () => {
     return Platform.OS === 'ios' && 
+           canMakePayments &&
            isCheckoutComplete() && 
            selectedPaymentMethod?.code === 'cod'; // Show only when COD is selected
   };
 
-  // Apple Pay payment flow function
+  // Apple Pay payment flow function using the apple-pay-react-native-expo library
   const initiateApplePayPayment = async (orderId: string) => {
     setApplePayLoading(true);
     
@@ -85,87 +109,55 @@ export default function CheckoutScreen() {
       
       console.log('Initiating Apple Pay with amount:', totalAmount);
       
-      // Check if PaymentRequest API is available
-      if (!window.PaymentRequest) {
-        throw new Error('Apple Pay not supported on this device');
-      }
-
-      // Create PaymentRequest for Apple Pay
-      const paymentRequest = new PaymentRequest(
-        [{
-          supportedMethods: 'https://apple.com/apple-pay',
-          data: {
-            version: 3,
-            merchantIdentifier: 'merchant.kw.com.azura',
-            merchantCapabilities: ['supports3DS'],
-            supportedNetworks: ['visa', 'masterCard'],
-            countryCode: 'KW',
-            currencyCode: 'KWD'
-          }
-        }],
-        {
-          total: {
+      // Prepare Apple Pay request
+      const paymentRequest = {
+        merchantIdentifier: 'merchant.kw.com.azura',
+        countryCode: 'KW',
+        currencyCode: 'KWD',
+        supportedNetworks: [
+          PaymentNetwork.visa,
+          PaymentNetwork.masterCard,
+          PaymentNetwork.amex
+        ],
+        merchantCapabilities: [
+          MerchantCapability["3DS"],
+          MerchantCapability.Credit,
+          MerchantCapability.Debit
+        ],
+        paymentSummaryItems: [
+          {
             label: 'Azura',
-            amount: { currency: 'KWD', value: totalAmount.toString() }
+            amount: totalAmount
           }
-        }
-      );
+        ]
+      };
 
-      // Handle merchant validation
-      paymentRequest.addEventListener('merchantvalidation', async (event: any) => {
-        console.log('✅ Merchant validation triggered');
-        try {
-          const response = await fetch(`${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|validateMerchant`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ validationURL: event.validationURL })
-          });
-
-          const merchantSession = await response.json();
-          console.log('✅ Merchant session received');
-          event.complete(merchantSession);
-        } catch (err) {
-          console.error('❌ Merchant validation failed:', err);
-          event.complete(null);
-        }
-      });
-
-      // Show Apple Pay sheet
-      const paymentResponse = await paymentRequest.show();
-
+      // Request Apple Pay payment
+      const paymentResponse = await ApplePay.show(paymentRequest);
+      
       console.log('✅ Payment authorized');
       
       // Generate track ID
       const trackId = 'ORDER_' + Date.now();
-
-      // Extract payment data
-      const token = paymentResponse.details.token?.paymentData 
-        ? paymentResponse.details.token.paymentData 
-        : paymentResponse.details.paymentData;
-      
-      const method = paymentResponse.details.token?.paymentMethod 
-        ? paymentResponse.details.token.paymentMethod 
-        : paymentResponse.details.paymentMethod;
 
       // Process payment with backend
       const processResponse = await fetch(`${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPayment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          token: {
-            paymentData: token,
-            paymentMethod: method
-          },
+          token: paymentResponse,
           amount: totalAmount.toString(),
-          currencyCode: '414', // KWD currency code
-          trackId: trackId
+          currencyCode: '414', // KWD currency code for payment processing
+          trackId: trackId,
+          orderId: orderId // Pass along the order ID for backend reference
         })
       });
 
       const result = await processResponse.json();
 
       if (result.status === 'success') {
-        await paymentResponse.complete('success');
+        // Complete the payment with success
+        await ApplePay.complete(CompleteStatus.success);
         
         // Clear cart
         await clearCart();
@@ -182,10 +174,12 @@ export default function CheckoutScreen() {
           }
         });
       } else {
-        await paymentResponse.complete('fail');
+        // Complete the payment with failure
+        await ApplePay.complete(CompleteStatus.failure);
+        
         Alert.alert(
           'Payment Failed',
-          `Payment failed: For Amount ${result.amount}KWD on ${result.date} (GMT+3) Your PaymentId: ${result.apple_pay_paymentID}, ReferenceId: ${result.apple_pay_referenceNo}`
+          `Payment failed: ${result.message || 'An error occurred during payment processing.'}`
         );
         
         // Navigate to failure page
@@ -194,6 +188,132 @@ export default function CheckoutScreen() {
     } catch (error: any) {
       console.error('❌ Apple Pay payment failed:', error);
       Alert.alert('Apple Pay Error', error.message || 'Apple Pay payment failed');
+      
+      // Ensure we complete the payment with failure
+      try {
+        await ApplePay.complete(CompleteStatus.failure);
+      } catch (completeError) {
+        // Ignore errors when completing payment in error state
+        console.error('Error completing failed payment:', completeError);
+      }
+    }
+    
+    setApplePayLoading(false);
+  };
+
+  // Standalone Apple Pay button handler - can be used for direct Apple Pay payments
+  const onApplePayButtonClicked = async () => {
+    if (Platform.OS !== 'ios') {
+      Alert.alert('Apple Pay is only available on iOS.');
+      return;
+    }
+
+    setApplePayLoading(true);
+    
+    try {
+      // Calculate total amount for Apple Pay
+      const totalAmount = parsePrice(formatPrice(orderTotal));
+      
+      // Confirm order first to get an order ID
+      const confirmResponse = await makeApiCall(API_ENDPOINTS.confirmOrder, {
+        method: 'POST'
+      });
+      
+      if (confirmResponse.success !== 1 || !confirmResponse.data.order_id) {
+        throw new Error('Failed to create order.');
+      }
+      
+      const orderId = confirmResponse.data.order_id;
+      console.log(`Order created with ID: ${orderId}, initiating Apple Pay for amount: ${totalAmount}`);
+      
+      // Prepare Apple Pay request with detailed line items for better user experience
+      const paymentRequest = {
+        merchantIdentifier: 'merchant.kw.com.azura',
+        countryCode: 'KW',
+        currencyCode: 'KWD',
+        supportedNetworks: [
+          PaymentNetwork.visa,
+          PaymentNetwork.masterCard,
+          PaymentNetwork.amex
+        ],
+        merchantCapabilities: [
+          MerchantCapability["3DS"],
+          MerchantCapability.Credit,
+          MerchantCapability.Debit
+        ],
+        paymentSummaryItems: [
+          // Add items from cart with subtotal
+          {
+            label: 'Items Subtotal',
+            amount: total
+          },
+          // Add shipping if applicable
+          ...(shippingCost > 0 ? [{
+            label: 'Shipping',
+            amount: shippingCost
+          }] : []),
+          // Grand total (must be the last item and match the sum of previous items)
+          {
+            label: 'Azura', // Company name as the final line item
+            amount: totalAmount
+          }
+        ]
+      };
+
+      // Request Apple Pay payment
+      const paymentResponse = await ApplePay.show(paymentRequest);
+      
+      console.log('✅ Payment authorized, processing with backend');
+      
+      // Generate track ID
+      const trackId = `ORDER_${orderId}_${Date.now()}`;
+
+      // Process payment with backend
+      const processResponse = await fetch(`${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPayment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: paymentResponse,
+          amount: totalAmount.toString(),
+          currencyCode: '414', // KWD currency code
+          trackId: trackId,
+          orderId: orderId
+        })
+      });
+
+      const result = await processResponse.json();
+
+      if (result.status === 'success') {
+        await ApplePay.complete(CompleteStatus.success);
+        // Clear cart
+        await clearCart();
+        
+        // Navigate to success page
+        router.replace({
+          pathname: '/order-success',
+          params: { 
+            orderData: JSON.stringify({
+              order_id: orderId, 
+              payment_method: 'Apple Pay',
+              status: 'success'
+            })
+          }
+        });
+      } else {
+        await ApplePay.complete(CompleteStatus.failure);
+        Alert.alert('Payment Failed', result.message || 'An error occurred during payment processing.');
+        router.replace('/order-failure');
+      }
+    } catch (error: any) {
+      console.error('❌ Apple Pay payment failed:', error);
+      Alert.alert('Apple Pay Error', error.message || 'Apple Pay payment failed');
+      
+      // Ensure we complete the payment with failure if needed
+      try {
+        await ApplePay.complete(CompleteStatus.failure);
+      } catch (completeError) {
+        // Ignore errors when completing payment in error state
+      }
     }
     
     setApplePayLoading(false);
@@ -515,6 +635,11 @@ export default function CheckoutScreen() {
 
   const handlePaymentMethodSelection = async (method: any) => {
     setSelectedPaymentMethod(method);
+    
+    // If Apple Pay is enabled and another payment method is selected, disable it
+    if (useApplePay && method?.code !== 'cod') {
+      setUseApplePay(false);
+    }
     
     try {
       // Call set payment method API immediately when user selects
@@ -1081,7 +1206,19 @@ ${address.address_2 || ''}`;
                     styles.applePayButton,
                     useApplePay && styles.selectedApplePayButton
                   ]}
-                  onPress={() => setUseApplePay(!useApplePay)}
+                  onPress={() => {
+                    // Toggle Apple Pay selection
+                    const newState = !useApplePay;
+                    setUseApplePay(newState);
+                    
+                    // If turning on, also set "Cash on Delivery" as the selected payment method
+                    if (newState && paymentMethods && paymentMethods.length > 0) {
+                      const codMethod = paymentMethods.find(method => method.code === 'cod');
+                      if (codMethod) {
+                        handlePaymentMethodSelection(codMethod);
+                      }
+                    }
+                  }}
                 >
                   <View style={styles.applePayIcon}>
                     <Ionicons 

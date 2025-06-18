@@ -23,7 +23,7 @@
     },
     "web": {
       "favicon": "./src/assets/icon.png"
-    }, 
+    },
     "splash": {
       "image": "./src/assets/icon.png",
       "resizeMode": "contain",
@@ -34,6 +34,12 @@
         "projectId": "92df4acd-1d46-4cf5-a942-476a79f5d31d"
       }
     },
-    "owner": "malakstar786"
+    "owner": "malakstar786",
+    "plugins": [
+      ["apple-pay-react-native-expo", {
+        "merchantIdentifiers": ["merchant.kw.com.azura"]
+      }],
+      ["./plugins/withApplePayEntitlement.js", { "merchantId": "merchant.kw.com.azura" }]
+    ]
   }
 }

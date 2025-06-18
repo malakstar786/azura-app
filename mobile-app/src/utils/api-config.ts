@@ -97,15 +97,23 @@ export const getCurrentOCSESSID = async (): Promise<string | null> => {
 
 // Get existing OCSESSID or generate a new one
 export const getOrCreateOCSESSID = async (): Promise<string> => {
-  const existingOCSESSID = await getCurrentOCSESSID();
-  
-  if (existingOCSESSID) {
-    return existingOCSESSID;
+  try {
+    const existingOCSESSID = await getCurrentOCSESSID();
+    
+    if (existingOCSESSID) {
+      return existingOCSESSID;
+    }
+    
+    const newOCSESSID = await generateRandomOCSESSID();
+    await setOCSESSID(newOCSESSID);
+    return newOCSESSID;
+  } catch (error) {
+    // If there's an error, generate a fallback OCSESSID
+    console.error('Error in getOrCreateOCSESSID:', error);
+    const fallbackOCSESSID = Math.random().toString(36).substring(2, 15);
+    await setOCSESSID(fallbackOCSESSID);
+    return fallbackOCSESSID;
   }
-  
-  const newOCSESSID = await generateRandomOCSESSID();
-  await setOCSESSID(newOCSESSID);
-  return newOCSESSID;
 };
 
 // Function to check if an error is a network error

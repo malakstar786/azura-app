@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useLanguageStore } from '@store/language-store';
@@ -6,22 +6,33 @@ import { useTranslation } from '@utils/translations';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@theme';
 import { getFlexDirection } from '@utils/rtlStyles';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LanguageSelection = () => {
   const router = useRouter();
   const { setLanguage, setIsFirstTimeUser, currentLanguage } = useLanguageStore();
   const { t } = useTranslation();
+  
+  useEffect(() => {
+    console.log("Language selection screen mounted");
+    // Ensure first-time user flag is set to false to prevent further navigations
+    AsyncStorage.setItem('isFirstTimeUser', 'false');
+    setIsFirstTimeUser(false);
+  }, []);
 
   const handleLanguageSelection = async (language: 'en' | 'ar') => {
     console.log(`Selected language: ${language}`);
     
-    // Update language and mark as not first-time user
-    await setLanguage(language);
-    setIsFirstTimeUser(false);
-    
-    // Navigate to the shop screen
-    console.log("Navigating to shop screen");
-    router.replace('/(shop)');
+    try {
+      // Update language
+      await setLanguage(language);
+      
+      // Navigate to the shop screen
+      console.log("Navigating to shop screen");
+      router.replace('/(shop)');
+    } catch (error) {
+      console.error("Error during language selection:", error);
+    }
   };
 
   return (
