@@ -60,12 +60,5 @@ target 'Azura' do
         end
       end
     end
-    
-    # Fix duplicate library linking warnings
-    installer.pods_project.targets.each do |target|
-      target.build_configurations.each do |config|
-        config.build_settings['OTHER_LDFLAGS'] = ['$(inherited)'].uniq
-      end
-    end
   end
 end

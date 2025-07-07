@@ -39,7 +39,6 @@ export default function CheckoutScreen() {
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [showApplePayButton, setShowApplePayButton] = useState(false);
   const [applePayLoading, setApplePayLoading] = useState(false);
-  const [useApplePay, setUseApplePay] = useState(false);
   const [canMakePayments, setCanMakePayments] = useState(false);
 
   // Check if Apple Pay is available on this device
@@ -47,19 +46,26 @@ export default function CheckoutScreen() {
     if (Platform.OS === 'ios') {
       // Check if device supports Apple Pay
       const checkApplePaySupport = async () => {
+        console.log('📱 [ApplePay] Starting device capability check for Apple Pay');
         try {
+          console.log('📱 [ApplePay] iOS platform detected, checking Apple Pay availability');
           // Use ApplePay.isAvailable() if it exists, otherwise fall back to a manual check
           setCanMakePayments(true); // Assume support until we can properly check
+          console.log('📱 [ApplePay] Setting canMakePayments to true (placeholder implementation)');
           
           // Add actual implementation once we have the correct API reference
           // This will be replaced with actual API call when we have accurate documentation
+          console.log('📱 [ApplePay] Capability check completed successfully');
         } catch (error) {
-          console.error('Error checking Apple Pay availability:', error);
+          console.error('❌ [ApplePay] Error checking Apple Pay availability:', error);
           setCanMakePayments(false);
+          console.log('❌ [ApplePay] Setting canMakePayments to false due to error');
         }
       };
       
       checkApplePaySupport();
+    } else {
+      console.log('📱 [ApplePay] Non-iOS platform detected, Apple Pay not supported');
     }
   }, []);
 
@@ -93,138 +99,44 @@ export default function CheckoutScreen() {
 
   // Check if Apple Pay should be shown (iOS only, all requirements met)
   const shouldShowApplePayButton = () => {
-    return Platform.OS === 'ios' && 
-           canMakePayments &&
-           isCheckoutComplete() && 
-           selectedPaymentMethod?.code === 'cod'; // Show only when COD is selected
+    console.log('🧐 [ApplePay] Checking if Apple Pay button should be shown');
+    console.log(`🧐 [ApplePay] Platform.OS: ${Platform.OS}`);
+    console.log(`🧐 [ApplePay] canMakePayments: ${canMakePayments}`);
+    console.log(`🧐 [ApplePay] isCheckoutComplete: ${isCheckoutComplete()}`);
+    console.log(`🧐 [ApplePay] selectedPaymentMethod?.code: ${selectedPaymentMethod?.code || 'none'}`);
+    
+    const shouldShow = Platform.OS === 'ios' && 
+                      canMakePayments &&
+                      isCheckoutComplete() && 
+                      selectedPaymentMethod?.code === 'applepay_knet';
+                      
+    console.log(`🧐 [ApplePay] Should show Apple Pay button: ${shouldShow}`);
+    return shouldShow;
   };
 
-  // Apple Pay payment flow function using the apple-pay-react-native-expo library
-  const initiateApplePayPayment = async (orderId: string) => {
-    setApplePayLoading(true);
+  // Apple Pay payment processor - called when Place Order button is clicked
+  const onApplePayButtonClicked = async (orderId: string) => {
+    console.log('🍏 [ApplePay] Starting Apple Pay payment flow for order:', orderId);
     
-    try {
-      // Calculate total amount for Apple Pay
-      const totalAmount = parsePrice(formatPrice(orderTotal));
-      
-      console.log('Initiating Apple Pay with amount:', totalAmount);
-      
-      // Prepare Apple Pay request
-      const paymentRequest = {
-        merchantIdentifier: 'merchant.kw.com.azura',
-        countryCode: 'KW',
-        currencyCode: 'KWD',
-        supportedNetworks: [
-          PaymentNetwork.visa,
-          PaymentNetwork.masterCard,
-          PaymentNetwork.amex
-        ],
-        merchantCapabilities: [
-          MerchantCapability["3DS"],
-          MerchantCapability.Credit,
-          MerchantCapability.Debit
-        ],
-        paymentSummaryItems: [
-          {
-            label: 'Azura',
-            amount: totalAmount
-          }
-        ]
-      };
-
-      // Request Apple Pay payment
-      const paymentResponse = await ApplePay.show(paymentRequest);
-      
-      console.log('✅ Payment authorized');
-      
-      // Generate track ID
-      const trackId = 'ORDER_' + Date.now();
-
-      // Process payment with backend
-      const processResponse = await fetch(`${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPayment`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: paymentResponse,
-          amount: totalAmount.toString(),
-          currencyCode: '414', // KWD currency code for payment processing
-          trackId: trackId,
-          orderId: orderId // Pass along the order ID for backend reference
-        })
-      });
-
-      const result = await processResponse.json();
-
-      if (result.status === 'success') {
-        // Complete the payment with success
-        await ApplePay.complete(CompleteStatus.success);
-        
-        // Clear cart
-        await clearCart();
-        
-        // Navigate to success page with order data
-        router.replace({
-          pathname: '/order-success',
-          params: { 
-            orderData: JSON.stringify({
-              order_id: orderId,
-              payment_method: 'Apple Pay',
-              status: 'success'
-            })
-          }
-        });
-      } else {
-        // Complete the payment with failure
-        await ApplePay.complete(CompleteStatus.failure);
-        
-        Alert.alert(
-          'Payment Failed',
-          `Payment failed: ${result.message || 'An error occurred during payment processing.'}`
-        );
-        
-        // Navigate to failure page
-        router.replace('/order-failure');
-      }
-    } catch (error: any) {
-      console.error('❌ Apple Pay payment failed:', error);
-      Alert.alert('Apple Pay Error', error.message || 'Apple Pay payment failed');
-      
-      // Ensure we complete the payment with failure
-      try {
-        await ApplePay.complete(CompleteStatus.failure);
-      } catch (completeError) {
-        // Ignore errors when completing payment in error state
-        console.error('Error completing failed payment:', completeError);
-      }
-    }
-    
-    setApplePayLoading(false);
-  };
-
-  // Standalone Apple Pay button handler - can be used for direct Apple Pay payments
-  const onApplePayButtonClicked = async () => {
     if (Platform.OS !== 'ios') {
+      console.log('❌ [ApplePay] Not on iOS platform, aborting Apple Pay');
       Alert.alert('Apple Pay is only available on iOS.');
-      return;
+      return false;
     }
 
+    console.log('🍏 [ApplePay] Setting Apple Pay loading state to true');
     setApplePayLoading(true);
     
     try {
       // Calculate total amount for Apple Pay
       const totalAmount = parsePrice(formatPrice(orderTotal));
+      console.log('🍏 [ApplePay] Calculated total amount:', totalAmount);
+      console.log('🍏 [ApplePay] Formatted price:', formatPrice(orderTotal));
+      console.log('🍏 [ApplePay] Order total:', orderTotal);
+      console.log('🍏 [ApplePay] Subtotal:', total);
+      console.log('🍏 [ApplePay] Shipping cost:', shippingCost);
       
-      // Confirm order first to get an order ID
-      const confirmResponse = await makeApiCall(API_ENDPOINTS.confirmOrder, {
-        method: 'POST'
-      });
-      
-      if (confirmResponse.success !== 1 || !confirmResponse.data.order_id) {
-        throw new Error('Failed to create order.');
-      }
-      
-      const orderId = confirmResponse.data.order_id;
-      console.log(`Order created with ID: ${orderId}, initiating Apple Pay for amount: ${totalAmount}`);
+      console.log(`🍏 [ApplePay] Preparing Apple Pay request for order ID: ${orderId} with amount: ${totalAmount}`);
       
       // Prepare Apple Pay request with detailed line items for better user experience
       const paymentRequest = {
@@ -234,7 +146,6 @@ export default function CheckoutScreen() {
         supportedNetworks: [
           PaymentNetwork.visa,
           PaymentNetwork.masterCard,
-          PaymentNetwork.amex
         ],
         merchantCapabilities: [
           MerchantCapability["3DS"],
@@ -259,36 +170,97 @@ export default function CheckoutScreen() {
           }
         ]
       };
+      
+      console.log('🍏 [ApplePay] Payment request configured:', JSON.stringify(paymentRequest, null, 2));
+      console.log('🍏 [ApplePay] Showing Apple Pay sheet to customer...');
 
       // Request Apple Pay payment
       const paymentResponse = await ApplePay.show(paymentRequest);
       
-      console.log('✅ Payment authorized, processing with backend');
+      console.log('✅ [ApplePay] Payment authorized by customer');
+      console.log('🔍 [ApplePay] Payment response received. Available keys:', Object.keys(paymentResponse));
       
       // Generate track ID
-      const trackId = `ORDER_${orderId}_${Date.now()}`;
+      const trackId = `ORDER_${Date.now()}`;
+      console.log('🍏 [ApplePay] Generated track ID:', trackId);
 
       // Process payment with backend
-      const processResponse = await fetch(`${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPayment`, {
+      console.log('🍏 [ApplePay] Preparing payload for backend processing');
+      console.log('🔍 [ApplePay] Response structure summary:', JSON.stringify({
+        network: paymentResponse.paymentNetwork || 'unknown',
+        hasData: typeof paymentResponse === 'object' && !!paymentResponse,
+        // Check known properties that might exist on the response
+        keys: Object.keys(paymentResponse || {})
+      }));
+      
+      const requestBody = {
+        token: {
+          paymentData: paymentResponse,
+          paymentMethod: paymentResponse.paymentNetwork
+        },
+        amount: totalAmount.toString(),
+        currencyCode: '414', // KWD currency code
+        trackId: trackId, 
+        trackid: trackId, 
+        order_id: orderId
+      };
+      
+      console.log('🍏 [ApplePay] Request body keys:', Object.keys(requestBody));
+      console.log('🍏 [ApplePay] Sending payment to backend for processing');
+      console.log(`🍏 [ApplePay] API endpoint: ${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPaymentApp`);
+      
+      const processResponse = await fetch(`${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPaymentApp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: paymentResponse,
-          amount: totalAmount.toString(),
-          currencyCode: '414', // KWD currency code
-          trackId: trackId,
-          orderId: orderId
-        })
+        body: JSON.stringify(requestBody)
       });
 
-      const result = await processResponse.json();
+      // Check if the response is successful
+      console.log('🍏 [ApplePay] API response status:', processResponse.status, processResponse.statusText, processResponse);
+      console.log('🍏 [ApplePay] API response headers:', JSON.stringify(Object.fromEntries([...processResponse.headers.entries()])));
+      
+      if (!processResponse.ok) {
+        console.error(`❌ [ApplePay] API responded with error status: ${processResponse.status} ${processResponse.statusText}`);
+        throw new Error(`Server error: ${processResponse.status} ${processResponse.statusText}`);
+      }
+      
+      // Check if the response is valid JSON
+      let result;
+      try {
+        const responseText = await processResponse.text();
+        
+        // Log the raw response for debugging
+        console.log('🔍 [ApplePay] Raw API response (first 200 chars):', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
+        console.log('🔍 [ApplePay] Response length:', responseText.length);
+        
+        // Check if response starts with HTML (common error case)
+        if (responseText.trim().startsWith('<')) {
+          console.error('❌ [ApplePay] Server returned HTML instead of JSON:', responseText.substring(0, 300));
+          throw new Error('Server returned HTML instead of JSON. Possible server error.');
+        }
+        
+        // Parse JSON
+        result = JSON.parse(responseText);
+        console.log('🍏 [ApplePay] Backend processing result:', result);
+      } catch (error) {
+        const parseError = error as Error;
+        console.error('❌ [ApplePay] Error parsing API response:', parseError);
+        console.error('❌ [ApplePay] Parse error stack:', parseError.stack);
+        throw new Error('Invalid response from server: ' + parseError.message);
+      }
 
       if (result.status === 'success') {
+        console.log('✅ [ApplePay] Payment successful, completing Apple Pay transaction');
         await ApplePay.complete(CompleteStatus.success);
+        console.log('✅ [ApplePay] Apple Pay transaction marked as completed');
+        
         // Clear cart
+        console.log('🍏 [ApplePay] Clearing cart');
         await clearCart();
+        console.log('✅ [ApplePay] Cart cleared successfully');
         
         // Navigate to success page
+        console.log('🍏 [ApplePay] Navigating to success page with order data');
         router.replace({
           pathname: '/order-success',
           params: { 
@@ -299,40 +271,66 @@ export default function CheckoutScreen() {
             })
           }
         });
+        console.log('✅ [ApplePay] Successfully completed Apple Pay flow');
+        return true;
       } else {
+        console.error('❌ [ApplePay] Payment failed with status:', result.status);
+        console.error('❌ [ApplePay] Payment failure message:', result.message || 'Unknown error');
         await ApplePay.complete(CompleteStatus.failure);
+        console.log('❌ [ApplePay] Apple Pay transaction marked as failed');
         Alert.alert('Payment Failed', result.message || 'An error occurred during payment processing.');
+        console.log('❌ [ApplePay] Navigating to failure page');
         router.replace('/order-failure');
+        return false;
       }
     } catch (error: any) {
-      console.error('❌ Apple Pay payment failed:', error);
+      console.error('❌ [ApplePay] Payment flow failed with error:', error);
+      console.error('❌ [ApplePay] Error message:', error.message);
+      console.error('❌ [ApplePay] Error stack:', error.stack);
+      
       Alert.alert('Apple Pay Error', error.message || 'Apple Pay payment failed');
       
       // Ensure we complete the payment with failure if needed
       try {
+        console.log('❌ [ApplePay] Attempting to complete Apple Pay with failure status');
         await ApplePay.complete(CompleteStatus.failure);
-      } catch (completeError) {
+        console.log('✅ [ApplePay] Successfully completed Apple Pay with failure status');
+      } catch (completeError: any) {
+        console.error('❌ [ApplePay] Error completing failed payment:', completeError);
+        console.error('❌ [ApplePay] Complete error message:', completeError.message);
         // Ignore errors when completing payment in error state
       }
+      return false;
+    } finally {
+      setApplePayLoading(false);
+      console.log('🍏 [ApplePay] Apple Pay loading state set to false');
     }
-    
-    setApplePayLoading(false);
   };
 
   // Load addresses and cart on mount
   useEffect(() => {
     const initializeCheckout = async () => {
+      console.log('🚀 [Checkout Init] Starting checkout initialization');
+      console.log('🚀 [Checkout Init] Authentication status:', isAuthenticated);
+      
       // Always fetch cart data
+      console.log('🛒 [Checkout Init] Fetching cart data');
       await getCart();
+      console.log('✅ [Checkout Init] Cart data fetched');
       
       if (isAuthenticated) {
+        console.log('👤 [Checkout Init] User is authenticated, loading addresses');
         loadAddresses();
       } else {
+        console.log('👤 [Checkout Init] User is not authenticated, loading local address');
         // Load local address for unauthenticated users
         loadLocalAddress();
       }
+      
+      console.log('🚀 [Checkout Init] Checkout initialization completed');
     };
     
+    console.log('🚀 [Checkout Init] Triggering checkout initialization');
     initializeCheckout();
   }, [isAuthenticated]);
 
@@ -350,71 +348,148 @@ export default function CheckoutScreen() {
   }, [selectedAddress, localAddress, isAuthenticated]);
 
   const loadAddresses = async () => {
+    console.log('🏠 [Addresses] Starting to load addresses for checkout');
     setAddressLoading(true);
     
     try {
       // Fetch addresses directly for checkout to get the original order
+      console.log('🏠 [Addresses] Making API call to fetch addresses');
+      console.log('🏠 [Addresses] API Endpoint:', API_ENDPOINTS.addresses);
+      
       const response = await makeApiCall(API_ENDPOINTS.addresses, {
         method: 'GET'
       });
       
+      console.log('🏠 [Addresses] Raw API response:', JSON.stringify(response, null, 2));
+      console.log('🏠 [Addresses] Response success status:', response.success);
+      console.log('🏠 [Addresses] Response data type:', typeof response.data);
+      console.log('🏠 [Addresses] Response data is array:', Array.isArray(response.data));
+      
       if (response.success === 1 && Array.isArray(response.data) && response.data.length > 0) {
+        console.log('🏠 [Addresses] Processing addresses data');
+        console.log('🏠 [Addresses] Total addresses received:', response.data.length);
+        console.log('🏠 [Addresses] All addresses:', JSON.stringify(response.data, null, 2));
+        
         // Get the LAST address from the original API response (most recent)
         // The API returns addresses in order of creation, so the last one is the newest
         const mostRecentAddress = response.data[response.data.length - 1];
         setSelectedAddress(mostRecentAddress);
         
-        console.log('Using most recent address for checkout:', mostRecentAddress);
-        console.log('Total addresses available:', response.data.length);
+        console.log('🏠 [Addresses] Selected most recent address:', JSON.stringify(mostRecentAddress, null, 2));
+        console.log('🏠 [Addresses] Selected address ID:', mostRecentAddress.address_id);
+        console.log('🏠 [Addresses] Selected address name:', `${mostRecentAddress.firstname} ${mostRecentAddress.lastname}`);
+        console.log('🏠 [Addresses] Selected address city:', mostRecentAddress.city);
+        console.log('🏠 [Addresses] Selected address custom fields:', JSON.stringify(mostRecentAddress.custom_field, null, 2));
       } else {
         setSelectedAddress(null);
-        console.log('No addresses found for checkout');
+        console.log('🏠 [Addresses] No addresses found for checkout');
+        console.log('🏠 [Addresses] Response success:', response.success);
+        console.log('🏠 [Addresses] Response data length:', response.data?.length || 'N/A');
       }
       
       // Also fetch for the address store (for the address modal)
+      console.log('🏠 [Addresses] Fetching addresses for address store');
       await fetchAddresses();
+      console.log('🏠 [Addresses] Address store fetch completed');
     } catch (error) {
-      console.error('Error loading addresses for checkout:', error);
+      console.error('❌ [Addresses] Error loading addresses for checkout:', error);
+      console.error('❌ [Addresses] Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ [Addresses] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       setSelectedAddress(null);
     }
     
     setAddressLoading(false);
+    console.log('🏠 [Addresses] Address loading completed');
   };
 
   const loadLocalAddress = async () => {
+    console.log('💾 [Local Address] Loading local address from AsyncStorage');
+    
     try {
+      console.log('💾 [Local Address] Retrieving saved address from key: @checkout_local_address');
       const savedAddress = await AsyncStorage.getItem('@checkout_local_address');
+      
+      console.log('💾 [Local Address] Raw saved address data:', savedAddress);
+      console.log('💾 [Local Address] Saved address exists:', !!savedAddress);
+      
       if (savedAddress) {
-        setLocalAddress(JSON.parse(savedAddress));
+        console.log('💾 [Local Address] Parsing saved address JSON');
+        const parsedAddress = JSON.parse(savedAddress);
+        console.log('💾 [Local Address] Parsed address data:', JSON.stringify(parsedAddress, null, 2));
+        console.log('💾 [Local Address] Address name:', `${parsedAddress.firstname} ${parsedAddress.lastname}`);
+        console.log('💾 [Local Address] Address city:', parsedAddress.city);
+        console.log('💾 [Local Address] Address custom fields:', JSON.stringify(parsedAddress.custom_field, null, 2));
+        
+        setLocalAddress(parsedAddress);
+        console.log('✅ [Local Address] Local address set in state');
+      } else {
+        console.log('💾 [Local Address] No saved local address found');
       }
     } catch (error) {
-      console.error('Error loading local address:', error);
+      console.error('❌ [Local Address] Error loading local address:', error);
+      console.error('❌ [Local Address] Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ [Local Address] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     }
+    
+    console.log('💾 [Local Address] Local address loading completed');
   };
 
   const saveLocalAddress = async (address: any) => {
+    console.log('💾 [Save Local Address] Saving local address to AsyncStorage');
+    console.log('💾 [Save Local Address] Address to save:', JSON.stringify(address, null, 2));
+    console.log('💾 [Save Local Address] Storage key: @checkout_local_address');
+    
     try {
-      await AsyncStorage.setItem('@checkout_local_address', JSON.stringify(address));
+      console.log('💾 [Save Local Address] Stringifying address data');
+      const addressJson = JSON.stringify(address);
+      console.log('💾 [Save Local Address] JSON string length:', addressJson.length);
+      
+      console.log('💾 [Save Local Address] Writing to AsyncStorage');
+      await AsyncStorage.setItem('@checkout_local_address', addressJson);
+      console.log('✅ [Save Local Address] Successfully saved to AsyncStorage');
+      
+      console.log('💾 [Save Local Address] Setting address in state');
       setLocalAddress(address);
+      console.log('✅ [Save Local Address] Local address state updated');
     } catch (error) {
-      console.error('Error saving local address:', error);
+      console.error('❌ [Save Local Address] Error saving local address:', error);
+      console.error('❌ [Save Local Address] Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ [Save Local Address] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     }
+    
+    console.log('💾 [Save Local Address] Save local address operation completed');
   };
 
   const setAddressInCheckoutAndFetchMethods = async () => {
+    console.log('🔄 [Address Setup] Starting address setup and methods fetch');
+    console.log('🔄 [Address Setup] Is authenticated:', isAuthenticated);
+    console.log('🔄 [Address Setup] Selected address:', selectedAddress ? `${selectedAddress.firstname} ${selectedAddress.lastname}` : 'None');
+    console.log('🔄 [Address Setup] Local address:', localAddress ? `${localAddress.firstname} ${localAddress.lastname}` : 'None');
+    
     setMethodsLoading(true);
     
     try {
       const currentAddress = isAuthenticated ? selectedAddress : localAddress;
       
+      console.log('🔄 [Address Setup] Current address to use:', currentAddress ? `${currentAddress.firstname} ${currentAddress.lastname}` : 'None');
+      
       if (!currentAddress) {
+        console.log('🔄 [Address Setup] No current address available, skipping setup');
         return;
       }
 
       // For both authenticated and unauthenticated users, send complete address data
       if (isAuthenticated && selectedAddress) {
+        console.log('🔄 [Address Setup] Processing authenticated user address');
+        
         // Get user's email and phone from auth store
         const { user } = useAuthStore.getState();
+        console.log('🔄 [Address Setup] User from auth store:', user ? {
+          email: user.email,
+          telephone: user.telephone,
+          firstname: user.firstname,
+          lastname: user.lastname
+        } : 'No user data');
         
         // Set payment address in checkout session using complete address data
         const addressData = {
@@ -435,18 +510,27 @@ export default function CheckoutScreen() {
           }
         };
 
+        console.log('🔄 [Address Setup] Prepared address data for authenticated user:', JSON.stringify(addressData, null, 2));
+
         // Set payment address
-        await makeApiCall('/index.php?route=extension/mstore/payment_address|save', {
+        console.log('🔄 [Address Setup] Setting payment address for authenticated user');
+        const paymentAddressResponse = await makeApiCall('/index.php?route=extension/mstore/payment_address|save', {
           method: 'POST',
           data: addressData
         });
+        console.log('🔄 [Address Setup] Payment address response:', JSON.stringify(paymentAddressResponse, null, 2));
 
         // Set shipping address (same as payment)
-        await makeApiCall('/index.php?route=extension/mstore/shipping_address|save', {
+        console.log('🔄 [Address Setup] Setting shipping address for authenticated user');
+        const shippingAddressResponse = await makeApiCall('/index.php?route=extension/mstore/shipping_address|save', {
           method: 'POST',
           data: addressData
         });
+        console.log('🔄 [Address Setup] Shipping address response:', JSON.stringify(shippingAddressResponse, null, 2));
       } else if (!isAuthenticated && localAddress) {
+        console.log('🔄 [Address Setup] Processing unauthenticated user address');
+        console.log('🔄 [Address Setup] Local address details:', JSON.stringify(localAddress, null, 2));
+        
         // For unauthenticated users, set address data directly
         const addressData = {
           firstname: localAddress.firstname,
@@ -466,129 +550,207 @@ export default function CheckoutScreen() {
           }
         };
 
+        console.log('🔄 [Address Setup] Prepared address data for unauthenticated user:', JSON.stringify(addressData, null, 2));
+
         // Set payment address
-        await makeApiCall('/index.php?route=extension/mstore/payment_address|save', {
+        console.log('🔄 [Address Setup] Setting payment address for unauthenticated user');
+        const paymentAddressResponse = await makeApiCall('/index.php?route=extension/mstore/payment_address|save', {
           method: 'POST',
           data: addressData
         });
+        console.log('🔄 [Address Setup] Payment address response:', JSON.stringify(paymentAddressResponse, null, 2));
 
         // Set shipping address (same as payment)
-        await makeApiCall('/index.php?route=extension/mstore/shipping_address|save', {
+        console.log('🔄 [Address Setup] Setting shipping address for unauthenticated user');
+        const shippingAddressResponse = await makeApiCall('/index.php?route=extension/mstore/shipping_address|save', {
           method: 'POST',
           data: addressData
         });
+        console.log('🔄 [Address Setup] Shipping address response:', JSON.stringify(shippingAddressResponse, null, 2));
       }
 
       // Now fetch shipping and payment methods
+      console.log('🔄 [Address Setup] Starting to fetch shipping and payment methods');
       await fetchShippingAndPaymentMethods();
+      console.log('🔄 [Address Setup] Completed fetching shipping and payment methods');
 
     } catch (error) {
-      console.error('Error setting address in checkout session:', error);
+      console.error('❌ [Address Setup] Error setting address in checkout session:', error);
+      console.error('❌ [Address Setup] Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ [Address Setup] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       setShippingMethods([]);
       setPaymentMethods([]);
       setSelectedShippingMethod(null);
       setSelectedPaymentMethod(null);
     } finally {
       setMethodsLoading(false);
+      console.log('🔄 [Address Setup] Address setup and methods fetch completed');
     }
   };
 
   const fetchShippingAndPaymentMethods = async () => {
+    console.log('🚚💳 [Methods] Starting to fetch shipping and payment methods');
+    
     try {
       // Get current language for API calls
       const { useLanguageStore } = await import('@store/language-store');
       const { currentLanguage } = useLanguageStore.getState();
-      console.log(`🌐 CHECKOUT: Fetching shipping/payment methods with language: ${currentLanguage}`);
+      console.log(`🌐 [Methods] Fetching shipping/payment methods with language: ${currentLanguage}`);
       
       // Fetch shipping methods with language parameter
+      console.log('🚚 [Shipping] Fetching shipping methods');
+      console.log('🚚 [Shipping] API endpoint: /index.php?route=extension/mstore/shipping_method');
+      console.log('🚚 [Shipping] Language params:', currentLanguage === 'ar' ? { language: 'ar' } : 'None');
+      
       const shippingResponse = await makeApiCall('/index.php?route=extension/mstore/shipping_method', {
         method: 'GET',
         params: currentLanguage === 'ar' ? { language: 'ar' } : undefined
       });
       
-      console.log('Shipping methods response:', shippingResponse);
+      console.log('🚚 [Shipping] Raw shipping methods response:', JSON.stringify(shippingResponse, null, 2));
+      console.log('🚚 [Shipping] Response success status:', shippingResponse.success);
+      console.log('🚚 [Shipping] Response data exists:', !!shippingResponse.data);
+      console.log('🚚 [Shipping] Response data type:', typeof shippingResponse.data);
       
       if (shippingResponse.success === 1 && shippingResponse.data) {
+        console.log('🚚 [Shipping] Processing shipping response data');
+        console.log('🚚 [Shipping] Has shipping_methods:', !!shippingResponse.data.shipping_methods);
+        console.log('🚚 [Shipping] Shipping_methods type:', typeof shippingResponse.data.shipping_methods);
+        
         // Parse shipping methods from nested structure
         if (shippingResponse.data.shipping_methods && typeof shippingResponse.data.shipping_methods === 'object') {
+          console.log('🚚 [Shipping] Raw shipping methods object:', JSON.stringify(shippingResponse.data.shipping_methods, null, 2));
+          
           const parsedMethods = [];
           
           // Iterate through shipping methods (e.g., "flat")
           for (const methodKey in shippingResponse.data.shipping_methods) {
+            console.log(`🚚 [Shipping] Processing method key: ${methodKey}`);
             const method = shippingResponse.data.shipping_methods[methodKey];
+            console.log(`🚚 [Shipping] Method ${methodKey} data:`, JSON.stringify(method, null, 2));
             
             // Iterate through quotes within each method
             if (method.quote && typeof method.quote === 'object') {
+              console.log(`🚚 [Shipping] Processing quotes for method ${methodKey}`);
+              console.log(`🚚 [Shipping] Quotes data:`, JSON.stringify(method.quote, null, 2));
+              
               for (const quoteKey in method.quote) {
+                console.log(`🚚 [Shipping] Processing quote key: ${quoteKey}`);
                 const quote = method.quote[quoteKey];
-                parsedMethods.push({
+                console.log(`🚚 [Shipping] Quote ${quoteKey} data:`, JSON.stringify(quote, null, 2));
+                
+                const parsedMethod = {
                   ...quote,
                   title: quote.title || method.title,
                   sort_order: method.sort_order
-                });
+                };
+                console.log(`🚚 [Shipping] Parsed method:`, JSON.stringify(parsedMethod, null, 2));
+                parsedMethods.push(parsedMethod);
               }
+            } else {
+              console.log(`🚚 [Shipping] No quotes found for method ${methodKey}`);
             }
           }
           
+          console.log('🚚 [Shipping] Total parsed shipping methods:', parsedMethods.length);
+          console.log('🚚 [Shipping] All parsed methods:', JSON.stringify(parsedMethods, null, 2));
+          
           if (parsedMethods.length > 0) {
             setShippingMethods(parsedMethods);
+            console.log('🚚 [Shipping] Set shipping methods in state');
           } else {
-            console.log('No shipping method quotes available');
+            console.log('🚚 [Shipping] No shipping method quotes available');
             setShippingMethods([]);
             setSelectedShippingMethod(null);
           }
         } else {
           // No shipping methods available - this is expected if address is not set properly
-          console.log('No shipping methods available, address may not be set in checkout session');
+          console.log('🚚 [Shipping] No shipping methods available, address may not be set in checkout session');
+          console.log('🚚 [Shipping] Response data structure:', Object.keys(shippingResponse.data || {}));
           setShippingMethods([]);
           setSelectedShippingMethod(null);
         }
+      } else {
+        console.log('🚚 [Shipping] Shipping response unsuccessful or no data');
+        console.log('🚚 [Shipping] Success status:', shippingResponse.success);
+        console.log('🚚 [Shipping] Error:', shippingResponse.error);
       }
       
       // Fetch payment methods with language parameter
+      console.log('💳 [Payment] Fetching payment methods');
+      console.log('💳 [Payment] API endpoint: /index.php?route=extension/mstore/payment_method');
+      console.log('💳 [Payment] Language params:', currentLanguage === 'ar' ? { language: 'ar' } : 'None');
+      
       const paymentResponse = await makeApiCall('/index.php?route=extension/mstore/payment_method', {
         method: 'GET',
         params: currentLanguage === 'ar' ? { language: 'ar' } : undefined
       });
       
-      console.log('Payment methods response:', paymentResponse);
+      console.log('💳 [Payment] Raw payment methods response:', JSON.stringify(paymentResponse, null, 2));
+      console.log('💳 [Payment] Response success status:', paymentResponse.success);
+      console.log('💳 [Payment] Response data exists:', !!paymentResponse.data);
+      console.log('💳 [Payment] Response data type:', typeof paymentResponse.data);
       
       if (paymentResponse.success === 1 && paymentResponse.data) {
+        console.log('💳 [Payment] Processing payment response data');
+        console.log('💳 [Payment] Has payment_methods:', !!paymentResponse.data.payment_methods);
+        console.log('💳 [Payment] Payment_methods type:', typeof paymentResponse.data.payment_methods);
+        
         // Parse payment methods from object structure
         if (paymentResponse.data.payment_methods && typeof paymentResponse.data.payment_methods === 'object') {
+          console.log('💳 [Payment] Raw payment methods object:', JSON.stringify(paymentResponse.data.payment_methods, null, 2));
+          
           const parsedMethods = [];
           
           // Iterate through payment methods (e.g., "custom", "knet", "cod")
           for (const methodKey in paymentResponse.data.payment_methods) {
+            console.log(`💳 [Payment] Processing method key: ${methodKey}`);
             const method = paymentResponse.data.payment_methods[methodKey];
-            parsedMethods.push({
+            console.log(`💳 [Payment] Method ${methodKey} data:`, JSON.stringify(method, null, 2));
+            
+            const parsedMethod = {
               ...method,
               sort_order: method.sort_order || "999" // Default sort order if not provided
-            });
+            };
+            console.log(`💳 [Payment] Parsed method:`, JSON.stringify(parsedMethod, null, 2));
+            parsedMethods.push(parsedMethod);
           }
+          
+          console.log('💳 [Payment] Total parsed payment methods:', parsedMethods.length);
+          console.log('💳 [Payment] All parsed methods:', JSON.stringify(parsedMethods, null, 2));
           
           if (parsedMethods.length > 0) {
             setPaymentMethods(parsedMethods);
+            console.log('💳 [Payment] Set payment methods in state');
           } else {
-            console.log('No payment method options available');
+            console.log('💳 [Payment] No payment method options available');
             setPaymentMethods([]);
             setSelectedPaymentMethod(null);
           }
         } else {
           // No payment methods available - this is expected if address is not set properly
-          console.log('No payment methods available, address may not be set in checkout session');
+          console.log('💳 [Payment] No payment methods available, address may not be set in checkout session');
+          console.log('💳 [Payment] Response data structure:', Object.keys(paymentResponse.data || {}));
           setPaymentMethods([]);
           setSelectedPaymentMethod(null);
         }
+      } else {
+        console.log('💳 [Payment] Payment response unsuccessful or no data');
+        console.log('💳 [Payment] Success status:', paymentResponse.success);
+        console.log('💳 [Payment] Error:', paymentResponse.error);
       }
       
     } catch (error) {
-      console.error('Error fetching shipping/payment methods:', error);
+      console.error('❌ [Methods] Error fetching shipping/payment methods:', error);
+      console.error('❌ [Methods] Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ [Methods] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
       setShippingMethods([]);
       setPaymentMethods([]);
       setSelectedShippingMethod(null);
       setSelectedPaymentMethod(null);
     }
+    
+    console.log('🚚💳 [Methods] Shipping and payment methods fetch completed');
   };
 
   const handleEditAddress = () => {
@@ -616,43 +778,87 @@ export default function CheckoutScreen() {
   };
 
   const handleShippingMethodSelection = async (method: any) => {
+    console.log('🚚 [Shipping Selection] User selected shipping method');
+    console.log('🚚 [Shipping Selection] Selected method:', JSON.stringify(method, null, 2));
+    console.log('🚚 [Shipping Selection] Method code:', method?.code || 'No code');
+    console.log('🚚 [Shipping Selection] Method title:', method?.title || 'No title');
+    console.log('🚚 [Shipping Selection] Method cost:', method?.cost || method?.text || 'No cost info');
+    
     setSelectedShippingMethod(method);
+    console.log('🚚 [Shipping Selection] Updated selectedShippingMethod state');
     
     try {
       // Call set shipping method API immediately when user selects
-      await makeApiCall(API_ENDPOINTS.setShippingMethod, {
+      const methodCode = method?.code || "flat.flat";
+      console.log('🚚 [Shipping Selection] Sending shipping method to backend:', methodCode);
+      console.log('🚚 [Shipping Selection] API endpoint:', API_ENDPOINTS.setShippingMethod);
+      
+      const response = await makeApiCall(API_ENDPOINTS.setShippingMethod, {
         method: 'POST',
         data: {
-          shipping_method: method?.code || "flat.flat"
+          shipping_method: methodCode
         }
       });
       
-      console.log('Shipping method set successfully:', method?.code || "flat.flat");
+      console.log('🚚 [Shipping Selection] Backend response:', JSON.stringify(response, null, 2));
+      console.log('🚚 [Shipping Selection] Response success status:', response.success);
+      
+      if (response.success === 1) {
+        console.log('✅ [Shipping Selection] Shipping method set successfully:', methodCode);
+      } else {
+        console.log('❌ [Shipping Selection] Failed to set shipping method:', response.error || 'Unknown error');
+      }
     } catch (error) {
-      console.error('Error setting shipping method:', error);
+      console.error('❌ [Shipping Selection] Error setting shipping method:', error);
+      console.error('❌ [Shipping Selection] Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ [Shipping Selection] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     }
   };
 
   const handlePaymentMethodSelection = async (method: any) => {
-    setSelectedPaymentMethod(method);
+    console.log('💳 [Payment Selection] User selected payment method');
+    console.log('💳 [Payment Selection] Selected method:', JSON.stringify(method, null, 2));
+    console.log('💳 [Payment Selection] Method code:', method?.code || 'No code');
+    console.log('💳 [Payment Selection] Method title:', method?.title || 'No title');
+    console.log('💳 [Payment Selection] Method sort order:', method?.sort_order || 'No sort order');
     
-    // If Apple Pay is enabled and another payment method is selected, disable it
-    if (useApplePay && method?.code !== 'cod') {
-      setUseApplePay(false);
+    // Check if Apple Pay KNET is selected
+    if (method?.code === 'applepay_knet') {
+      console.log('🍏 [Payment Selection] Apple Pay KNET payment method selected');
+      console.log('🍏 [Payment Selection] Apple Pay method details:', JSON.stringify(method, null, 2));
     }
+    
+    setSelectedPaymentMethod(method);
+    console.log('💳 [Payment Selection] Updated selectedPaymentMethod state');
     
     try {
       // Call set payment method API immediately when user selects
-      await makeApiCall(API_ENDPOINTS.setPaymentMethod, {
+      const methodCode = method?.code || "cod";
+      console.log('💳 [Payment Selection] Sending payment method to backend:', methodCode);
+      console.log('💳 [Payment Selection] API endpoint:', API_ENDPOINTS.setPaymentMethod);
+      console.log('💳 [Payment Selection] Request data:', { payment_method: methodCode });
+      
+      const response = await makeApiCall(API_ENDPOINTS.setPaymentMethod, {
         method: 'POST',
         data: {
-          payment_method: method?.code || "cod"
+          payment_method: methodCode
         }
       });
       
-      console.log('Payment method set successfully:', method?.code || "cod");
+      console.log('💳 [Payment Selection] Backend response:', JSON.stringify(response, null, 2));
+      console.log('💳 [Payment Selection] Response success status:', response.success);
+      console.log('💳 [Payment Selection] Response data:', response.data);
+      console.log('💳 [Payment Selection] Response error:', response.error);
+      
+      if (response.success === 1) {
+        console.log('✅ [Payment Selection] Payment method set successfully:', methodCode);
+      } else {
+        console.log('❌ [Payment Selection] Failed to set payment method:', response.error || 'Unknown error');
+      }
     } catch (error) {
-      console.error('Error setting payment method:', error);
+      console.error('❌ [Payment Selection] Error setting payment method:', error);
+      console.error('❌ [Payment Selection] Error message:', error instanceof Error ? error.message : 'Unknown error');
+      console.error('❌ [Payment Selection] Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     }
   };
 
@@ -660,6 +866,7 @@ export default function CheckoutScreen() {
     // Clear previous general errors
     setError(null);
     setIsLoading(true);
+    console.log('🛒 [Order] Starting order placement process');
 
     try {
       // All required data should already be set:
@@ -669,117 +876,197 @@ export default function CheckoutScreen() {
       
       // Verify all required selections are made
       if (!selectedShippingMethod) {
+        console.log('❌ [Order] Order validation failed: No shipping method selected');
         throw new Error('Shipping method not selected');
       }
 
       if (!selectedPaymentMethod) {
+        console.log('❌ [Order] Order validation failed: No payment method selected');
         throw new Error('Payment method not selected');
       }
 
-      // Confirm order
+      console.log(`🛒 [Order] Selected payment method: ${selectedPaymentMethod?.code || 'unknown'}`);
+
+      // For Apple Pay, ensure we set the correct payment method first
+      if (selectedPaymentMethod?.code === 'applepay_knet' && Platform.OS === 'ios') {
+        console.log('🍏 [ApplePay] Apple Pay payment method detected, setting applepay_knet as payment method');
+        // Explicitly set payment method to Apple Pay KNET
+        await makeApiCall(API_ENDPOINTS.setPaymentMethod, {
+          method: 'POST',
+          data: {
+            payment_method: 'applepay_knet' 
+          }
+        });
+        console.log('🍏 [ApplePay] Payment method set to applepay_knet');
+      }
+      
+      // Confirm order for all payment methods (including Apple Pay)
+      console.log('🛒 [Order] Confirming order with backend');
+      console.log('🛒 [Order] API endpoint:', API_ENDPOINTS.confirmOrder);
+      console.log('🛒 [Order] Request method: POST');
+      console.log('🛒 [Order] Selected shipping method:', selectedShippingMethod ? {
+        code: selectedShippingMethod.code,
+        title: selectedShippingMethod.title,
+        cost: selectedShippingMethod.cost || selectedShippingMethod.text
+      } : 'None');
+      console.log('🛒 [Order] Selected payment method:', selectedPaymentMethod ? {
+        code: selectedPaymentMethod.code,
+        title: selectedPaymentMethod.title
+      } : 'None');
+      
       const confirmResponse = await makeApiCall(API_ENDPOINTS.confirmOrder, {
         method: 'POST'
       });
-
-      if (confirmResponse.success === 1) {
-        // Check if there's a redirect_url for payment gateway (KNet, Credit Card)
-        if (confirmResponse.data.redirect_url) {
-          console.log('Payment redirect URL detected:', confirmResponse.data.redirect_url);
-          
-          // Decode HTML entities and fix URL format
-          let processedUrl = confirmResponse.data.redirect_url.replace(/&amp;/g, '&');
-          
-          // Fix specific URL format: change "&order_id=" to "&amp&order_id="
-          processedUrl = processedUrl.replace(/&order_id=/g, '&amp&order_id=');
-          
-          console.log('Processed payment URL:', processedUrl);
-          
-          // Open payment gateway in WebView
-          setPaymentUrl(processedUrl);
-          setShowPaymentWebView(true);
-          setIsLoading(false);
-          return;
-        }
-        
-        // Check if Apple Pay was selected
-        if (useApplePay && Platform.OS === 'ios') {
-          // Set order success state but don't redirect yet
-          setOrderSuccess(true);
-          
-          // Extract order ID for Apple Pay processing
-          const orderId = confirmResponse.data.order_id;
-          
-          // Trigger Apple Pay payment flow
-          await initiateApplePayPayment(orderId);
-          return;
-        }
-        
-        // For COD or direct payments without redirect_url
-        setOrderSuccess(true);
-        
-        // Clear cart
-        await clearCart();
-
-        // Extract important order data for success page
-        const orderData = {
-          order_id: confirmResponse.data.order_id,
-          firstname: confirmResponse.data.firstname,
-          lastname: confirmResponse.data.lastname,
-          email: confirmResponse.data.email,
-          date_added: confirmResponse.data.date_added,
-          total: confirmResponse.data.total,
-          payment_method: confirmResponse.data.payment_method,
-        };
-
-        // Redirect to success page with order data
-        router.replace({
-          pathname: '/order-success',
-          params: { orderData: JSON.stringify(orderData) }
-        });
-      } else {
-        // Handle error - redirect to failure page
-        router.replace('/order-failure');
+      
+      console.log('🛒 [Order] Raw backend order confirmation response:', JSON.stringify(confirmResponse, null, 2));
+      console.log('🛒 [Order] Response success status:', confirmResponse.success);
+      console.log('🛒 [Order] Response data exists:', !!confirmResponse.data);
+      console.log('🛒 [Order] Response error:', confirmResponse.error);
+      
+      // If order creation failed, throw error
+      if (confirmResponse.success !== 1) {
+        console.log('❌ [Order] Order confirmation failed');
+        console.log('❌ [Order] Failed response:', JSON.stringify(confirmResponse, null, 2));
+        console.log('❌ [Order] Error details:', confirmResponse.error || 'No error details');
+        throw new Error('Failed to create order.');
       }
+
+      console.log('✅ [Order] Order created successfully');
+      console.log('🛒 [Order] Order ID:', confirmResponse.data?.order_id || 'No order ID');
+      console.log('🛒 [Order] Order data:', JSON.stringify(confirmResponse.data, null, 2));
+
+      // Now handle payment method-specific flows
+      if (selectedPaymentMethod?.code === 'applepay_knet' && Platform.OS === 'ios') {
+        console.log('🍏 [ApplePay] Starting Apple Pay flow for order:', confirmResponse.data.order_id);
+        // Trigger Apple Pay payment flow with the order ID
+        const success = await onApplePayButtonClicked(confirmResponse.data.order_id);
+        console.log(`🍏 [ApplePay] Apple Pay flow completed with success: ${success}`);
+        setIsLoading(false);
+        return;
+      }
+
+      // For other payment methods with redirect URL (KNet, Credit Card)
+      if (confirmResponse.data.redirect_url) {
+        console.log('💳 [Payment Redirect] Payment redirect URL detected');
+        console.log('💳 [Payment Redirect] Raw redirect URL:', confirmResponse.data.redirect_url);
+        console.log('💳 [Payment Redirect] URL length:', confirmResponse.data.redirect_url.length);
+        
+        // Decode HTML entities and fix URL format
+        let processedUrl = confirmResponse.data.redirect_url.replace(/&amp;/g, '&');
+        console.log('💳 [Payment Redirect] After HTML entity decode:', processedUrl);
+        
+        // Fix specific URL format: change "&order_id=" to "&amp&order_id="
+        processedUrl = processedUrl.replace(/&order_id=/g, '&amp&order_id=');
+        console.log('💳 [Payment Redirect] After order_id fix:', processedUrl);
+        
+        console.log('💳 [Payment Redirect] Final processed payment URL:', processedUrl);
+        console.log('💳 [Payment Redirect] URL host:', new URL(processedUrl).host);
+        console.log('💳 [Payment Redirect] URL pathname:', new URL(processedUrl).pathname);
+        console.log('💳 [Payment Redirect] URL search params:', new URL(processedUrl).search);
+        
+        // Open payment gateway in WebView
+        console.log('💳 [Payment Redirect] Setting payment URL and showing WebView');
+        setPaymentUrl(processedUrl);
+        setShowPaymentWebView(true);
+        setIsLoading(false);
+        console.log('💳 [Payment Redirect] WebView should now be visible');
+        return;
+      }
+      
+      // For COD or direct payments without redirect_url
+      console.log('💰 [Payment] Direct payment completed without redirect');
+      setOrderSuccess(true);
+      
+      // Clear cart
+      await clearCart();
+      console.log('🛒 [Order] Cart cleared');
+
+      // Extract important order data for success page
+      const orderData = {
+        order_id: confirmResponse.data.order_id,
+        firstname: confirmResponse.data.firstname,
+        lastname: confirmResponse.data.lastname,
+        email: confirmResponse.data.email,
+        date_added: confirmResponse.data.date_added,
+        total: confirmResponse.data.total,
+        payment_method: confirmResponse.data.payment_method,
+      };
+
+      console.log('🛒 [Order] Navigating to success page with order data');
+      // Redirect to success page with order data
+      router.replace({
+        pathname: '/order-success',
+        params: { orderData: JSON.stringify(orderData) }
+      });
     } catch (err) {
+      console.error('❌ [Order] Error during order placement:', err);
       setError(err instanceof Error ? err.message : 'An error occurred while placing the order');
     } finally {
       setIsLoading(false);
+      console.log('🛒 [Order] Order placement process completed');
     }
   };
 
   // Handle payment WebView navigation changes
   const handlePaymentNavigation = async (navState: any) => {
     const currentUrl = navState.url;
-    console.log('Payment WebView navigation:', currentUrl);
+    console.log('🌐 [WebView Navigation] Payment WebView navigation event');
+    console.log('🌐 [WebView Navigation] Current URL:', currentUrl);
+    console.log('🌐 [WebView Navigation] Navigation state:', JSON.stringify(navState, null, 2));
+    console.log('🌐 [WebView Navigation] Loading:', navState.loading);
+    console.log('🌐 [WebView Navigation] Can go back:', navState.canGoBack);
+    console.log('🌐 [WebView Navigation] Can go forward:', navState.canGoForward);
     
     // Monitor for success URL
     if (currentUrl.includes('checkout/success')) {
-      console.log('Payment successful - closing WebView and navigating to success');
+      console.log('✅ [WebView Navigation] Payment successful URL detected');
+      console.log('✅ [WebView Navigation] Success URL:', currentUrl);
+      console.log('✅ [WebView Navigation] Closing WebView and navigating to success');
       
       // Close WebView
       setShowPaymentWebView(false);
       setPaymentUrl(null);
+      console.log('✅ [WebView Navigation] WebView closed and payment URL cleared');
       
       // Clear cart
+      console.log('✅ [WebView Navigation] Clearing cart');
       await clearCart();
+      console.log('✅ [WebView Navigation] Cart cleared successfully');
       
       // Navigate to success page
+      console.log('✅ [WebView Navigation] Navigating to order success page');
       router.replace('/order-success');
       return;
     }
     
     // Monitor for failure URL (cart page indicates failed payment)
     if (currentUrl.includes('checkout/cart')) {
-      console.log('Payment failed - closing WebView and navigating to failure');
+      console.log('❌ [WebView Navigation] Payment failed URL detected');
+      console.log('❌ [WebView Navigation] Failure URL:', currentUrl);
+      console.log('❌ [WebView Navigation] Cart page indicates failed payment');
+      console.log('❌ [WebView Navigation] Closing WebView and navigating to failure');
       
       // Close WebView
       setShowPaymentWebView(false);
       setPaymentUrl(null);
+      console.log('❌ [WebView Navigation] WebView closed and payment URL cleared');
       
       // Navigate to failure page
+      console.log('❌ [WebView Navigation] Navigating to order failure page');
       router.replace('/order-failure');
       return;
     }
+    
+    // Log other navigation patterns for debugging
+    if (currentUrl.includes('knet') || currentUrl.includes('kpay')) {
+      console.log('🏛️ [WebView Navigation] KNET payment gateway detected');
+    }
+    
+    if (currentUrl.includes('cybersource')) {
+      console.log('💳 [WebView Navigation] CyberSource payment gateway detected');
+    }
+    
+    console.log('🌐 [WebView Navigation] Navigation event processed');
   };
 
   // Close payment WebView manually
@@ -825,12 +1112,25 @@ ${address.address_2 || ''}`;
   };
 
   const addPaymentAddress = async (addressData: any) => {
+    console.log('🏠 [Add Address] Starting to add payment address');
+    console.log('🏠 [Add Address] Input address data:', JSON.stringify(addressData, null, 2));
+    console.log('🏠 [Add Address] Is authenticated:', isAuthenticated);
+    
     try {
       setIsLoading(true);
+      console.log('🏠 [Add Address] Set loading state to true');
       
       if (isAuthenticated) {
+        console.log('🏠 [Add Address] Processing authenticated user address');
+        
         // Get user's email from auth store
         const { user } = useAuthStore.getState();
+        console.log('🏠 [Add Address] User from auth store:', user ? {
+          email: user.email,
+          telephone: user.telephone,
+          firstname: user.firstname,
+          lastname: user.lastname
+        } : 'No user data');
         
         // For authenticated users, use the payment address endpoint
         const requestData = {
@@ -851,7 +1151,8 @@ ${address.address_2 || ''}`;
           }
         };
 
-        console.log('Adding payment address:', requestData);
+        console.log('🏠 [Add Address] Prepared request data for authenticated user:', JSON.stringify(requestData, null, 2));
+        console.log('🏠 [Add Address] API endpoint: /index.php?route=extension/mstore/payment_address|save');
 
         const response = await makeApiCall('/index.php?route=extension/mstore/payment_address|save', {
           method: 'POST',
@@ -861,19 +1162,35 @@ ${address.address_2 || ''}`;
           }
         });
 
-        console.log('Payment address response:', response);
+        console.log('🏠 [Add Address] Payment address API response:', JSON.stringify(response, null, 2));
+        console.log('🏠 [Add Address] Response success status:', response.success);
+        console.log('🏠 [Add Address] Response data:', response.data);
+        console.log('🏠 [Add Address] Response error:', response.error);
 
         if (response.success === 1) {
+          console.log('✅ [Add Address] Payment address added successfully');
+          
           // Refresh addresses for authenticated users and get the most recent one
+          console.log('🏠 [Add Address] Refreshing addresses');
           await loadAddresses(); // This will automatically select the most recent address
+          console.log('🏠 [Add Address] Addresses refreshed');
+          
           // Explicitly trigger method fetching after address is set
+          console.log('🏠 [Add Address] Triggering methods fetch');
           await setAddressInCheckoutAndFetchMethods();
+          console.log('🏠 [Add Address] Methods fetch completed');
+          
           setIsLoading(false);
+          console.log('🏠 [Add Address] Set loading state to false');
           return true;
         } else {
+          console.log('❌ [Add Address] Failed to add payment address');
+          console.log('❌ [Add Address] Error details:', response.error);
           throw new Error(response.error?.[0] || 'Failed to add address');
         }
       } else {
+        console.log('🏠 [Add Address] Processing unauthenticated user address');
+        
         // For unauthenticated users, save in the same format as API response
         const localAddressData = {
           address_id: Date.now().toString(), // Generate a temporary ID
@@ -896,15 +1213,26 @@ ${address.address_2 || ''}`;
           default: false
         };
 
+        console.log('🏠 [Add Address] Prepared local address data:', JSON.stringify(localAddressData, null, 2));
+        console.log('🏠 [Add Address] Saving local address to AsyncStorage');
         await saveLocalAddress(localAddressData);
+        console.log('🏠 [Add Address] Local address saved successfully');
+        
         // Explicitly trigger method fetching after address is set
+        console.log('🏠 [Add Address] Triggering methods fetch for unauthenticated user');
         await setAddressInCheckoutAndFetchMethods();
+        console.log('🏠 [Add Address] Methods fetch completed for unauthenticated user');
+        
         setIsLoading(false);
+        console.log('🏠 [Add Address] Set loading state to false');
         return true;
       }
     } catch (error: any) {
-      console.error('Error adding payment address:', error);
+      console.error('❌ [Add Address] Error adding payment address:', error);
+      console.error('❌ [Add Address] Error message:', error.message);
+      console.error('❌ [Add Address] Error stack:', error.stack);
       setIsLoading(false);
+      console.log('🏠 [Add Address] Set loading state to false due to error');
       Alert.alert('Error', error.message || 'Failed to add address');
       return false;
     }
@@ -1175,11 +1503,12 @@ ${address.address_2 || ''}`;
                   key={index}
                   style={[
                     styles.methodOption,
-                    selectedPaymentMethod === method && styles.selectedMethodOption
+                    method.code === 'applepay_knet' ? styles.applePayMethodOption : null,
+                    selectedPaymentMethod === method && styles.selectedMethodOption,
+                    selectedPaymentMethod === method && method.code === 'applepay_knet' && styles.selectedApplePayMethodOption
                   ]}
                   onPress={() => {
                     handlePaymentMethodSelection(method);
-                    setUseApplePay(false); // Reset Apple Pay selection when selecting other methods
                   }}
                 >
                   <View style={styles.methodRadio}>
@@ -1191,58 +1520,38 @@ ${address.address_2 || ''}`;
                     </View>
                   </View>
                   <View style={styles.methodInfo}>
-                    <Text style={styles.methodTitle}>{method.title || method.name}</Text>
-                    {method.terms && (
-                      <Text style={styles.methodTerms}>{method.terms}</Text>
+                    {method.code === 'applepay_knet' ? (
+                      <View style={styles.applePayMethodContent}>
+                        <View style={[
+                          styles.applePayBadge,
+                          selectedPaymentMethod === method ? styles.applePayBadgeSelected : null
+                        ]}>
+                    <Ionicons 
+                      name="logo-apple" 
+                            size={16} 
+                            color={selectedPaymentMethod === method ? "#fff" : "#000"} 
+                            style={styles.appleLogoIcon}
+                    />
+                  <Text style={[
+                    styles.applePayText,
+                            selectedPaymentMethod === method ? styles.applePayTextSelected : null
+                  ]}>
+                            Pay
+                  </Text>
+                    </View>
+                        <Text style={styles.methodSubtext}>Apple Pay via KNET</Text>
+                  </View>
+                    ) : (
+                      <>
+                        <Text style={styles.methodTitle}>{method.title || method.name}</Text>
+                        {method.terms && (
+                          <Text style={styles.methodTerms}>{method.terms}</Text>
+                        )}
+                      </>
                     )}
                   </View>
                 </TouchableOpacity>
               ))}
-              
-              {/* Apple Pay Button - Show on iOS when COD is selected */}
-              {shouldShowApplePayButton() && (
-                <TouchableOpacity
-                  style={[
-                    styles.applePayButton,
-                    useApplePay && styles.selectedApplePayButton
-                  ]}
-                  onPress={() => {
-                    // Toggle Apple Pay selection
-                    const newState = !useApplePay;
-                    setUseApplePay(newState);
-                    
-                    // If turning on, also set "Cash on Delivery" as the selected payment method
-                    if (newState && paymentMethods && paymentMethods.length > 0) {
-                      const codMethod = paymentMethods.find(method => method.code === 'cod');
-                      if (codMethod) {
-                        handlePaymentMethodSelection(codMethod);
-                      }
-                    }
-                  }}
-                >
-                  <View style={styles.applePayIcon}>
-                    <Ionicons 
-                      name="logo-apple" 
-                      size={20} 
-                      color={useApplePay ? "#fff" : "#000"} 
-                    />
-                  </View>
-                  <Text style={[
-                    styles.applePayText,
-                    useApplePay && styles.selectedApplePayText
-                  ]}>
-                    Pay with Apple Pay
-                  </Text>
-                  <View style={styles.methodRadio}>
-                    <View style={[
-                      styles.radioOuter,
-                      useApplePay && styles.radioSelected
-                    ]}>
-                      {useApplePay && <View style={styles.radioInner} />}
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              )}
             </View>
           ) : (
             <View style={styles.noMethodsContainer}>
@@ -1888,7 +2197,8 @@ const styles = StyleSheet.create({
   },
   methodSubtext: {
     fontSize: 12,
-    color: '#666',
+    color: '#666666',
+    marginTop: 2,
   },
   methodsList: {
     padding: 8,
@@ -2010,12 +2320,41 @@ const styles = StyleSheet.create({
     marginEnd: 12,
   },
   applePayText: {
-    flex: 1,
+    color: '#ffffff',
+    fontWeight: 'bold',
     fontSize: 14,
-    fontWeight: '500',
-    color: '#000',
   },
   selectedApplePayText: {
-    color: '#fff',
+    color: '#ffffff',
+  },
+  applePayMethodOption: {
+    backgroundColor: '#f2f2f2',
+    borderColor: '#e0e0e0',
+  },
+  selectedApplePayMethodOption: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  applePayMethodContent: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  applePayBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#000000',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginBottom: 4,
+  },
+  applePayBadgeSelected: {
+    backgroundColor: '#000000',
+  },
+  appleLogoIcon: {
+    marginRight: 2,
+  },
+  applePayTextSelected: {
+    color: '#ffffff',
   },
 }); 

@@ -756,7 +756,6 @@ export const emptyCart = async (): Promise<ApiResponse<any>> => {
         'Cookie': `OCSESSID=${currentOcsessid}`
       }
     });
-    
     // Get response text
     const responseText = await response.text();
     console.log('Empty cart raw response:', responseText);

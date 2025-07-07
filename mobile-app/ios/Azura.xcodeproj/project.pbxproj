@@ -7,11 +7,11 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		014A5A0D9DBBEC0568A9E5F6 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 29E4820BFD03E3D0D992780F /* PrivacyInfo.xcprivacy */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
-		2518B259E7C86B5CEA21C6B5 /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFC197D251C4519F3C3AAB19 /* ExpoModulesProvider.swift */; };
+		25356127DE4F7BC110FCC2E9 /* libPods-Azura.a in Frameworks */ = {isa = PBXBuildFile; fileRef = CECADD1A91F642A7ADE00EB8 /* libPods-Azura.a */; };
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
-		67864765CAB4C79ABE994B2B /* libPods-Azura.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E8809D8646B61C2A72D677F7 /* libPods-Azura.a */; };
+		48499CC5548294D14166D332 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 8D5047CED2327886C1EBC59E /* PrivacyInfo.xcprivacy */; };
+		B9C664C26598FFC472BCAC5B /* ExpoModulesProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = D068075D01689483923B0E51 /* ExpoModulesProvider.swift */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
 /* End PBXBuildFile section */
@@ -20,13 +20,13 @@
 		13B07F961A680F5B00A75B9A /* Azura.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Azura.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		13B07FB51A68108700A75B9A /* Images.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; name = Images.xcassets; path = Azura/Images.xcassets; sourceTree = "<group>"; };
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = Azura/Info.plist; sourceTree = "<group>"; };
-		29D1BAE3350759B60D945FF2 /* Pods-Azura.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Azura.release.xcconfig"; path = "Target Support Files/Pods-Azura/Pods-Azura.release.xcconfig"; sourceTree = "<group>"; };
-		29E4820BFD03E3D0D992780F /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Azura/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
-		3934B722409588602928EAD8 /* Pods-Azura.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Azura.debug.xcconfig"; path = "Target Support Files/Pods-Azura/Pods-Azura.debug.xcconfig"; sourceTree = "<group>"; };
+		8D5047CED2327886C1EBC59E /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xml; name = PrivacyInfo.xcprivacy; path = Azura/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = SplashScreen.storyboard; path = Azura/SplashScreen.storyboard; sourceTree = "<group>"; };
 		BB2F792C24A3F905000567C9 /* Expo.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Expo.plist; sourceTree = "<group>"; };
-		CFC197D251C4519F3C3AAB19 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Azura/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
-		E8809D8646B61C2A72D677F7 /* libPods-Azura.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Azura.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		CE4630D43A3D808C209F87B4 /* Pods-Azura.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Azura.debug.xcconfig"; path = "Target Support Files/Pods-Azura/Pods-Azura.debug.xcconfig"; sourceTree = "<group>"; };
+		CECADD1A91F642A7ADE00EB8 /* libPods-Azura.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-Azura.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		D068075D01689483923B0E51 /* ExpoModulesProvider.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = ExpoModulesProvider.swift; path = "Pods/Target Support Files/Pods-Azura/ExpoModulesProvider.swift"; sourceTree = "<group>"; };
+		EAAF9EE8CC47A6249FE6FF38 /* Pods-Azura.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Azura.release.xcconfig"; path = "Target Support Files/Pods-Azura/Pods-Azura.release.xcconfig"; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Azura/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Azura-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Azura-Bridging-Header.h"; path = "Azura/Azura-Bridging-Header.h"; sourceTree = "<group>"; };
@@ -37,7 +37,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				67864765CAB4C79ABE994B2B /* libPods-Azura.a in Frameworks */,
+				25356127DE4F7BC110FCC2E9 /* libPods-Azura.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,7 +53,7 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				29E4820BFD03E3D0D992780F /* PrivacyInfo.xcprivacy */,
+				8D5047CED2327886C1EBC59E /* PrivacyInfo.xcprivacy */,
 			);
 			name = Azura;
 			sourceTree = "<group>";
@@ -62,26 +62,18 @@
 			isa = PBXGroup;
 			children = (
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
-				E8809D8646B61C2A72D677F7 /* libPods-Azura.a */,
+				CECADD1A91F642A7ADE00EB8 /* libPods-Azura.a */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		58257D4FAD0A999DB50C31DF /* Pods */ = {
+		30C67DD8F368014FE246311F /* Pods */ = {
 			isa = PBXGroup;
 			children = (
-				3934B722409588602928EAD8 /* Pods-Azura.debug.xcconfig */,
-				29D1BAE3350759B60D945FF2 /* Pods-Azura.release.xcconfig */,
+				CE4630D43A3D808C209F87B4 /* Pods-Azura.debug.xcconfig */,
+				EAAF9EE8CC47A6249FE6FF38 /* Pods-Azura.release.xcconfig */,
 			);
 			path = Pods;
-			sourceTree = "<group>";
-		};
-		77CF53A17976CB9E56C7EA02 /* ExpoModulesProviders */ = {
-			isa = PBXGroup;
-			children = (
-				988BDF289B2039FA0A458604 /* Azura */,
-			);
-			name = ExpoModulesProviders;
 			sourceTree = "<group>";
 		};
 		832341AE1AAA6A7D00B99B32 /* Libraries */ = {
@@ -98,8 +90,8 @@
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
-				58257D4FAD0A999DB50C31DF /* Pods */,
-				77CF53A17976CB9E56C7EA02 /* ExpoModulesProviders */,
+				30C67DD8F368014FE246311F /* Pods */,
+				D75DC0CFC9722A1745309037 /* ExpoModulesProviders */,
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -114,10 +106,10 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		988BDF289B2039FA0A458604 /* Azura */ = {
+		AE4FA4AC6E45DE11BD0A7417 /* Azura */ = {
 			isa = PBXGroup;
 			children = (
-				CFC197D251C4519F3C3AAB19 /* ExpoModulesProvider.swift */,
+				D068075D01689483923B0E51 /* ExpoModulesProvider.swift */,
 			);
 			name = Azura;
 			sourceTree = "<group>";
@@ -131,6 +123,14 @@
 			path = Azura/Supporting;
 			sourceTree = "<group>";
 		};
+		D75DC0CFC9722A1745309037 /* ExpoModulesProviders */ = {
+			isa = PBXGroup;
+			children = (
+				AE4FA4AC6E45DE11BD0A7417 /* Azura */,
+			);
+			name = ExpoModulesProviders;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -139,13 +139,13 @@
 			buildConfigurationList = 13B07F931A680F5B00A75B9A /* Build configuration list for PBXNativeTarget "Azura" */;
 			buildPhases = (
 				08A4A3CD28434E44B6B9DE2E /* [CP] Check Pods Manifest.lock */,
-				28BB58482BA10E165BDDA78A /* [Expo] Configure project */,
+				5F6FDFB0B9F240C134ED5637 /* [Expo] Configure project */,
 				13B07F871A680F5B00A75B9A /* Sources */,
 				13B07F8C1A680F5B00A75B9A /* Frameworks */,
 				13B07F8E1A680F5B00A75B9A /* Resources */,
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */,
-				DF725FF3106D659E638845BA /* [CP] Embed Pods Frameworks */,
+				BEEB4E13266F6C2669D89D72 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -162,8 +162,7 @@
 		83CBB9F71A601CBA00E9B192 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1630;
+				LastUpgradeCheck = 1130;
 				TargetAttributes = {
 					13B07F861A680F5B00A75B9A = {
 						LastSwiftMigration = 1250;
@@ -196,7 +195,7 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				014A5A0D9DBBEC0568A9E5F6 /* PrivacyInfo.xcprivacy in Resources */,
+				48499CC5548294D14166D332 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -240,7 +239,7 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
-		28BB58482BA10E165BDDA78A /* [Expo] Configure project */ = {
+		5F6FDFB0B9F240C134ED5637 /* [Expo] Configure project */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -299,7 +298,7 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Azura/Pods-Azura-resources.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
-		DF725FF3106D659E638845BA /* [CP] Embed Pods Frameworks */ = {
+		BEEB4E13266F6C2669D89D72 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -325,7 +324,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */,
-				2518B259E7C86B5CEA21C6B5 /* ExpoModulesProvider.swift in Sources */,
+				B9C664C26598FFC472BCAC5B /* ExpoModulesProvider.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -334,14 +333,14 @@
 /* Begin XCBuildConfiguration section */
 		13B07F941A680F5B00A75B9A /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 3934B722409588602928EAD8 /* Pods-Azura.debug.xcconfig */;
+			baseConfigurationReference = CE4630D43A3D808C209F87B4 /* Pods-Azura.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Azura/Azura.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 3ATQC55A2K;
 				ENABLE_BITCODE = NO;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_PREPROCESSOR_DEFINITIONS = (
 					"$(inherited)",
 					"FB_SONARKIT_ENABLED=1",
@@ -371,13 +370,13 @@
 		};
 		13B07F951A680F5B00A75B9A /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 29D1BAE3350759B60D945FF2 /* Pods-Azura.release.xcconfig */;
+			baseConfigurationReference = EAAF9EE8CC47A6249FE6FF38 /* Pods-Azura.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_ENTITLEMENTS = Azura/Azura.entitlements;
 				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				DEVELOPMENT_TEAM = 3ATQC55A2K;
 				INFOPLIST_FILE = Azura/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -423,7 +422,6 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -431,10 +429,8 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
-				DEVELOPMENT_TEAM = 3ATQC55A2K;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -458,10 +454,7 @@
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "$(inherited) DEBUG";
@@ -492,7 +485,6 @@
 				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
 				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
 				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
-				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
 				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
 				CLANG_WARN_STRICT_PROTOTYPES = YES;
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
@@ -500,10 +492,8 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = YES;
-				DEVELOPMENT_TEAM = 3ATQC55A2K;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -519,13 +509,9 @@
 				);
 				LIBRARY_SEARCH_PATHS = "$(SDKROOT)/usr/lib/swift\"$(inherited)\"";
 				MTL_ENABLE_DEBUG_INFO = NO;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					" ",
-				);
+				OTHER_LDFLAGS = "$(inherited)  ";
 				REACT_NATIVE_PATH = "${PODS_ROOT}/../../node_modules/react-native";
 				SDKROOT = iphoneos;
-				SWIFT_COMPILATION_MODE = wholemodule;
 				USE_HERMES = true;
 				VALIDATE_PRODUCT = YES;
 			};
