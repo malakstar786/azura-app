@@ -116,29 +116,57 @@ export default function CheckoutScreen() {
 
   // Apple Pay payment processor - called when Place Order button is clicked
   const onApplePayButtonClicked = async (orderId: string) => {
-    console.log('🍏 [ApplePay] Starting Apple Pay payment flow for order:', orderId);
+    const startTime = Date.now();
+    const sessionId = `APL_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    console.log('🍏 [ApplePay] ========== APPLE PAY FLOW START ==========');
+    console.log('🍏 [ApplePay] Session ID:', sessionId);
+    console.log('🍏 [ApplePay] Timestamp:', new Date().toISOString());
+    console.log('🍏 [ApplePay] Order ID:', orderId);
+    console.log('🍏 [ApplePay] Platform:', Platform.OS, Platform.Version);
+    console.log('🍏 [ApplePay] User Agent:', navigator?.userAgent || 'N/A');
+    
+    // Platform validation
     if (Platform.OS !== 'ios') {
-      console.log('❌ [ApplePay] Not on iOS platform, aborting Apple Pay');
+      console.log('❌ [ApplePay] Platform check failed - not iOS');
+      console.log('❌ [ApplePay] Current platform:', Platform.OS);
+      console.log('❌ [ApplePay] Aborting Apple Pay flow');
       Alert.alert('Apple Pay is only available on iOS.');
       return false;
     }
+    console.log('✅ [ApplePay] Platform check passed - iOS detected');
 
-    console.log('🍏 [ApplePay] Setting Apple Pay loading state to true');
+    // Device capability checks
+    console.log('🍏 [ApplePay] Checking Apple Pay device capabilities...');
+    console.log('🍏 [ApplePay] Setting loading state to true');
     setApplePayLoading(true);
     
     try {
+      console.log('🍏 [ApplePay] ========== PAYMENT CALCULATION PHASE ==========');
+      
       // Calculate total amount for Apple Pay
       const totalAmount = parsePrice(formatPrice(orderTotal));
-      console.log('🍏 [ApplePay] Calculated total amount:', totalAmount);
-      console.log('🍏 [ApplePay] Formatted price:', formatPrice(orderTotal));
-      console.log('🍏 [ApplePay] Order total:', orderTotal);
-      console.log('🍏 [ApplePay] Subtotal:', total);
-      console.log('🍏 [ApplePay] Shipping cost:', shippingCost);
+      console.log('🍏 [ApplePay] Payment calculation details:');
+      console.log('🍏 [ApplePay] - Raw order total:', orderTotal, typeof orderTotal);
+      console.log('🍏 [ApplePay] - Formatted price string:', formatPrice(orderTotal));
+      console.log('🍏 [ApplePay] - Parsed total amount:', totalAmount, typeof totalAmount);
+      console.log('🍏 [ApplePay] - Items subtotal:', total, typeof total);
+      console.log('🍏 [ApplePay] - Shipping cost:', shippingCost, typeof shippingCost);
+      console.log('🍏 [ApplePay] - Currency:', 'KWD');
       
-      console.log(`🍏 [ApplePay] Preparing Apple Pay request for order ID: ${orderId} with amount: ${totalAmount}`);
+      // Validation checks
+      if (isNaN(totalAmount) || totalAmount <= 0) {
+        console.error('❌ [ApplePay] Invalid total amount calculated:', totalAmount);
+        throw new Error('Invalid payment amount calculated');
+      }
+      console.log('✅ [ApplePay] Payment amount validation passed');
+      
+      console.log('🍏 [ApplePay] ========== PAYMENT REQUEST PREPARATION ==========');
+      console.log(`🍏 [ApplePay] Preparing Apple Pay request - Order: ${orderId}, Amount: ${totalAmount} KWD`);
       
       // Prepare Apple Pay request with detailed line items for better user experience
+      console.log('🍏 [ApplePay] Configuring payment request object...');
+      
       const paymentRequest = {
         merchantIdentifier: 'merchant.kw.com.azura',
         countryCode: 'KW',
@@ -149,8 +177,6 @@ export default function CheckoutScreen() {
         ],
         merchantCapabilities: [
           MerchantCapability["3DS"],
-          MerchantCapability.Credit,
-          MerchantCapability.Debit
         ],
         paymentSummaryItems: [
           // Add items from cart with subtotal
@@ -171,32 +197,82 @@ export default function CheckoutScreen() {
         ]
       };
       
-      console.log('🍏 [ApplePay] Payment request configured:', JSON.stringify(paymentRequest, null, 2));
-      console.log('🍏 [ApplePay] Showing Apple Pay sheet to customer...');
+      console.log('🍏 [ApplePay] Payment request configuration complete:');
+      console.log('🍏 [ApplePay] - Merchant ID:', paymentRequest.merchantIdentifier);
+      console.log('🍏 [ApplePay] - Country:', paymentRequest.countryCode);
+      console.log('🍏 [ApplePay] - Currency:', paymentRequest.currencyCode);
+      console.log('🍏 [ApplePay] - Supported networks:', paymentRequest.supportedNetworks);
+      console.log('🍏 [ApplePay] - Merchant capabilities:', paymentRequest.merchantCapabilities);
+      console.log('🍏 [ApplePay] - Payment summary items count:', paymentRequest.paymentSummaryItems.length);
+      console.log('🍏 [ApplePay] - Payment summary items:', JSON.stringify(paymentRequest.paymentSummaryItems, null, 2));
+      console.log('🍏 [ApplePay] - Full payment request:', JSON.stringify(paymentRequest, null, 2));
+      
+      console.log('🍏 [ApplePay] ========== APPLE PAY SHEET PRESENTATION ==========');
+      console.log('🍏 [ApplePay] Presenting Apple Pay sheet to user...');
+      console.log('🍏 [ApplePay] Waiting for user interaction...');
 
       // Request Apple Pay payment
+      const paymentSheetStartTime = Date.now();
       const paymentResponse = await ApplePay.show(paymentRequest);
+      const paymentSheetDuration = Date.now() - paymentSheetStartTime;
       
+      console.log('🍏 [ApplePay] ========== PAYMENT AUTHORIZATION RECEIVED ==========');
       console.log('✅ [ApplePay] Payment authorized by customer');
-      console.log('🔍 [ApplePay] Payment response received. Available keys:', Object.keys(paymentResponse));
+      console.log('🍏 [ApplePay] Apple Pay sheet duration:', `${paymentSheetDuration}ms`);
+      console.log('🍏 [ApplePay] Payment response type:', typeof paymentResponse);
+      console.log('🍏 [ApplePay] Payment response is null/undefined:', paymentResponse == null);
+      
+      if (paymentResponse) {
+        console.log('🔍 [ApplePay] Payment response structure analysis:');
+        console.log('🔍 [ApplePay] - Available keys:', Object.keys(paymentResponse));
+        console.log('🔍 [ApplePay] - Payment network:', (paymentResponse as any).paymentNetwork || 'Not specified');
+        console.log('🔍 [ApplePay] - Has payment data:', !!(paymentResponse as any).paymentData);
+        console.log('🔍 [ApplePay] - Response object size:', JSON.stringify(paymentResponse).length, 'characters');
+        
+        // Log the COMPLETE Apple Pay response for debugging
+        console.log('🍎 [ApplePay] ========== FULL APPLE PAY RESPONSE ==========');
+        console.log('🍎 [ApplePay] Complete Apple Pay Response Object:');
+        console.log('🍎 [ApplePay]', JSON.stringify(paymentResponse, null, 2));
+        console.log('🍎 [ApplePay] ===================================================');
+        
+        // Log specific Apple Pay response properties if they exist
+        const responseAny = paymentResponse as any;
+        if (responseAny.paymentData) {
+          console.log('🔍 [ApplePay] - Payment data type:', typeof responseAny.paymentData);
+          console.log('🔍 [ApplePay] - Payment data content:', JSON.stringify(responseAny.paymentData, null, 2));
+        }
+        if (responseAny.transactionIdentifier) {
+          console.log('🔍 [ApplePay] - Transaction ID:', responseAny.transactionIdentifier);
+        }
+        if (responseAny.billingContact) {
+          console.log('🔍 [ApplePay] - Billing contact:', JSON.stringify(responseAny.billingContact, null, 2));
+        }
+        if (responseAny.shippingContact) {
+          console.log('🔍 [ApplePay] - Shipping contact:', JSON.stringify(responseAny.shippingContact, null, 2));
+        }
+      }
       
       // Generate track ID
       const trackId = `ORDER_${Date.now()}`;
-      console.log('🍏 [ApplePay] Generated track ID:', trackId);
+      console.log('🍏 [ApplePay] Generated tracking information:');
+      console.log('🍏 [ApplePay] - Track ID:', trackId);
+      console.log('🍏 [ApplePay] - Session ID:', sessionId);
 
-      // Process payment with backend
-      console.log('🍏 [ApplePay] Preparing payload for backend processing');
-      console.log('🔍 [ApplePay] Response structure summary:', JSON.stringify({
-        network: paymentResponse.paymentNetwork || 'unknown',
-        hasData: typeof paymentResponse === 'object' && !!paymentResponse,
-        // Check known properties that might exist on the response
-        keys: Object.keys(paymentResponse || {})
-      }));
+      console.log('🍏 [ApplePay] ========== BACKEND PROCESSING PREPARATION ==========');
+      console.log('🍏 [ApplePay] Preparing payload for backend API call...');
       
+      // Extract payment network and construct payment method object
+      const paymentNetwork = (paymentResponse as any).paymentNetwork;
+      const paymentMethodObject = {
+        network: paymentNetwork,
+        type: 'credit', // Default type since Apple Pay typically uses credit transactions
+        displayName: `${paymentNetwork}` // Basic display name format
+      };
+
       const requestBody = {
         token: {
           paymentData: paymentResponse,
-          paymentMethod: paymentResponse.paymentNetwork
+          paymentMethod: paymentMethodObject
         },
         amount: totalAmount.toString(),
         currencyCode: '414', // KWD currency code
@@ -205,105 +281,211 @@ export default function CheckoutScreen() {
         order_id: orderId
       };
       
-      console.log('🍏 [ApplePay] Request body keys:', Object.keys(requestBody));
-      console.log('🍏 [ApplePay] Sending payment to backend for processing');
-      console.log(`🍏 [ApplePay] API endpoint: ${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPaymentApp`);
+      console.log('🍏 [ApplePay] Backend request payload prepared:');
+      console.log('🍏 [ApplePay] - Request body keys:', Object.keys(requestBody));
+      console.log('🍏 [ApplePay] - Amount:', requestBody.amount);
+      console.log('🍏 [ApplePay] - Currency code:', requestBody.currencyCode);
+      console.log('🍏 [ApplePay] - Track ID:', requestBody.trackId);
+      console.log('🍏 [ApplePay] - Order ID:', requestBody.order_id);
+      console.log('🍏 [ApplePay] - Payment network (raw):', paymentNetwork);
+      console.log('🍏 [ApplePay] - Payment method object:', JSON.stringify(requestBody.token.paymentMethod, null, 2));
+      console.log('🍏 [ApplePay] - Has payment data:', !!requestBody.token.paymentData);
       
-      const processResponse = await fetch(`${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPaymentApp`, {
+      const apiEndpoint = `${API_BASE_URL}/index.php?route=extension/opencart/payment/applepay_knet|processPaymentApp`;
+      console.log('🍏 [ApplePay] API call details:');
+      console.log('🍏 [ApplePay] - Endpoint:', apiEndpoint);
+      console.log('🍏 [ApplePay] - Method: POST');
+      console.log('🍏 [ApplePay] - Content-Type: application/json');
+      console.log('🍏 [ApplePay] - Request payload size:', JSON.stringify(requestBody).length, 'characters');
+      
+      console.log('🍏 [ApplePay] Initiating backend API call...');
+      const apiCallStartTime = Date.now();
+      
+      const processResponse = await fetch(apiEndpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody)
       });
+      
+      const apiCallDuration = Date.now() - apiCallStartTime;
+      console.log('🍏 [ApplePay] API call completed in:', `${apiCallDuration}ms`);
 
-      // Check if the response is successful
-      console.log('🍏 [ApplePay] API response status:', processResponse.status, processResponse.statusText, processResponse);
-      console.log('🍏 [ApplePay] API response headers:', JSON.stringify(Object.fromEntries([...processResponse.headers.entries()])));
+      console.log('🍏 [ApplePay] ========== API RESPONSE ANALYSIS ==========');
+      console.log('🍏 [ApplePay] Response status analysis:');
+      console.log('🍏 [ApplePay] - Status code:', processResponse.status);
+      console.log('🍏 [ApplePay] - Status text:', processResponse.statusText);
+      console.log('🍏 [ApplePay] - Response OK:', processResponse.ok);
+      console.log('🍏 [ApplePay] - Response type:', processResponse.type);
+      console.log('🍏 [ApplePay] - Response URL:', processResponse.url);
+      console.log('🍏 [ApplePay] - Response headers:', JSON.stringify(Object.fromEntries([...processResponse.headers.entries()])));
       
       if (!processResponse.ok) {
-        console.error(`❌ [ApplePay] API responded with error status: ${processResponse.status} ${processResponse.statusText}`);
+        console.error('❌ [ApplePay] API response indicates error:');
+        console.error('❌ [ApplePay] - HTTP Status:', processResponse.status);
+        console.error('❌ [ApplePay] - Status Text:', processResponse.statusText);
+        console.error('❌ [ApplePay] - Response URL:', processResponse.url);
         throw new Error(`Server error: ${processResponse.status} ${processResponse.statusText}`);
       }
+      console.log('✅ [ApplePay] HTTP response validation passed');
+      
+      console.log('🍏 [ApplePay] ========== RESPONSE PARSING & ANALYSIS ==========');
       
       // Check if the response is valid JSON
       let result;
       try {
+        console.log('🍏 [ApplePay] Extracting response text...');
         const responseText = await processResponse.text();
         
-        // Log the raw response for debugging
-        console.log('🔍 [ApplePay] Raw API response (first 200 chars):', responseText.substring(0, 200) + (responseText.length > 200 ? '...' : ''));
-        console.log('🔍 [ApplePay] Response length:', responseText.length);
+        console.log('🍏 [ApplePay] ========== RAW BACKEND RESPONSE ==========');
+        console.log('🔍 [ApplePay] Response length:', responseText.length, 'characters');
+        console.log('🔍 [ApplePay] Response starts with:', responseText.substring(0, 50));
+        console.log('🔍 [ApplePay] Response ends with:', responseText.substring(Math.max(0, responseText.length - 50)));
+        console.log('🔍 [ApplePay] Response preview (first 500 chars):', responseText.substring(0, 500) + (responseText.length > 500 ? '...' : ''));
+        
+        // Log the COMPLETE backend response
+        console.log('🔧 [ApplePay] ========== COMPLETE BACKEND RESPONSE ==========');
+        console.log('🔧 [ApplePay] Full Backend Response Text:');
+        console.log('🔧 [ApplePay]', responseText);
+        console.log('🔧 [ApplePay] ===============================================');
         
         // Check if response starts with HTML (common error case)
         if (responseText.trim().startsWith('<')) {
-          console.error('❌ [ApplePay] Server returned HTML instead of JSON:', responseText.substring(0, 300));
+          console.error('❌ [ApplePay] Response format error: Server returned HTML instead of JSON');
+          console.error('❌ [ApplePay] HTML response preview:', responseText.substring(0, 300));
           throw new Error('Server returned HTML instead of JSON. Possible server error.');
         }
         
+        // Validate JSON format
+        if (!responseText.trim().startsWith('{') && !responseText.trim().startsWith('[')) {
+          console.error('❌ [ApplePay] Response format error: Not valid JSON format');
+          console.error('❌ [ApplePay] Response content:', responseText);
+          throw new Error('Server response is not in JSON format');
+        }
+        
+        console.log('🍏 [ApplePay] Parsing JSON response...');
         // Parse JSON
         result = JSON.parse(responseText);
-        console.log('🍏 [ApplePay] Backend processing result:', result);
+        
+        console.log('🍏 [ApplePay] ========== PARSED BACKEND RESPONSE ==========');
+        console.log('🔧 [ApplePay] Parsed Backend Response Object:');
+        console.log('🔧 [ApplePay] Response Type:', typeof result);
+        console.log('🔧 [ApplePay] Response Keys:', Object.keys(result || {}));
+        console.log('🔧 [ApplePay] Complete Parsed Response:');
+        console.log('🔧 [ApplePay]', JSON.stringify(result, null, 2));
+        console.log('🔧 [ApplePay] ===============================================');
+        
+        console.log('✅ [ApplePay] JSON parsing successful');
       } catch (error) {
         const parseError = error as Error;
-        console.error('❌ [ApplePay] Error parsing API response:', parseError);
-        console.error('❌ [ApplePay] Parse error stack:', parseError.stack);
+        console.error('❌ [ApplePay] ========== JSON PARSING ERROR ==========');
+        console.error('❌ [ApplePay] JSON parsing failed');
+        console.error('❌ [ApplePay] Error type:', typeof parseError);
+        console.error('❌ [ApplePay] Error name:', parseError.name);
+        console.error('❌ [ApplePay] Error message:', parseError.message);
+        console.error('❌ [ApplePay] Error stack:', parseError.stack);
+        console.error('❌ [ApplePay] Session ID:', sessionId);
         throw new Error('Invalid response from server: ' + parseError.message);
       }
 
+      console.log('🍏 [ApplePay] ========== PAYMENT RESULT PROCESSING ==========');
+      console.log('🍏 [ApplePay] Backend result status:', result.status);
+      console.log('🍏 [ApplePay] Backend result keys:', Object.keys(result));
+      
       if (result.status === 'success') {
-        console.log('✅ [ApplePay] Payment successful, completing Apple Pay transaction');
+        console.log('🍏 [ApplePay] ========== SUCCESS FLOW ==========');
+        console.log('✅ [ApplePay] Payment processing successful');
+        console.log('✅ [ApplePay] Result data:', JSON.stringify(result, null, 2));
+        
+        console.log('🍏 [ApplePay] Completing Apple Pay transaction with success status...');
         await ApplePay.complete(CompleteStatus.success);
-        console.log('✅ [ApplePay] Apple Pay transaction marked as completed');
+        console.log('✅ [ApplePay] Apple Pay SDK notified of successful completion');
         
         // Clear cart
-        console.log('🍏 [ApplePay] Clearing cart');
+        console.log('🍏 [ApplePay] Initiating cart cleanup...');
         await clearCart();
-        console.log('✅ [ApplePay] Cart cleared successfully');
+        console.log('✅ [ApplePay] Shopping cart cleared successfully');
+        
+        // Prepare success page data
+        const successData = {
+          order_id: orderId, 
+          payment_method: 'Apple Pay',
+          status: 'success',
+          session_id: sessionId,
+          timestamp: new Date().toISOString()
+        };
+        console.log('🍏 [ApplePay] Success page data prepared:', JSON.stringify(successData, null, 2));
         
         // Navigate to success page
-        console.log('🍏 [ApplePay] Navigating to success page with order data');
+        console.log('🍏 [ApplePay] Navigating to order success page...');
         router.replace({
           pathname: '/order-success',
-          params: { 
-            orderData: JSON.stringify({
-              order_id: orderId, 
-              payment_method: 'Apple Pay',
-              status: 'success'
-            })
-          }
+          params: { orderData: JSON.stringify(successData) }
         });
-        console.log('✅ [ApplePay] Successfully completed Apple Pay flow');
+        console.log('✅ [ApplePay] Navigation to success page completed');
+        console.log('✅ [ApplePay] Apple Pay flow completed successfully');
         return true;
       } else {
-        console.error('❌ [ApplePay] Payment failed with status:', result.status);
-        console.error('❌ [ApplePay] Payment failure message:', result.message || 'Unknown error');
+        console.log('🍏 [ApplePay] ========== FAILURE FLOW ==========');
+        console.error('❌ [ApplePay] Payment processing failed');
+        console.error('❌ [ApplePay] Result status:', result.status);
+        console.error('❌ [ApplePay] Error message:', result.message || 'Unknown error');
+        console.error('❌ [ApplePay] Full result:', JSON.stringify(result, null, 2));
+        
+        console.log('🍏 [ApplePay] Completing Apple Pay transaction with failure status...');
         await ApplePay.complete(CompleteStatus.failure);
-        console.log('❌ [ApplePay] Apple Pay transaction marked as failed');
-        Alert.alert('Payment Failed', result.message || 'An error occurred during payment processing.');
-        console.log('❌ [ApplePay] Navigating to failure page');
+        console.log('✅ [ApplePay] Apple Pay SDK notified of failure completion');
+        
+        const errorMessage = result.message || 'An error occurred during payment processing.';
+        console.log('🍏 [ApplePay] Showing error alert to user:', errorMessage);
+        Alert.alert('Payment Failed', errorMessage);
+        
+        console.log('🍏 [ApplePay] Navigating to order failure page...');
         router.replace('/order-failure');
+        console.log('✅ [ApplePay] Navigation to failure page completed');
         return false;
       }
     } catch (error: any) {
-      console.error('❌ [ApplePay] Payment flow failed with error:', error);
-      console.error('❌ [ApplePay] Error message:', error.message);
-      console.error('❌ [ApplePay] Error stack:', error.stack);
+      console.log('🍏 [ApplePay] ========== ERROR HANDLING ==========');
+      console.error('❌ [ApplePay] Payment flow encountered an error');
+      console.error('❌ [ApplePay] Error type:', typeof error);
+      console.error('❌ [ApplePay] Error constructor:', error?.constructor?.name || 'Unknown');
+      console.error('❌ [ApplePay] Error message:', error?.message || 'No message available');
+      console.error('❌ [ApplePay] Error name:', error?.name || 'No name available');
+      console.error('❌ [ApplePay] Error code:', error?.code || 'No code available');
+      console.error('❌ [ApplePay] Error stack trace:', error?.stack || 'No stack trace available');
+      console.error('❌ [ApplePay] Full error object:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+      console.error('❌ [ApplePay] Session ID:', sessionId);
       
-      Alert.alert('Apple Pay Error', error.message || 'Apple Pay payment failed');
+      const userErrorMessage = error?.message || 'Apple Pay payment failed';
+      console.log('🍏 [ApplePay] Preparing user-facing error message:', userErrorMessage);
+      Alert.alert('Apple Pay Error', userErrorMessage);
       
       // Ensure we complete the payment with failure if needed
+      console.log('🍏 [ApplePay] Attempting to complete Apple Pay transaction with failure status...');
       try {
-        console.log('❌ [ApplePay] Attempting to complete Apple Pay with failure status');
         await ApplePay.complete(CompleteStatus.failure);
-        console.log('✅ [ApplePay] Successfully completed Apple Pay with failure status');
+        console.log('✅ [ApplePay] Successfully notified Apple Pay SDK of failure');
       } catch (completeError: any) {
-        console.error('❌ [ApplePay] Error completing failed payment:', completeError);
-        console.error('❌ [ApplePay] Complete error message:', completeError.message);
+        console.error('❌ [ApplePay] Critical: Failed to complete Apple Pay transaction');
+        console.error('❌ [ApplePay] Complete error type:', typeof completeError);
+        console.error('❌ [ApplePay] Complete error message:', completeError?.message || 'Unknown completion error');
+        console.error('❌ [ApplePay] Complete error stack:', completeError?.stack || 'No stack trace');
+        console.error('❌ [ApplePay] This may leave Apple Pay in an inconsistent state');
         // Ignore errors when completing payment in error state
       }
+      
+      console.log('🍏 [ApplePay] Error handling completed, returning false');
       return false;
     } finally {
+      const totalDuration = Date.now() - startTime;
       setApplePayLoading(false);
-      console.log('🍏 [ApplePay] Apple Pay loading state set to false');
+      
+      console.log('🍏 [ApplePay] ========== APPLE PAY FLOW CLEANUP ==========');
+      console.log('🍏 [ApplePay] Loading state set to false');
+      console.log('🍏 [ApplePay] Session ID:', sessionId);
+      console.log('🍏 [ApplePay] Total flow duration:', `${totalDuration}ms`);
+      console.log('🍏 [ApplePay] End timestamp:', new Date().toISOString());
+      console.log('🍏 [ApplePay] ========== APPLE PAY FLOW END ==========');
     }
   };
 
@@ -1821,7 +2003,15 @@ ${address.address_2 || ''}`;
                   'kpg.com.kw',                    // KNet payment gateway
                   'testsecureacceptance.cybersource.com',  // CyberSource test environment
                   'secureacceptance.cybersource.com',      // CyberSource production environment
+                  'geostag.cardinalcommerce.com',  // CardinalCommerce device fingerprinting
+                  '0merchantacsstag.cardinalcommerce.com', // CardinalCommerce ACS
+                  'centinelapistag.cardinalcommerce.com',  // CardinalCommerce Centinel API
                 ];
+                
+                // Special handling for about:blank
+                if (url === 'about:blank') {
+                  return true;
+                }
                 
                 const isAllowed = trustedDomains.some(domain => url.includes(domain));
                 if (!isAllowed) {

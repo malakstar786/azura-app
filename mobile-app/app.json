@@ -12,7 +12,10 @@
     ],
     "ios": {
       "bundleIdentifier": "com.azura.kw",
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.azura.kw",
