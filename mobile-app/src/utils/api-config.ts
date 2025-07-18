@@ -3,7 +3,7 @@ import * as Crypto from 'expo-crypto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // Core API configuration
-export const API_BASE_URL = 'https://new.azurakwt.com';
+export const API_BASE_URL = 'https://azura.com.kw/';
 
 // API Endpoints
 export const API_ENDPOINTS = {
