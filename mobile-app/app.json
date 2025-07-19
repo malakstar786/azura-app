@@ -4,7 +4,7 @@
     "slug": "azura",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./src/assets/app_icon.png",
+    "icon": "./src/assets/icon.png",
     "newArchEnabled": true,
     "userInterfaceStyle": "light",
     "assetBundlePatterns": [
@@ -20,15 +20,15 @@
     "android": {
       "package": "com.azura.kw",
       "adaptiveIcon": {
-        "foregroundImage": "./src/assets/app_icon.png",
+        "foregroundImage": "./src/assets/icon.png",
         "backgroundColor": "#000000"
       }
     },
     "web": {
-      "favicon": "./src/assets/app_icon.png"
+      "favicon": "./src/assets/icon.png"
     },
     "splash": {
-      "image": "./src/assets/app_icon.png",
+      "image": "./src/assets/icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#000000"
     },

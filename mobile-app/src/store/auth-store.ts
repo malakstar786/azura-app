@@ -146,31 +146,18 @@ export const useAuthStore = create<AuthState>()(
               const addresses = await get().fetchAddresses();
               set({ addresses });
             } catch (addressError) {
-              console.error('Failed to fetch addresses after login:', addressError);
-              // Continue even if address fetch fails
+              // Continue even if address fetch fails (silent failure)
             }
 
             // Fetch cart after successful login
-            console.log('Fetching cart after successful login');
             await useCartStore.getState().getCart();
             // Note: getCart() handles errors internally and doesn't throw
           } else {
-            throw new Error(
-              Array.isArray(response.error) ? response.error[0] : 'Invalid login credentials'
-            );
+            throw new Error('Invalid credentials');
           }
         } catch (error: any) {
-          console.error('Login error:', error);
-          
-          // Get detailed error information for debugging
-          const errorMessage = error.message || 'Login failed. Please try again.';
-          const errorResponse = error.response?.data?.error || [];
-          
-          console.log('Login error details:', {
-            message: errorMessage,
-            response: error.response,
-            errorData: errorResponse
-          });
+          // Simplified error handling without console errors
+          const errorMessage = 'Invalid credentials';
           
           set({ 
             isLoading: false, 
@@ -178,7 +165,7 @@ export const useAuthStore = create<AuthState>()(
             isAuthenticated: false,
             user: null
           });
-          throw error;
+          throw new Error(errorMessage);
         }
       },
 

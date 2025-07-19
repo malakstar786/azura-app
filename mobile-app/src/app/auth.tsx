@@ -90,13 +90,8 @@ export default function Auth() {
         
         // Router will handle redirection in the useEffect hook
       } catch (error: any) {
-        console.error('Login failed:', error);
-        let errorMessage = error.message || 'An unexpected error occurred';
-        
-        // Handle specific error codes
-        if (error.code === 'SERVER_ERROR' && error.response?.status === 404) {
-          errorMessage = 'The login service is currently unavailable. Please try again later.';
-        }
+        // Show simple error message without console errors
+        const errorMessage = 'Invalid credentials';
         
         setErrors({ 
           email: errorMessage, 

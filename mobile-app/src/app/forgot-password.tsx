@@ -32,15 +32,19 @@ export default function ForgotPassword() {
     setError('');
 
     try {
+      // Create FormData object for form submission
+      const formData = new FormData();
+      formData.append('email', email);
+
       const response = await makeApiCall(API_ENDPOINTS.forgotPassword, {
         method: 'POST',
-        data: { email }
+        data: formData
       });
 
       if (response.success === 1) {
         Alert.alert(
-          'Password Sent',
-          'Password has been sent to your email address',
+          'Email Sent',
+          response.data?.[0] || 'A password reset link has been sent to your email. Please check your email.',
           [{ text: 'OK', onPress: () => router.back() }]
         );
       } else {
@@ -69,7 +73,7 @@ export default function ForgotPassword() {
 
       <View style={styles.content}>
         <Text style={styles.title}>FORGOT PASSWORD?</Text>
-        <Text style={styles.subtitle}>PASSWORD WILL BE SENT ON EMAIL</Text>
+        <Text style={styles.subtitle}>RESET LINK WILL BE SENT TO YOUR EMAIL</Text>
 
         <View style={styles.divider} />
 

@@ -140,16 +140,37 @@ export default function CategoryScreen() {
 
         // Fetch products by category
         const response = await publicApi.getProductsByCategory(categoryId);
-        console.log('Category products response:', response);
+        console.log('📱 [CATEGORY] Category products response:', response);
         
         if (response.success === 1 && response.data) {
           // The API service now always returns data in the format { products: Product[], product_total: number }
           if (response.data.products && Array.isArray(response.data.products)) {
+            console.log('📱 [CATEGORY] ========== PROCESSING PRODUCTS FOR UI ==========');
+            console.log('📱 [CATEGORY] Total products received:', response.data.products.length);
+            
+            response.data.products.forEach((product: any, index: number) => {
+              console.log('📱 [CATEGORY] UI Product Analysis:', index + 1);
+              console.log('📱 [CATEGORY] - Product ID:', product.product_id);
+              console.log('📱 [CATEGORY] - Product Name:', product.name);
+              console.log('📱 [CATEGORY] - Stock Status Raw:', `"${product.stock_status}"`);
+              console.log('📱 [CATEGORY] - Stock Status Type:', typeof product.stock_status);
+              console.log('📱 [CATEGORY] - Quantity:', product.quantity);
+                             console.log('📱 [CATEGORY] - Is Quantity > 0?:', Number(product.quantity) > 0);
+               console.log('📱 [CATEGORY] - Will show as In Stock?:', Number(product.quantity) > 0);
+               console.log('📱 [CATEGORY] - Will show as Out of Stock?:', Number(product.quantity) <= 0);
+               console.log('📱 [CATEGORY] - Button disabled?:', Number(product.quantity) <= 0);
+              console.log('📱 [CATEGORY] - Date Added:', product.date_added);
+              console.log('📱 [CATEGORY] --------------------------------');
+            });
+            console.log('📱 [CATEGORY] ========== END UI PROCESSING ==========');
+            
             setProducts(response.data.products as Product[]);
           } else {
+            console.log('📱 [CATEGORY] ❌ No products array found in response data');
             setProducts([]);
           }
         } else {
+          console.log('📱 [CATEGORY] ❌ API call failed:', response.error);
           throw new Error(Array.isArray(response.error) ? response.error[0] : 'Invalid response format');
         }
       } catch (err: any) {
@@ -164,7 +185,7 @@ export default function CategoryScreen() {
   }, [slug, currentLanguage, lastUpdated]);
 
   const isNewArrival = (product: Product) => {
-    const isInStock = product.stock_status === "2-3 Days";
+    const isInStock = Number(product.quantity) > 0;
     const addedDate = new Date(product.date_added);
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -172,7 +193,7 @@ export default function CategoryScreen() {
   };
 
   const addToCart = (product: Product) => {
-    if (product.quantity <= 0) {
+    if (Number(product.quantity) <= 0) {
       toast.show('This product is currently out of stock.', {
         type: 'error',
         placement: 'bottom',
@@ -214,7 +235,7 @@ export default function CategoryScreen() {
           <TouchableOpacity 
             style={[styles.button, styles.addToCartButton]}
             onPress={() => addToCart(item)}
-            disabled={item.stock_status !== "2-3 Days"}
+            disabled={Number(item.quantity) <= 0}
           >
             <Text style={styles.buttonText}>{t('product.addToCart')}</Text>
           </TouchableOpacity>
@@ -222,14 +243,19 @@ export default function CategoryScreen() {
           <TouchableOpacity 
             style={[styles.button, styles.buyNowButton]}
             onPress={() => handleBuyNow(item)}
-            disabled={item.stock_status !== "2-3 Days"}
+            disabled={Number(item.quantity) <= 0}
           >
             <Text style={[styles.buttonText, styles.buyNowButtonText]}>{t('product.buyNow')}</Text>
           </TouchableOpacity>
         </View>
         
         <Text style={styles.stockStatus}>
-          {item.stock_status === "2-3 Days" ? t('product.inStock') : t('product.outOfStock')}
+          {(() => {
+            const isInStock = Number(item.quantity) > 0;
+            const statusText = isInStock ? t('product.inStock') : t('product.outOfStock');
+            console.log(`📱 [RENDER] Product ${item.product_id} (${item.name}) - Quantity: ${item.quantity} → Showing: "${statusText}"`);
+            return statusText;
+          })()}
         </Text>
       </View>
     </View>

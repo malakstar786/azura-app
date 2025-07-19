@@ -9,7 +9,7 @@ export const API_BASE_URL = 'https://azura.com.kw/';
 export const API_ENDPOINTS = {
   login: '/index.php?route=extension/mstore/account|login',
   register: '/index.php?route=extension/mstore/account|register',
-  forgotPassword: '/index.php?route=extension/mstore/account|forgotten',
+  forgotPassword: '/index.php?route=extension/mstore/account|forgetPassword',
   updateProfile: '/index.php?route=extension/mstore/account|edit',
   editAddress: '/index.php?route=extension/mstore/account|edit_address',
   addresses: '/index.php?route=extension/mstore/account|addresses',
@@ -165,10 +165,7 @@ export const makeApiCall = async <T = any>(
       headers['Content-Type'] = 'application/json';
     }
     
-    // If data is FormData, ensure proper content type
-    if (options.data instanceof FormData) {
-      headers['Content-Type'] = 'multipart/form-data';
-    }
+    // For FormData, don't set Content-Type manually - let axios handle it with proper boundary
     
     // Log request details
     console.log(`Making ${method} request to ${url}`);

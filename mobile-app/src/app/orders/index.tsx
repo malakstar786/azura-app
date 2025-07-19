@@ -85,6 +85,12 @@ export default function OrdersScreen() {
         }
       );
 
+      // Check if response is JSON before parsing
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        throw new Error('Server returned non-JSON response. Please try again later.');
+      }
+
       const data = await response.json();
       
       if (data.success === 1) {
@@ -203,7 +209,13 @@ export default function OrdersScreen() {
         <View style={styles.emptyContainer}>
           <Ionicons name="receipt-outline" size={80} color={theme.colors.mediumGray} />
           <Text style={styles.emptyTitle}>{t('orders.noOrders')}</Text>
-          <Text style={styles.emptySubtitle}>{t('orders.noOrdersDescription')}</Text>
+          <Text style={styles.emptySubtitle}>To see your orders</Text>
+          <TouchableOpacity 
+            style={styles.startShoppingButton} 
+            onPress={() => router.push('/(shop)')}
+          >
+            <Text style={styles.startShoppingButtonText}>{t('empty.startShopping')}</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -534,5 +546,17 @@ const styles = StyleSheet.create({
     color: theme.colors.textPrimary,
     flex: 2,
     textAlign: getTextAlign() === 'left' ? 'right' : 'left',
+  },
+  startShoppingButton: {
+    backgroundColor: theme.colors.black,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    marginTop: theme.spacing.lg,
+  },
+  startShoppingButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.md,
+    fontWeight: theme.typography.weights.semibold as any,
   },
 }); 

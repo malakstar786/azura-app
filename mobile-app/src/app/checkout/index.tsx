@@ -40,6 +40,7 @@ export default function CheckoutScreen() {
   const [showApplePayButton, setShowApplePayButton] = useState(false);
   const [applePayLoading, setApplePayLoading] = useState(false);
   const [canMakePayments, setCanMakePayments] = useState(false);
+  const [orderConfirmationData, setOrderConfirmationData] = useState<any>(null);
 
   // Check if Apple Pay is available on this device
   useEffect(() => {
@@ -226,7 +227,7 @@ export default function CheckoutScreen() {
         console.log('🔍 [ApplePay] Payment response structure analysis:');
         console.log('🔍 [ApplePay] - Available keys:', Object.keys(paymentResponse));
         console.log('🔍 [ApplePay] - Payment network:', (paymentResponse as any).paymentNetwork || 'Not specified');
-        console.log('🔍 [ApplePay] - Has payment data:', !!(paymentResponse as any).paymentData);
+        console.log('🔍 [ApplePay] - Has payment data:', !!(paymentResponse as any).data);
         console.log('🔍 [ApplePay] - Response object size:', JSON.stringify(paymentResponse).length, 'characters');
         
         // Log the COMPLETE Apple Pay response for debugging
@@ -237,18 +238,12 @@ export default function CheckoutScreen() {
         
         // Log specific Apple Pay response properties if they exist
         const responseAny = paymentResponse as any;
-        if (responseAny.paymentData) {
-          console.log('🔍 [ApplePay] - Payment data type:', typeof responseAny.paymentData);
-          console.log('🔍 [ApplePay] - Payment data content:', JSON.stringify(responseAny.paymentData, null, 2));
+        if (responseAny.data) {
+          console.log('🔍 [ApplePay] - Payment data type:', typeof responseAny.data);
+          console.log('🔍 [ApplePay] - Payment data content:', JSON.stringify(responseAny.data, null, 2));
         }
-        if (responseAny.transactionIdentifier) {
-          console.log('🔍 [ApplePay] - Transaction ID:', responseAny.transactionIdentifier);
-        }
-        if (responseAny.billingContact) {
-          console.log('🔍 [ApplePay] - Billing contact:', JSON.stringify(responseAny.billingContact, null, 2));
-        }
-        if (responseAny.shippingContact) {
-          console.log('🔍 [ApplePay] - Shipping contact:', JSON.stringify(responseAny.shippingContact, null, 2));
+        if (responseAny.transactionId) {
+          console.log('🔍 [ApplePay] - Transaction ID:', responseAny.transactionId);
         }
       }
       
@@ -405,22 +400,45 @@ export default function CheckoutScreen() {
         await clearCart();
         console.log('✅ [ApplePay] Shopping cart cleared successfully');
         
-        // Prepare success page data
-        const successData = {
-          order_id: orderId, 
-          payment_method: 'Apple Pay',
-          status: 'success',
-          session_id: sessionId,
-          timestamp: new Date().toISOString()
-        };
-        console.log('🍏 [ApplePay] Success page data prepared:', JSON.stringify(successData, null, 2));
-        
-        // Navigate to success page
-        console.log('🍏 [ApplePay] Navigating to order success page...');
-        router.replace({
-          pathname: '/order-success',
-          params: { orderData: JSON.stringify(successData) }
-        });
+        // Prepare success page data using stored order confirmation data
+        if (orderConfirmationData) {
+          const successData = {
+            order_id: orderConfirmationData.order_id,
+            store_name: orderConfirmationData.store_name,
+            firstname: orderConfirmationData.firstname,
+            lastname: orderConfirmationData.lastname,
+            email: orderConfirmationData.email,
+            date_added: orderConfirmationData.date_added,
+            total: orderConfirmationData.total,
+            payment_method: 'Apple Pay',
+            line_items: orderConfirmationData.line_items,
+          };
+          console.log('🍏 [ApplePay] Success page data prepared:', JSON.stringify(successData, null, 2));
+          
+          // Navigate to success page
+          console.log('🍏 [ApplePay] Navigating to order success page...');
+          router.replace({
+            pathname: '/order-success',
+            params: { orderData: JSON.stringify(successData) }
+          });
+        } else {
+          // Fallback to basic data if confirmation data is not available
+          const successData = {
+            order_id: orderId, 
+            payment_method: 'Apple Pay',
+            status: 'success',
+            session_id: sessionId,
+            timestamp: new Date().toISOString()
+          };
+          console.log('🍏 [ApplePay] Success page data prepared (fallback):', JSON.stringify(successData, null, 2));
+          
+          // Navigate to success page
+          console.log('🍏 [ApplePay] Navigating to order success page...');
+          router.replace({
+            pathname: '/order-success',
+            params: { orderData: JSON.stringify(successData) }
+          });
+        }
         console.log('✅ [ApplePay] Navigation to success page completed');
         console.log('✅ [ApplePay] Apple Pay flow completed successfully');
         return true;
@@ -1117,6 +1135,9 @@ export default function CheckoutScreen() {
       console.log('🛒 [Order] Order ID:', confirmResponse.data?.order_id || 'No order ID');
       console.log('🛒 [Order] Order data:', JSON.stringify(confirmResponse.data, null, 2));
 
+      // Store the order confirmation data for later use
+      setOrderConfirmationData(confirmResponse.data);
+
       // Now handle payment method-specific flows
       if (selectedPaymentMethod?.code === 'applepay_knet' && Platform.OS === 'ios') {
         console.log('🍏 [ApplePay] Starting Apple Pay flow for order:', confirmResponse.data.order_id);
@@ -1166,12 +1187,14 @@ export default function CheckoutScreen() {
       // Extract important order data for success page
       const orderData = {
         order_id: confirmResponse.data.order_id,
+        store_name: confirmResponse.data.store_name,
         firstname: confirmResponse.data.firstname,
         lastname: confirmResponse.data.lastname,
         email: confirmResponse.data.email,
         date_added: confirmResponse.data.date_added,
         total: confirmResponse.data.total,
         payment_method: confirmResponse.data.payment_method,
+        line_items: confirmResponse.data.line_items,
       };
 
       console.log('🛒 [Order] Navigating to success page with order data');
@@ -1215,18 +1238,37 @@ export default function CheckoutScreen() {
       await clearCart();
       console.log('✅ [WebView Navigation] Cart cleared successfully');
       
-      // Navigate to success page
-      console.log('✅ [WebView Navigation] Navigating to order success page');
-      router.replace('/order-success');
+      // Prepare order data for success page using stored confirmation data
+      if (orderConfirmationData) {
+        const orderData = {
+          order_id: orderConfirmationData.order_id,
+          store_name: orderConfirmationData.store_name,
+          firstname: orderConfirmationData.firstname,
+          lastname: orderConfirmationData.lastname,
+          email: orderConfirmationData.email,
+          date_added: orderConfirmationData.date_added,
+          total: orderConfirmationData.total,
+          payment_method: orderConfirmationData.payment_method,
+          line_items: orderConfirmationData.line_items,
+        };
+        
+        console.log('✅ [WebView Navigation] Navigating to success page with order data:', JSON.stringify(orderData, null, 2));
+        router.replace({
+          pathname: '/order-success',
+          params: { orderData: JSON.stringify(orderData) }
+        });
+      } else {
+        console.log('✅ [WebView Navigation] No order confirmation data available, navigating without data');
+        router.replace('/order-success');
+      }
       return;
     }
-    
-    // Monitor for failure URL (cart page indicates failed payment)
+
+    // Monitor for failure URL (checkout/cart)
     if (currentUrl.includes('checkout/cart')) {
       console.log('❌ [WebView Navigation] Payment failed URL detected');
       console.log('❌ [WebView Navigation] Failure URL:', currentUrl);
-      console.log('❌ [WebView Navigation] Cart page indicates failed payment');
-      console.log('❌ [WebView Navigation] Closing WebView and navigating to failure');
+      console.log('❌ [WebView Navigation] Closing WebView and navigating to failure page');
       
       // Close WebView
       setShowPaymentWebView(false);
@@ -1680,7 +1722,13 @@ ${address.address_2 || ''}`;
             </View>
           ) : paymentMethods.length > 0 ? (
             <View style={styles.methodsList}>
-              {paymentMethods.map((method: any, index: number) => (
+              {paymentMethods.filter((method: any) => {
+                // Filter out Apple Pay for non-iOS platforms
+                if (method.code === 'applepay_knet' && Platform.OS !== 'ios') {
+                  return false;
+                }
+                return true;
+              }).map((method: any, index: number) => (
                 <TouchableOpacity
                   key={index}
                   style={[
@@ -1706,17 +1754,17 @@ ${address.address_2 || ''}`;
                       <View style={styles.applePayMethodContent}>
                         <View style={[
                           styles.applePayBadge,
-                          selectedPaymentMethod === method ? styles.applePayBadgeSelected : null
+                          selectedPaymentMethod === method ? styles.applePayBadgeSelected : styles.applePayBadgeUnselected
                         ]}>
                     <Ionicons 
                       name="logo-apple" 
                             size={16} 
-                            color={selectedPaymentMethod === method ? "#fff" : "#000"} 
+                            color={selectedPaymentMethod === method ? "#fff" : "#fff"} 
                             style={styles.appleLogoIcon}
                     />
                   <Text style={[
                     styles.applePayText,
-                            selectedPaymentMethod === method ? styles.applePayTextSelected : null
+                            selectedPaymentMethod === method ? styles.applePayTextSelected : styles.applePayTextUnselected
                   ]}>
                             Pay
                   </Text>
@@ -1998,11 +2046,18 @@ ${address.address_2 || ''}`;
                 const url = request.url.toLowerCase();
                 const trustedDomains = [
                   'new.azurakwt.com',
+                  'azura.com.kw',                  // Azura main domain
                   'kpaytest.com.kw',               // KNet test environment
                   'knet.com.kw',                   // KNet production environment  
                   'kpg.com.kw',                    // KNet payment gateway
+                  'www.kpay.com.kw',               // KPay payment gateway
                   'testsecureacceptance.cybersource.com',  // CyberSource test environment
                   'secureacceptance.cybersource.com',      // CyberSource production environment
+                  'tm.cybersource.com',            // CyberSource device fingerprinting
+                  'h.online-metrix.net',           // ThreatMetrix device fingerprinting
+                  'ps4acs.netcetera-payment.ch',   // Netcetera 3D Secure ACS
+                  'geo.cardinalcommerce.com',      // CardinalCommerce geolocation and device fingerprinting
+                  'geoissuer.cardinalcommerce.com', // CardinalCommerce issuer device fingerprinting
                   'geostag.cardinalcommerce.com',  // CardinalCommerce device fingerprinting
                   '0merchantacsstag.cardinalcommerce.com', // CardinalCommerce ACS
                   'centinelapistag.cardinalcommerce.com',  // CardinalCommerce Centinel API
@@ -2509,11 +2564,6 @@ const styles = StyleSheet.create({
   applePayIcon: {
     marginEnd: 12,
   },
-  applePayText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
   selectedApplePayText: {
     color: '#ffffff',
   },
@@ -2541,10 +2591,25 @@ const styles = StyleSheet.create({
   applePayBadgeSelected: {
     backgroundColor: '#000000',
   },
+  applePayBadgeUnselected: {
+    backgroundColor: '#000000',
+  },
   appleLogoIcon: {
     marginRight: 2,
   },
+  applePayText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
   applePayTextSelected: {
     color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  applePayTextUnselected: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 }); 

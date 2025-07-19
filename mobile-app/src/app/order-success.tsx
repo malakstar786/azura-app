@@ -15,6 +15,7 @@ import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 interface OrderData {
   order_id: string;
+  store_name: string;
   firstname: string;
   lastname: string;
   email: string;
@@ -61,12 +62,24 @@ export default function OrderSuccessScreen() {
     return `#${orderId}`;
   };
 
-  // Mock product data for display - in real app this would come from line_items
-  const productData = {
-    sku: "00322100",
-    name: "AZURA NAIL HARDENER",
-    quantity: 1,
+  // Extract product data from line_items in the API response
+  const getProductData = () => {
+    if (orderData?.line_items && orderData.line_items.length > 0) {
+      const lineItem = orderData.line_items[0];
+      return {
+        sku: lineItem.product_data?.sku || lineItem.model || 'N/A',
+        name: lineItem.name || lineItem.product_data?.name || 'Product information not available',
+        quantity: lineItem.quantity || 1,
+      };
+    }
+    return {
+      sku: 'N/A',
+      name: 'Product information not available',
+      quantity: 1,
+    };
   };
+
+  const productData = getProductData();
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
@@ -96,28 +109,14 @@ export default function OrderSuccessScreen() {
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>ORDER ID</Text>
             <Text style={styles.detailValue}>
-              {orderData?.order_id ? formatOrderId(orderData.order_id) : '#2231123'}
-            </Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>DATE</Text>
-            <Text style={styles.detailValue}>
-              {orderData?.date_added ? formatDate(orderData.date_added) : '4 APRIL 2024'}
+              {orderData?.order_id ? formatOrderId(orderData.order_id) : ''}
             </Text>
           </View>
 
           <View style={styles.detailRow}>
             <Text style={styles.detailLabel}>EMAIL</Text>
             <Text style={styles.detailValue}>
-              {orderData?.email ? orderData.email.toUpperCase() : 'AHMED@GMAIL.COM'}
-            </Text>
-          </View>
-
-          <View style={styles.detailRow}>
-            <Text style={styles.detailLabel}>TRANSACTION ID</Text>
-            <Text style={styles.detailValue}>
-              TT#23332222111122121111234413
+              {orderData?.email ? orderData.email.toUpperCase() : ''}
             </Text>
           </View>
 

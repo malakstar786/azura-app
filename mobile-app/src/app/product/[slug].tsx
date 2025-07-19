@@ -64,9 +64,22 @@ const ProductDetails = () => {
         setError(null);
 
         const response = await publicApi.getProductDetail(slug);
-        console.log('Product detail response:', response);
+        console.log('🔍 [PRODUCT] Product detail response:', response);
         
         if (response.success === 1 && response.data) {
+          console.log('🔍 [PRODUCT] ========== PRODUCT DETAIL UI PROCESSING ==========');
+          console.log('🔍 [PRODUCT] Product ID:', response.data.product_id);
+          console.log('🔍 [PRODUCT] Product Name:', response.data.name);
+          console.log('🔍 [PRODUCT] Stock Status Raw:', `"${response.data.stock_status}"`);
+          console.log('🔍 [PRODUCT] Stock Status Type:', typeof response.data.stock_status);
+          console.log('🔍 [PRODUCT] Quantity:', response.data.quantity);
+          console.log('🔍 [PRODUCT] Is Quantity > 0?:', Number(response.data.quantity) > 0);
+          console.log('🔍 [PRODUCT] Will show as In Stock?:', Number(response.data.quantity) > 0);
+          console.log('🔍 [PRODUCT] Will show as Out of Stock?:', Number(response.data.quantity) <= 0);
+          console.log('🔍 [PRODUCT] Buttons will be disabled?:', Number(response.data.quantity) <= 0);
+          console.log('🔍 [PRODUCT] Cart item exists?:', !!cartItem);
+          console.log('🔍 [PRODUCT] ========== END PRODUCT DETAIL UI PROCESSING ==========');
+          
           setProduct(response.data);
           
           // If this product is in the cart, set the initial quantity
@@ -74,6 +87,7 @@ const ProductDetails = () => {
             setQuantity(typeof cartItem.quantity === 'string' ? parseInt(cartItem.quantity, 10) : cartItem.quantity);
           }
         } else {
+          console.log('🔍 [PRODUCT] ❌ Product detail API call failed:', response.error);
           throw new Error(Array.isArray(response.error) ? response.error[0] : 'Failed to load product');
         }
       } catch (err: any) {
@@ -108,7 +122,7 @@ const ProductDetails = () => {
   const handleAddToCart = () => {
     if (!product) return;
     
-    if (product.quantity <= 0) {
+    if (Number(product.quantity) <= 0) {
       toast.show('This product is currently out of stock.', {
         type: 'error',
         placement: 'bottom',
@@ -116,7 +130,7 @@ const ProductDetails = () => {
       return;
     }
 
-    if (quantity > product.quantity) {
+    if (quantity > Number(product.quantity)) {
       toast.show(`Only ${product.quantity} items available.`, {
         type: 'error',
         placement: 'bottom',
@@ -153,7 +167,7 @@ const ProductDetails = () => {
     router.push('/checkout');
   };
 
-  const isInStock = product?.stock_status === "2-3 Days";
+  const isInStock = Number(product?.quantity || 0) > 0;
   
   if (isLoading) {
     return (
