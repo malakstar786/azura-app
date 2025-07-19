@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: theme.typography.sizes.xxxl,
     fontWeight: theme.typography.weights.bold as any,
-    marginTop: 53,
+    marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.md,
     paddingHorizontal: theme.spacing.md,
     color: theme.colors.black,

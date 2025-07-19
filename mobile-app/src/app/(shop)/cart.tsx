@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.colors.white,
     paddingHorizontal: theme.spacing.md,
-    marginTop: 40,
+    marginTop: theme.spacing.lg,
     marginBottom: theme.spacing.md,
   },
   title: {
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: theme.colors.white,
     paddingHorizontal: theme.spacing.md,
-    paddingTop: 60,
+    paddingTop: theme.spacing.xl,
     paddingBottom: theme.spacing.md,
   },
   emptyTitle: {

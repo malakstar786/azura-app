@@ -8,6 +8,7 @@ import {
   ScrollView,
   Dimensions,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -209,15 +210,15 @@ const styles = StyleSheet.create({
     width: width * 0.85,
     backgroundColor: theme.colors.white,
     height: '100%',
-    paddingTop: 50,
+    paddingTop: Platform.OS === 'ios' ? theme.spacing.xxl + 20 : theme.spacing.lg,
   },
   header: {
     flexDirection: getFlexDirection('row'),
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 5,
-    paddingTop: 30,
+    paddingVertical: theme.spacing.sm,
+    paddingTop: theme.spacing.md,
     backgroundColor: theme.colors.white,
   },
   headerTitle: {

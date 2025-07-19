@@ -412,8 +412,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   header: {
-    paddingTop: 53,
-    paddingBottom: 15,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: 25,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
@@ -596,6 +596,6 @@ const styles = StyleSheet.create({
   menuButton: {
     position: 'absolute',
     left: 20,
-    top: 53,
+    top: theme.spacing.xl,
   },
 });
