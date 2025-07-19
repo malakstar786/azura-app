@@ -42,3 +42,5 @@ applepay_knet.twig
 # Native folders for Prebuild (as recommended by expo-doctor)
 /android
 /ios
+
+service-account-file.json
