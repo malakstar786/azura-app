@@ -7,7 +7,9 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   Alert,
-  ScrollView
+  ScrollView,
+  Linking,
+  AppState
 } from 'react-native';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,18 +21,33 @@ import { useTranslation } from '@utils/translations';
 import { useLanguageStore } from '@store/language-store';
 
 export default function MyDetailsScreen() {
-  const { user, isAuthenticated, updateUser } = useAuthStore();
+  const { user, isAuthenticated, updateUser, logout } = useAuthStore();
   const { t } = useTranslation();
   const { isRTL } = useLanguageStore();
   const [isLoading, setIsLoading] = useState(false);
   const [userDetails, setUserDetails] = useState<any>(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [hasLeftForDeletion, setHasLeftForDeletion] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated && user) {
       fetchUserDetails();
     }
   }, [isAuthenticated, user]);
+
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState: string) => {
+      if (nextAppState === 'active' && hasLeftForDeletion) {
+        // User returned to app after visiting delete URL
+        setHasLeftForDeletion(false);
+        logout();
+        router.replace('/auth');
+      }
+    };
+
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription?.remove();
+  }, [hasLeftForDeletion, logout]);
 
   const fetchUserDetails = async () => {
     if (!user) return;
@@ -81,6 +98,27 @@ export default function MyDetailsScreen() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleDeleteData = async () => {
+    Alert.alert(
+      'Delete Data',
+      'You will be redirected to delete your account data. When you return to the app, you will be logged out.',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            setHasLeftForDeletion(true);
+            Linking.openURL('https://azura.com.kw/?route=account/account|remove');
+          }
+        }
+      ]
+    );
   };
 
   if (isLoading) {
@@ -173,6 +211,13 @@ export default function MyDetailsScreen() {
         >
           <Text style={styles.editButtonText}>{t('details.editButton')}</Text>
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.deleteButton}
+          onPress={handleDeleteData}
+        >
+          <Text style={styles.deleteButtonText}>Delete Data</Text>
+        </TouchableOpacity>
       </ScrollView>
     </View>
   );
@@ -240,11 +285,24 @@ const styles = StyleSheet.create({
   editButton: {
     backgroundColor: theme.colors.black,
     marginTop: theme.spacing.sm,
-    marginBottom: theme.spacing.xl,
+    marginBottom: theme.spacing.md,
     paddingVertical: theme.spacing.md,
+    borderRadius: theme.spacing.sm,
     alignItems: 'center',
   },
   editButtonText: {
+    color: theme.colors.white,
+    fontSize: theme.typography.sizes.lg,
+    fontWeight: theme.typography.weights.semibold as any,
+  },
+  deleteButton: {
+    backgroundColor: theme.colors.red,
+    marginBottom: theme.spacing.xl,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.spacing.sm,
+    alignItems: 'center',
+  },
+  deleteButtonText: {
     color: theme.colors.white,
     fontSize: theme.typography.sizes.lg,
     fontWeight: theme.typography.weights.semibold as any,
