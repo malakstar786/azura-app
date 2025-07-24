@@ -98,16 +98,28 @@ export default function DrawerMenu({ visible, onClose }: DrawerMenuProps) {
   };
 
   const getCategorySlug = (categoryName: string, categoryId: string) => {
-    // Map category names to proper slugs based on our app routing
-    switch (categoryName.toLowerCase()) {
-      case 'nail care':
+    // Map category IDs directly to ensure consistency with category page routing
+    switch (categoryId) {
+      case '20':
         return 'nail-care';
-      case 'makeup':
+      case '18':
         return 'makeup';
-      case 'fragrance':
+      case '57':
         return 'perfumes';
       default:
-        return categoryName.toLowerCase().replace(/\s+/g, '-');
+        // Fallback to name-based mapping for unknown category IDs
+        switch (categoryName.toLowerCase()) {
+          case 'nail care':
+            return 'nail-care';
+          case 'makeup':
+            return 'makeup';
+          case 'fragrance':
+          case 'perfume':
+          case 'perfumes':
+            return 'perfumes';
+          default:
+            return categoryName.toLowerCase().replace(/\s+/g, '-');
+        }
     }
   };
 
