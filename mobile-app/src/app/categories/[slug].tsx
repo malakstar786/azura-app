@@ -12,6 +12,7 @@ import {
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useCartStore } from '@store/cart-store';
+import { useAuthStore } from '@store/auth-store';
 import { useLanguageStore } from '@store/language-store';
 import { useTranslation } from '@utils/translations';
 import { useToast } from 'react-native-toast-notifications';
@@ -103,6 +104,7 @@ export default function CategoryScreen() {
   const toast = useToast();
   const { t } = useTranslation();
   const { currentLanguage, lastUpdated } = useLanguageStore();
+  const { isAuthenticated } = useAuthStore();
 
   const getCategoryDescription = (categorySlug: string) => {
     switch(categorySlug) {
@@ -204,6 +206,13 @@ export default function CategoryScreen() {
   };
 
   const handleBuyNow = (product: Product) => {
+    // Check if user is authenticated before proceeding
+    if (!isAuthenticated) {
+      // Redirect to auth page with checkout redirect parameter
+      router.push('/auth?redirect=checkout');
+      return;
+    }
+    
     addToCart(product);
     router.push('/checkout');
   };
