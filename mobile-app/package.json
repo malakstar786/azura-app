@@ -43,6 +43,9 @@
     "babel-plugin-module-resolver": "^5.0.2",
     "typescript": "^5.3.3"
   },
+  "overrides": {
+    "use-latest-callback": "0.2.4"
+  },
   "private": true,
   "expo": {
     "doctor": {

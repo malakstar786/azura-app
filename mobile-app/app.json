@@ -7,18 +7,21 @@
     "icon": "./src/assets/app_icon.png",
     "newArchEnabled": true,
     "userInterfaceStyle": "light",
+    "jsEngine": "hermes",
     "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
       "bundleIdentifier": "com.azura.kw",
       "supportsTablet": true,
+      "jsEngine": "hermes",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "package": "com.azura.kw",
+      "jsEngine": "hermes",
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/app_icon.png",
         "backgroundColor": "#000000"
