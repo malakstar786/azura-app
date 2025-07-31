@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./src/assets/app_icon.png",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "userInterfaceStyle": "light",
     "jsEngine": "hermes",
     "assetBundlePatterns": [
@@ -17,6 +17,9 @@
       "jsEngine": "hermes",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
+      },
+      "entitlements": {
+        "com.apple.developer.in-app-payments": ["merchant.kw.com.azura"]
       }
     },
     "android": {
