@@ -11,7 +11,7 @@ import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
-import ApplePay, { MerchantCapability, PaymentNetwork, CompleteStatus } from 'apple-pay-react-native-expo';
+// import ApplePay, { MerchantCapability, PaymentNetwork, CompleteStatus } from 'apple-pay-react-native-expo';
 
 export default function CheckoutScreen() {
   const { isAuthenticated } = useAuthStore();
@@ -173,11 +173,11 @@ export default function CheckoutScreen() {
         countryCode: 'KW',
         currencyCode: 'KWD',
         supportedNetworks: [
-          PaymentNetwork.visa,
-          PaymentNetwork.masterCard,
+          // PaymentNetwork.visa,
+          // PaymentNetwork.masterCard,
         ],
         merchantCapabilities: [
-          MerchantCapability["3DS"],
+          // MerchantCapability["3DS"],
         ],
         paymentSummaryItems: [
           // Add items from cart with subtotal
@@ -214,7 +214,8 @@ export default function CheckoutScreen() {
 
       // Request Apple Pay payment
       const paymentSheetStartTime = Date.now();
-      const paymentResponse = await ApplePay.show(paymentRequest);
+      // const paymentResponse = await ApplePay.show(paymentRequest);
+      throw new Error('Apple Pay disabled for testing');
       const paymentSheetDuration = Date.now() - paymentSheetStartTime;
       
       console.log('🍏 [ApplePay] ========== PAYMENT AUTHORIZATION RECEIVED ==========');
@@ -392,7 +393,7 @@ export default function CheckoutScreen() {
         console.log('✅ [ApplePay] Result data:', JSON.stringify(result, null, 2));
         
         console.log('🍏 [ApplePay] Completing Apple Pay transaction with success status...');
-        await ApplePay.complete(CompleteStatus.success);
+        // await ApplePay.complete(CompleteStatus.success);
         console.log('✅ [ApplePay] Apple Pay SDK notified of successful completion');
         
         // Clear cart
@@ -450,7 +451,7 @@ export default function CheckoutScreen() {
         console.error('❌ [ApplePay] Full result:', JSON.stringify(result, null, 2));
         
         console.log('🍏 [ApplePay] Completing Apple Pay transaction with failure status...');
-        await ApplePay.complete(CompleteStatus.failure);
+        // await ApplePay.complete(CompleteStatus.failure);
         console.log('✅ [ApplePay] Apple Pay SDK notified of failure completion');
         
         const errorMessage = result.message || 'An error occurred during payment processing.';
@@ -481,7 +482,7 @@ export default function CheckoutScreen() {
       // Ensure we complete the payment with failure if needed
       console.log('🍏 [ApplePay] Attempting to complete Apple Pay transaction with failure status...');
       try {
-        await ApplePay.complete(CompleteStatus.failure);
+        // await ApplePay.complete(CompleteStatus.failure);
         console.log('✅ [ApplePay] Successfully notified Apple Pay SDK of failure');
       } catch (completeError: any) {
         console.error('❌ [ApplePay] Critical: Failed to complete Apple Pay transaction');

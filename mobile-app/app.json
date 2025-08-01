@@ -17,9 +17,6 @@
       "jsEngine": "hermes",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      },
-      "entitlements": {
-        "com.apple.developer.in-app-payments": ["merchant.kw.com.azura"]
       }
     },
     "android": {
@@ -45,20 +42,6 @@
     },
     "owner": "malakstar786",
     "plugins": [
-      [
-        "apple-pay-react-native-expo",
-        {
-          "merchantIdentifiers": [
-            "merchant.kw.com.azura"
-          ]
-        }
-      ],
-      [
-        "./plugins/withApplePayEntitlement.js",
-        {
-          "merchantId": "merchant.kw.com.azura"
-        }
-      ],
       "expo-router"
     ]
   }
