@@ -44,7 +44,7 @@
     "@types/react": "~19.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
     "expo-module-scripts": "^4.1.9",
-    "typescript": "^5.3.3"
+    "typescript": "~5.8.3"
   },
   "private": true,
   "expo": {
