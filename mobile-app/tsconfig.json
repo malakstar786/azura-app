@@ -2,9 +2,12 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "target": "es2018",
+    "lib": ["es2018"],
     "jsx": "react-native",
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "downlevelIteration": true,
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],

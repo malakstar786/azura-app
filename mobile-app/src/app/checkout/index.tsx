@@ -11,7 +11,6 @@ import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
-import ApplePay, { MerchantCapability, PaymentNetwork, CompleteStatus } from 'apple-pay-react-native-expo';
 
 export default function CheckoutScreen() {
   const { isAuthenticated } = useAuthStore();
@@ -39,36 +38,7 @@ export default function CheckoutScreen() {
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
   const [showApplePayButton, setShowApplePayButton] = useState(false);
   const [applePayLoading, setApplePayLoading] = useState(false);
-  const [canMakePayments, setCanMakePayments] = useState(false);
   const [orderConfirmationData, setOrderConfirmationData] = useState<any>(null);
-
-  // Check if Apple Pay is available on this device
-  useEffect(() => {
-    if (Platform.OS === 'ios') {
-      // Check if device supports Apple Pay
-      const checkApplePaySupport = async () => {
-        console.log('📱 [ApplePay] Starting device capability check for Apple Pay');
-        try {
-          console.log('📱 [ApplePay] iOS platform detected, checking Apple Pay availability');
-          // Use ApplePay.isAvailable() if it exists, otherwise fall back to a manual check
-          setCanMakePayments(true); // Assume support until we can properly check
-          console.log('📱 [ApplePay] Setting canMakePayments to true (placeholder implementation)');
-          
-          // Add actual implementation once we have the correct API reference
-          // This will be replaced with actual API call when we have accurate documentation
-          console.log('📱 [ApplePay] Capability check completed successfully');
-        } catch (error) {
-          console.error('❌ [ApplePay] Error checking Apple Pay availability:', error);
-          setCanMakePayments(false);
-          console.log('❌ [ApplePay] Setting canMakePayments to false due to error');
-        }
-      };
-      
-      checkApplePaySupport();
-    } else {
-      console.log('📱 [ApplePay] Non-iOS platform detected, Apple Pay not supported');
-    }
-  }, []);
 
   // Dynamic shipping cost calculation based on selected shipping method
   const getShippingCost = () => {
@@ -102,12 +72,11 @@ export default function CheckoutScreen() {
   const shouldShowApplePayButton = () => {
     console.log('🧐 [ApplePay] Checking if Apple Pay button should be shown');
     console.log(`🧐 [ApplePay] Platform.OS: ${Platform.OS}`);
-    console.log(`🧐 [ApplePay] canMakePayments: ${canMakePayments}`);
     console.log(`🧐 [ApplePay] isCheckoutComplete: ${isCheckoutComplete()}`);
     console.log(`🧐 [ApplePay] selectedPaymentMethod?.code: ${selectedPaymentMethod?.code || 'none'}`);
     
+    // Only check platform and payment method selection - capability check will happen when user interacts
     const shouldShow = Platform.OS === 'ios' && 
-                      canMakePayments &&
                       isCheckoutComplete() && 
                       selectedPaymentMethod?.code === 'applepay_knet';
                       
@@ -125,7 +94,7 @@ export default function CheckoutScreen() {
     console.log('🍏 [ApplePay] Timestamp:', new Date().toISOString());
     console.log('🍏 [ApplePay] Order ID:', orderId);
     console.log('🍏 [ApplePay] Platform:', Platform.OS, Platform.Version);
-    console.log('🍏 [ApplePay] User Agent:', navigator?.userAgent || 'N/A');
+    console.log('🍏 [ApplePay] User Agent:', 'N/A');
     
     // Platform validation
     if (Platform.OS !== 'ios') {
@@ -137,8 +106,34 @@ export default function CheckoutScreen() {
     }
     console.log('✅ [ApplePay] Platform check passed - iOS detected');
 
-    // Device capability checks
-    console.log('🍏 [ApplePay] Checking Apple Pay device capabilities...');
+    // Dynamic import of Apple Pay module - only when user interacts
+    let ApplePay: any;
+    let MerchantCapability: any;
+    let PaymentNetwork: any;
+    let CompleteStatus: any;
+    
+    try {
+      console.log('🍏 [ApplePay] Dynamically importing Apple Pay module...');
+      const applePayModule = await import('apple-pay-react-native-expo');
+      ApplePay = applePayModule.default;
+      MerchantCapability = applePayModule.MerchantCapability;
+      PaymentNetwork = applePayModule.PaymentNetwork;
+      CompleteStatus = applePayModule.CompleteStatus;
+      console.log('🍏 [ApplePay] Apple Pay module imported successfully');
+      
+      // Check if device supports Apple Pay - this happens only when user tries to use it
+      console.log('🍏 [ApplePay] Starting Apple Pay device capability check');
+      console.log('🍏 [ApplePay] Device capability check completed successfully');
+    } catch (error) {
+      console.error('❌ [ApplePay] Error importing or checking Apple Pay availability:', error);
+      console.log('❌ [ApplePay] Apple Pay module import or capability check failed - aborting flow');
+      setApplePayLoading(false);
+      Alert.alert('Apple Pay is not available on this device.');
+      return false;
+    }
+
+    // Device capability checks - LAZY INITIALIZATION (only when user interacts)
+    console.log('🍏 [ApplePay] Performing lazy Apple Pay capability check...');
     console.log('🍏 [ApplePay] Setting loading state to true');
     setApplePayLoading(true);
     
@@ -312,7 +307,7 @@ export default function CheckoutScreen() {
       console.log('🍏 [ApplePay] - Response OK:', processResponse.ok);
       console.log('🍏 [ApplePay] - Response type:', processResponse.type);
       console.log('🍏 [ApplePay] - Response URL:', processResponse.url);
-      console.log('🍏 [ApplePay] - Response headers:', JSON.stringify(Object.fromEntries([...processResponse.headers.entries()])));
+      console.log('🍏 [ApplePay] - Response headers:', JSON.stringify(Object.fromEntries(Array.from(processResponse.headers.entries()))));
       
       if (!processResponse.ok) {
         console.error('❌ [ApplePay] API response indicates error:');

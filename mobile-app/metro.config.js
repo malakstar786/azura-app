@@ -8,4 +8,7 @@ config.resolver.sourceExts = ['jsx', 'js', 'ts', 'tsx', 'json'];
 // Add better error handling for modules
 config.resolver.platforms = ['ios', 'android', 'native', 'web'];
 
+// Force CommonJS resolution order to avoid ESM export issues
+config.resolver.resolverMainFields = ['react-native', 'main', 'browser'];
+
 module.exports = config; 
