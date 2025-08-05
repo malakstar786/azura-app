@@ -1,6 +1,6 @@
 {
-  "name": "mobile-app",
-  "version": "1.0.0",
+  "name": "Azura",
+  "version": "2.0.0",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
@@ -24,6 +24,7 @@
     "expo-splash-screen": "~0.30.10",
     "expo-status-bar": "~2.2.3",
     "expo-system-ui": "~5.0.10",
+    "expo-updates": "~0.28.17",
     "node-fetch": "^3.3.2",
     "react": "19.0.0",
     "react-hook-form": "^7.54.2",
@@ -35,8 +36,7 @@
     "react-native-toast-notifications": "^3.4.0",
     "react-native-webview": "13.13.5",
     "zod": "^3.24.2",
-    "zustand": "^5.0.3",
-    "expo-updates": "~0.28.17"
+    "zustand": "^5.0.3"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

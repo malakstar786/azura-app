@@ -20,7 +20,6 @@
       },
       "entitlements": {
         "com.apple.developer.in-app-payments": [
-          "merchant.kw.com.azura",
           "merchant.kw.com.azura"
         ]
       }
