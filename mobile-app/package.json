@@ -35,16 +35,17 @@
     "react-native-toast-notifications": "^3.4.0",
     "react-native-webview": "13.13.5",
     "zod": "^3.24.2",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "expo-updates": "~0.28.17"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/expo": "^32.0.13",
     "@types/react": "~19.0.10",
     "babel-plugin-module-resolver": "^5.0.2",
+    "expo-module-scripts": "^4.1.9",
     "typescript": "^5.3.3"
   },
-
   "private": true,
   "expo": {
     "doctor": {

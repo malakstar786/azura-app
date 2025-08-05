@@ -19,7 +19,10 @@
         "ITSAppUsesNonExemptEncryption": false
       },
       "entitlements": {
-        "com.apple.developer.in-app-payments": ["merchant.kw.com.azura"]
+        "com.apple.developer.in-app-payments": [
+          "merchant.kw.com.azura",
+          "merchant.kw.com.azura"
+        ]
       }
     },
     "android": {
@@ -54,6 +57,12 @@
         }
       ],
       "expo-router"
-    ]
+    ],
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/92df4acd-1d46-4cf5-a942-476a79f5d31d"
+    }
   }
 }
