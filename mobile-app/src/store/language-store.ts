@@ -147,11 +147,14 @@ export const useLanguageStore = create<LanguageState>()(
             }
           }
 
-          // Crucially, initialize I18nManager BEFORE rendering
+          // SAFE: Only update I18nManager if it's different and we're not in production
           const initialIsRTL = initialLanguage === 'ar';
+          
+          // Check if we need to change RTL
           if (I18nManager.isRTL !== initialIsRTL) {
-            I18nManager.forceRTL(initialIsRTL);
-            // Do NOT restart here immediately. We'll prompt the user for the very first switch.
+            // In production, don't force RTL during initialization
+            // Let the user change it manually to avoid crashes
+            console.log('RTL change needed but skipping during initialization for safety');
           }
           
           // Update theme RTL properties

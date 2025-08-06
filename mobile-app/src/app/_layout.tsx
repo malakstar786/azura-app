@@ -35,7 +35,11 @@ export default function RootLayout() {
         await getOrCreateOCSESSID();
         
         // Initialize language store
-        await initialize();
+        try {
+          await initialize();
+        } catch (languageError) {
+          console.warn('Language initialization failed, using defaults:', languageError);
+        }
         
         // Simulate any other initialization if needed
         await new Promise(resolve => setTimeout(resolve, 2000));
