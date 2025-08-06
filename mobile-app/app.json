@@ -55,13 +55,16 @@
           ]
         }
       ],
-      "expo-router"
+      "expo-router",
+      "expo-updates"
     ],
     "runtimeVersion": {
       "policy": "appVersion"
     },
     "updates": {
-      "url": "https://u.expo.dev/92df4acd-1d46-4cf5-a942-476a79f5d31d"
+      "url": "https://u.expo.dev/92df4acd-1d46-4cf5-a942-476a79f5d31d",
+      "enabled": true,
+      "fallbackToCacheTimeout": 0
     }
   }
 }

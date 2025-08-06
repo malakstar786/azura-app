@@ -1,16 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, ScrollView, Dimensions, Image, Pressable, ActivityIndicator } from 'react-native';
-import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
-import { makeApiCall, API_ENDPOINTS, ApiResponse } from '@utils/api-config';
 import { publicApi } from '@utils/api-service';
 import { useTranslation } from '@utils/translations';
 import { useLanguageStore } from '@store/language-store';
 import { theme } from '@/theme';
 import { getFlexDirection, getTextAlign, getStartEndMargin } from '@utils/rtlStyles';
 
-const { width } = Dimensions.get('window');
 
 interface Product {
   product_id: string;
@@ -22,10 +19,6 @@ interface Product {
   category_id: string;
 }
 
-interface ProductsResponse {
-  product_total: number;
-  products: Product[];
-}
 
 const SearchResultItem = ({ product }: { product: Product }) => {
   const { t } = useTranslation();

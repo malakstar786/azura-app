@@ -1,4 +1,4 @@
-import { useLanguageStore, Language } from '../store/language-store';
+import { useLanguageStore } from '../store/language-store';
 
 // Define translations structure by language first, then keys
 const translations = {

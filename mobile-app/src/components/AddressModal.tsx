@@ -1,5 +1,5 @@
 import React from 'react';
-import { Modal, View, StyleSheet, Dimensions } from 'react-native';
+import { Modal, View, StyleSheet } from 'react-native';
 import type { Address } from '@store/address-store';
 import AddEditAddress from './add-edit-address';
 
@@ -9,8 +9,6 @@ interface AddressModalProps {
   isNewAddress: boolean;
   address?: Address;
 }
-
-const SCREEN_HEIGHT = Dimensions.get('window').height;
 
 export default function AddressModal({ visible, onClose, isNewAddress, address }: AddressModalProps) {
   // Convert Address to FormData format

@@ -4,12 +4,10 @@ import {
   Text,
   StyleSheet,
   Alert,
-  Platform,
   TouchableOpacity,
   FlatList,
   Image,
   Dimensions,
-  Pressable,
   Modal,
   ScrollView,
 } from 'react-native';

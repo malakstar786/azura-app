@@ -4,13 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  Image,
   ScrollView,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { theme } from '@theme';
-import { useTranslation } from '@utils/translations';
 import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 interface OrderData {
@@ -29,7 +27,6 @@ export default function OrderSuccessScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const [orderData, setOrderData] = useState<OrderData | null>(null);
-  const { t } = useTranslation();
 
   useEffect(() => {
     // Get order data from navigation params or local storage
@@ -49,14 +46,6 @@ export default function OrderSuccessScreen() {
     router.replace('/(shop)');
   };
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric'
-    });
-  };
 
   const formatOrderId = (orderId: string) => {
     return `#${orderId}`;

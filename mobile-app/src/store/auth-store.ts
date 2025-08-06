@@ -4,9 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { 
   makeApiCall, 
   API_ENDPOINTS, 
-  ApiResponse,
   setOCSESSID, 
-  getCurrentOCSESSID, 
   NetworkErrorCodes, 
   API_BASE_URL, 
   getOrCreateOCSESSID,
@@ -14,9 +12,6 @@ import {
 } from '@utils/api-config';
 import { Alert } from 'react-native';
 import { useCartStore } from './cart-store';
-
-// Constants imported from api-config
-const OCSESSID_STORAGE_KEY = '@azura_ocsessid';
 
 export interface Address {
   address_id: string;

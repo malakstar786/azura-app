@@ -46,7 +46,7 @@ const setNavigationLock = async (): Promise<void> => {
 // Create store with persistence
 export const useLanguageStore = create<LanguageState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       // Default state
       currentLanguage: 'en',
       isRTL: false,

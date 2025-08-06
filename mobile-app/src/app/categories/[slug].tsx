@@ -18,7 +18,6 @@ import { useTranslation } from '@utils/translations';
 import { useToast } from 'react-native-toast-notifications';
 import { publicApi } from '@utils/api-service';
 import type { Product as ApiProduct } from '../../types/api';
-import { ProductListItem } from '@components/product-list-item';
 import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
 const { width } = Dimensions.get('window');

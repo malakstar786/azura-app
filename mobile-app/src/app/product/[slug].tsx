@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Redirect, Stack, useLocalSearchParams, router } from 'expo-router';
+import { Stack, useLocalSearchParams, router } from 'expo-router';
 import {
   StyleSheet,
   Text,
@@ -36,11 +36,6 @@ interface Product {
   date_added: string;
 }
 
-interface ApiResponse {
-  success: number;
-  error: string | undefined;
-  data: Product;
-}
 
 const ProductDetails = () => {
   const { slug } = useLocalSearchParams<{ slug: string }>();

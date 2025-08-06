@@ -23,7 +23,7 @@ import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
 import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
 
-const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface FormData {
   firstname: string;

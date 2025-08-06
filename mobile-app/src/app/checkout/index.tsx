@@ -10,11 +10,11 @@ import AddEditAddress from '@components/add-edit-address';
 import { theme } from '@theme';
 import { useTranslation } from '@utils/translations';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 export default function CheckoutScreen() {
   const { isAuthenticated } = useAuthStore();
-  const { addresses, fetchAddresses } = useAuthStore();
+  const { fetchAddresses } = useAuthStore();
   const { items, total, clearCart, getCart } = useCartStore();
   const { t } = useTranslation();
   const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
@@ -36,7 +36,6 @@ export default function CheckoutScreen() {
   const [methodsLoading, setMethodsLoading] = useState(false);
   const [showPaymentWebView, setShowPaymentWebView] = useState(false);
   const [paymentUrl, setPaymentUrl] = useState<string | null>(null);
-  const [showApplePayButton, setShowApplePayButton] = useState(false);
   const [applePayLoading, setApplePayLoading] = useState(false);
   const [orderConfirmationData, setOrderConfirmationData] = useState<any>(null);
 

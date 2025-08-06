@@ -20,7 +20,7 @@ interface OrderStore {
   fetchOrders: () => Promise<void>;
 }
 
-export const useOrderStore = create<OrderStore>((set, get) => ({
+export const useOrderStore = create<OrderStore>((set) => ({
   orders: [],
   isLoading: false,
   error: null,

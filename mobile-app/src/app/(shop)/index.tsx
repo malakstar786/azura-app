@@ -9,7 +9,7 @@ import { useTranslation } from "@utils/translations";
 import { theme } from "@theme";
 import { Ionicons } from '@expo/vector-icons';
 import DrawerMenu from "@components/DrawerMenu";
-import { getTextAlign, getFlexDirection } from '@utils/rtlStyles';
+import { getFlexDirection } from '@utils/rtlStyles';
 
 const { width, height } = Dimensions.get("window");
 
